@@ -1,0 +1,15 @@
+{
+  "name": "@everecho/ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@everecho/config": "workspace:*",
+    "@everecho/contracts": "workspace:*",
+    "zod": "4.5.4",
+    "@anthropic-ai/sdk": "0.122.0"
+  }
+}
