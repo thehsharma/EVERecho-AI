@@ -12,16 +12,16 @@ types.setTypeParser(1700, (v: string) => Number(v));
 export type QueryParams = readonly unknown[];
 
 export interface Queryable {
-  query<T extends Record<string, unknown> = Record<string, unknown>>(
+  query<T extends object = Record<string, unknown>>(
     sql: string,
     params?: QueryParams,
   ): Promise<T[]>;
   /** Exactly one row, or a thrown error naming what was expected. */
-  one<T extends Record<string, unknown> = Record<string, unknown>>(
+  one<T extends object = Record<string, unknown>>(
     sql: string,
     params?: QueryParams,
   ): Promise<T>;
-  maybeOne<T extends Record<string, unknown> = Record<string, unknown>>(
+  maybeOne<T extends object = Record<string, unknown>>(
     sql: string,
     params?: QueryParams,
   ): Promise<T | null>;
@@ -47,7 +47,7 @@ export class NotFoundError extends Error {
 class QueryRunner implements Queryable {
   constructor(private readonly runner: pg.Pool | pg.PoolClient) {}
 
-  async query<T extends Record<string, unknown> = Record<string, unknown>>(
+  async query<T extends object = Record<string, unknown>>(
     sql: string,
     params: QueryParams = [],
   ): Promise<T[]> {
@@ -55,7 +55,7 @@ class QueryRunner implements Queryable {
     return result.rows as T[];
   }
 
-  async one<T extends Record<string, unknown> = Record<string, unknown>>(
+  async one<T extends object = Record<string, unknown>>(
     sql: string,
     params: QueryParams = [],
   ): Promise<T> {
@@ -65,7 +65,7 @@ class QueryRunner implements Queryable {
     return row;
   }
 
-  async maybeOne<T extends Record<string, unknown> = Record<string, unknown>>(
+  async maybeOne<T extends object = Record<string, unknown>>(
     sql: string,
     params: QueryParams = [],
   ): Promise<T | null> {
@@ -95,13 +95,13 @@ export class Database implements Queryable {
     this.runner = new QueryRunner(this.pool);
   }
 
-  query<T extends Record<string, unknown> = Record<string, unknown>>(sql: string, params?: QueryParams) {
+  query<T extends object = Record<string, unknown>>(sql: string, params?: QueryParams) {
     return this.runner.query<T>(sql, params);
   }
-  one<T extends Record<string, unknown> = Record<string, unknown>>(sql: string, params?: QueryParams) {
+  one<T extends object = Record<string, unknown>>(sql: string, params?: QueryParams) {
     return this.runner.one<T>(sql, params);
   }
-  maybeOne<T extends Record<string, unknown> = Record<string, unknown>>(sql: string, params?: QueryParams) {
+  maybeOne<T extends object = Record<string, unknown>>(sql: string, params?: QueryParams) {
     return this.runner.maybeOne<T>(sql, params);
   }
 

@@ -55,8 +55,12 @@ export const consentPolicyDocumentSchema = z.object({
     generation: z.boolean(),
     /** Provider-side retention in days. 0 = no retention permitted. */
     retentionDays: z.number().int().min(0).max(3650),
-    /** Never negotiable; present so the value is recorded in the signed hash. */
-    noModelTraining: z.literal(true),
+    /**
+     * Never negotiable. Typed as a boolean rather than `true` so that a request
+     * setting it to false is refused by the consent compiler *by name*, instead
+     * of by a generic schema error that explains nothing.
+     */
+    noModelTraining: z.boolean(),
   }),
 
   /**
@@ -64,9 +68,9 @@ export const consentPolicyDocumentSchema = z.object({
    * Present in the document so the refusal is part of the audited record.
    */
   voiceAndLikeness: z.object({
-    syntheticVoice: z.literal(false),
-    syntheticLikeness: z.literal(false),
-    personaSimulation: z.literal(false),
+    syntheticVoice: z.boolean(),
+    syntheticLikeness: z.boolean(),
+    personaSimulation: z.boolean(),
   }),
 
   /** Whether consent may be changed later without a fresh teach-back. */
