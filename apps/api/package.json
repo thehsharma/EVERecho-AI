@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "start": "tsx src/main.ts"
+    "start": "tsx src/main.ts",
+    "eval": "tsx evals/run-evals.ts",
+    "openapi": "tsx src/openapi/emit.ts ../../docs/openapi.json"
   },
   "dependencies": {
     "@everecho/adapters": "workspace:*",

@@ -1,5 +1,5 @@
 import type { EvidenceClass } from '@everecho/contracts';
-import { coverage, splitSentences, tokenOverlap } from './text';
+import { coverage, extractProperNouns, sharedTokenCount, splitSentences, tokenOverlap } from './text';
 
 export interface EvidencePassage {
   id: string;
@@ -134,7 +134,25 @@ export function detectContradiction(
   a: { text: string; years: number[] },
   b: { text: string; years: number[] },
 ): ContradictionFinding | null {
-  const sameSubject = tokenOverlap(a.text, b.text) >= 0.55;
+  /**
+   * Two accounts of one event rarely share half their words — "we moved to
+   * Pune in 1962 because my father took a job on the railways" and "we moved
+   * to Pune in 1968, when his work brought him there" overlap by less than a
+   * third. What they do share is an anchor: the same place name.
+   *
+   * So the test is: at least two content words in common — one shared place
+   * name is not two accounts of one event, it is two events in one town — plus
+   * either a shared proper noun or substantial overlap.
+   *
+   * A contradiction is surfaced for the storyteller to judge and is never acted
+   * on, so a false positive costs a moment of their attention while a miss
+   * costs the archive its accuracy.
+   */
+  const overlap = tokenOverlap(a.text, b.text);
+  const shared = sharedTokenCount(a.text, b.text);
+  const nounsA = new Set(extractProperNouns(a.text).map((n) => n.toLowerCase()));
+  const sharedAnchor = extractProperNouns(b.text).some((n) => nounsA.has(n.toLowerCase()));
+  const sameSubject = shared >= 2 && (overlap >= 0.5 || sharedAnchor);
   if (!sameSubject) return null;
 
   const yearsDiffer =

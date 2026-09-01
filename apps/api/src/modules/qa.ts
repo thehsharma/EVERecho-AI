@@ -10,6 +10,7 @@ import {
 import {
   PROHIBITED_REQUEST_MESSAGE,
   contentTokens,
+  detectInjection,
   isProhibitedRequest,
   stableHash,
   truncate,
@@ -70,6 +71,21 @@ async function retrieveAuthorisedEvidence(
   },
 ): Promise<RetrievedClaim[]> {
   const [queryVector] = await ctx.embeddings.embed([input.question]);
+
+  /**
+   * An OR query over the question's content words.
+   *
+   * `websearch_to_tsquery` requires every term, so a single word the archive
+   * never uses ("how big was her first class") returns nothing at all — which
+   * reads to a family member as an empty archive rather than a phrasing
+   * mismatch. Ranking still favours documents matching more terms.
+   * Tokens are stripped to letters and digits before they reach `to_tsquery`.
+   */
+  const tsQuery =
+    contentTokens(input.question)
+      .map((token) => token.replace(/[^\p{L}\p{N}]/gu, ''))
+      .filter((token) => token.length > 1)
+      .join(' | ') || 'zzzznomatch';
   const usePgvector = await ctx.db.capability('pgvector').catch(() => false);
 
   // One query, one ranking. Only the similarity expression differs by capability.
@@ -80,7 +96,7 @@ async function retrieveAuthorisedEvidence(
   return tx.query<RetrievedClaim>(
     `WITH scored AS (
        SELECT m.id AS memory_id, m.title AS memory_title, m.sensitivity,
-              ts_rank(m.search_tsv, websearch_to_tsquery('english', $2)) AS lexical,
+              ts_rank(m.search_tsv, to_tsquery('english', $2)) AS lexical,
               coalesce(${similarity}, 0) AS semantic
        FROM memory m
        LEFT JOIN memory_embedding me ON me.memory_id = m.id
@@ -109,11 +125,14 @@ async function retrieveAuthorisedEvidence(
      GROUP BY c.id, s.memory_id, s.memory_title, s.sensitivity, e.source_asset_id,
               sa.original_filename, sa.kind, e.transcript_segment_id, e.locator, e.quoted_text,
               s.lexical, s.semantic
-     ORDER BY score DESC
+     -- Ties broken deterministically: two claims with the same score must not
+     -- produce different answers on different runs, and a LIMIT that cuts
+     -- through a tie group would do exactly that.
+     ORDER BY score DESC, c.created_at ASC, c.id ASC
      LIMIT $8`,
     [
       input.archiveId,
-      input.question,
+      tsQuery,
       queryVector ?? [],
       allowedSensitivities(input.maxSensitivity),
       input.restrictedTopics,
@@ -171,6 +190,30 @@ export function registerQaRoutes(app: FastifyInstance, ctx: AppContext): void {
             };
           }
 
+          // A question that tries to disable citations, override the rules or
+          // invite fabrication gets no answer. Answering it with a cited claim
+          // would still be rewarding the attempt.
+          const injection = detectInjection(body.question);
+          if (injection.length > 0) {
+            await tx.query(
+              `INSERT INTO security_event (archive_id, user_id, kind, severity, request_id, metadata)
+               VALUES ($1, $2, 'injection_attempt_in_question', 'low', $3, $4)`,
+              [params.archiveId, user.id, request.id, JSON.stringify({ labels: injection.map((f) => f.label) })],
+            );
+            return {
+              response: await storeResponse(ctx, tx, {
+                archiveId: params.archiveId,
+                userId: user.id,
+                question: body.question,
+                answerText: ABSTENTION_TEXT,
+                abstentionReason: 'unsafe_request',
+                claims: [],
+                policyVersion: decision.policyVersion,
+                snapshotId: null,
+              }),
+            };
+          }
+
           const retrieved = await retrieveAuthorisedEvidence(ctx, tx, {
             archiveId: params.archiveId,
             question: body.question,
@@ -178,7 +221,7 @@ export function registerQaRoutes(app: FastifyInstance, ctx: AppContext): void {
             excludedSourceIds: decision.obligations.excludedSourceIds,
             restrictedTopics: decision.obligations.restrictedTopics,
             limitToSourceIds: body.sourceIds,
-            limit: 24,
+            limit: 60,
           });
 
           const snapshot = await tx.one<{ id: string }>(

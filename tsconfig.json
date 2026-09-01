@@ -12,6 +12,7 @@
     "packages/*/test/**/*.ts",
     "apps/api/src/**/*.ts",
     "apps/api/test/**/*.ts",
+    "apps/api/evals/**/*.ts",
     "apps/worker/src/**/*.ts",
     "apps/worker/test/**/*.ts",
     "apps/web/src/**/*.ts",

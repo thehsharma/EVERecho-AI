@@ -28,7 +28,26 @@ export function tokenise(text: string): string[] {
  * Deliberately mild: over-stemming collapses distinct words and produces
  * confident wrong matches, which is the worse failure here.
  */
+/**
+ * Irregular forms no suffix rule can reach. Small and deliberately common:
+ * without "taught -> teach", asking how long someone taught finds nothing in a
+ * recording that says "I taught for thirty-one years".
+ */
+const IRREGULAR: Record<string, string> = {
+  taught: 'teach', thought: 'think', bought: 'buy', brought: 'bring', caught: 'catch',
+  sought: 'seek', fought: 'fight', told: 'tell', sold: 'sell', held: 'hold',
+  left: 'leave', felt: 'feel', kept: 'keep', slept: 'sleep', met: 'meet',
+  built: 'build', sent: 'send', spent: 'spend', lost: 'lose', found: 'find',
+  gave: 'give', given: 'give', took: 'take', taken: 'take', went: 'go', gone: 'go',
+  came: 'come', ran: 'run', wrote: 'write', written: 'write', spoke: 'speak',
+  spoken: 'speak', knew: 'know', known: 'know', grew: 'grow', grown: 'grow',
+  began: 'begin', begun: 'begin', children: 'child', people: 'person',
+  women: 'woman', men: 'man', wives: 'wife', lives: 'life',
+};
+
 export function stem(token: string): string {
+  const irregular = IRREGULAR[token];
+  if (irregular) return irregular;
   if (token.length <= 3) return token;
 
   let base = token;
@@ -76,6 +95,14 @@ export function tokenOverlap(a: string, b: string): number {
   let shared = 0;
   for (const t of setA) if (setB.has(t)) shared += 1;
   return shared / Math.min(setA.size, setB.size);
+}
+
+/** How many distinct content words two texts have in common. */
+export function sharedTokenCount(a: string, b: string): number {
+  const setB = new Set(contentTokens(b));
+  let shared = 0;
+  for (const token of new Set(contentTokens(a))) if (setB.has(token)) shared += 1;
+  return shared;
 }
 
 /** Proportion of `claim`'s content words that appear in `evidence`. */

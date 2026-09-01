@@ -102,3 +102,22 @@ describe('contradiction detection', () => {
     ).toBeNull();
   });
 });
+
+describe('contradiction detection across real phrasing', () => {
+  it('spots two accounts of the same move that share only a place name', () => {
+    const finding = detectContradiction(
+      { text: 'We moved to Pune in 1962 because my father took a job on the railways.', years: [1962] },
+      { text: 'We moved to Pune in 1968, before we were married, when his work brought him there.', years: [1968] },
+    );
+    expect(finding?.kind).toBe('date_conflict');
+  });
+
+  it('does not flag two different events that happen to name the same place', () => {
+    expect(
+      detectContradiction(
+        { text: 'She was born in Nagpur in 1948.', years: [1948] },
+        { text: 'Her first teaching post was near the Nagpur cantonment, which she took in 1971 after finishing college.', years: [1971] },
+      ),
+    ).toBeNull();
+  });
+});
