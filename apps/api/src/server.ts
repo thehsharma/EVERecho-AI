@@ -106,15 +106,14 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
   await app.register(multipart, {
     limits: { fileSize: ctx.cfg.env.UPLOAD_MAX_BYTES, files: 1 },
   });
-  await app.register(rateLimit, {
-    global: true,
-    max: ctx.cfg.env.RATE_LIMIT_MAX,
-    timeWindow: ctx.cfg.env.RATE_LIMIT_WINDOW_MS,
-    // Rate limit by account where we have one, by address otherwise, so one
-    // household behind a shared address does not lock each other out.
-    keyGenerator: (request) => request.user?.id ?? request.ip,
-  });
 
+  /**
+   * Session resolution runs BEFORE the rate limiter is registered, because
+   * Fastify runs onRequest hooks in registration order. With it after, the
+   * limiter's key generator never sees `request.user`, every request falls back
+   * to the client address, and all server-rendered traffic — which arrives from
+   * one address — shares a single bucket and locks every user out together.
+   */
   app.addHook('onRequest', async (request, reply) => {
     reply.header('x-request-id', request.id);
     request.user = null;
@@ -126,9 +125,25 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
         reply.clearCookie(ctx.cfg.env.SESSION_COOKIE_NAME, { path: '/' });
       }
     }
+  });
 
-    // Double-submit CSRF on every state-changing request that carries a session.
-    // Webhooks authenticate by provider signature and are exempt by design.
+  await app.register(rateLimit, {
+    global: true,
+    max: ctx.cfg.env.RATE_LIMIT_MAX,
+    timeWindow: ctx.cfg.env.RATE_LIMIT_WINDOW_MS,
+    // Per account where we have one, per address otherwise, so one household
+    // behind a shared connection does not lock each other out.
+    keyGenerator: (request) => request.user?.id ?? request.ip,
+    // Liveness and readiness probes must not consume anyone's budget, and the
+    // branding endpoint is fetched on every page render with nothing private
+    // in it.
+    allowList: (request) => ['/healthz', '/readyz', '/v1/meta'].includes(request.url.split('?')[0] ?? ''),
+  });
+
+  app.addHook('onRequest', async (request) => {
+    // Double-submit CSRF on every state-changing request that carries a
+    // session. Webhooks authenticate by provider signature and are exempt.
+    const token = request.cookies[ctx.cfg.env.SESSION_COOKIE_NAME];
     if (!SAFE_METHODS.has(request.method) && token && !request.url.startsWith('/v1/webhooks/')) {
       const presented = request.headers['x-csrf-token'];
       if (!csrfTokenValid(token, typeof presented === 'string' ? presented : undefined, ctx.cfg.env.SESSION_SECRET)) {

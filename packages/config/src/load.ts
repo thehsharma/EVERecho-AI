@@ -1,4 +1,43 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { envSchema, type Env } from './schema';
+
+/**
+ * Loads a `.env` file if one exists, walking up from the current directory to
+ * the repository root. Values already present in the environment always win, so
+ * a deployment's real configuration is never shadowed by a file left on disk.
+ *
+ * Hand-rolled rather than a dependency: the format is four lines of parsing,
+ * and configuration loading is not somewhere to add a supply-chain surface.
+ */
+function loadDotEnv(startDir = process.cwd()): void {
+  let dir = resolve(startDir);
+  for (let depth = 0; depth < 6; depth += 1) {
+    const candidate = join(dir, '.env');
+    if (existsSync(candidate)) {
+      for (const line of readFileSync(candidate, 'utf8').split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eq = trimmed.indexOf('=');
+        if (eq < 1) continue;
+        const key = trimmed.slice(0, eq).trim();
+        if (process.env[key] !== undefined) continue;
+        let value = trimmed.slice(eq + 1).trim();
+        if (
+          (value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))
+        ) {
+          value = value.slice(1, -1);
+        }
+        process.env[key] = value;
+      }
+      return;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) return;
+    dir = parent;
+  }
+}
 
 export interface AppConfig {
   env: Env;
@@ -32,8 +71,10 @@ const PRODUCTION_REQUIRED: readonly (keyof Env)[] = [
 
 const DEV_DEFAULT_MARKERS = ['dev-only', 'change-me', 'changeme', 'localhost'];
 
-export function loadConfig(source: Record<string, string | undefined> = process.env): AppConfig {
-  const parsed = envSchema.safeParse(source);
+export function loadConfig(source?: Record<string, string | undefined>): AppConfig {
+  // Only when reading the real environment; tests pass an explicit source.
+  if (source === undefined) loadDotEnv();
+  const parsed = envSchema.safeParse(source ?? process.env);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`);
     throw new ConfigError(`Invalid environment configuration:\n  - ${issues.join('\n  - ')}`, issues);
