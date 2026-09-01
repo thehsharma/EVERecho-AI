@@ -81,9 +81,7 @@ export function openPolicy(overrides: Partial<ConsentPolicyDocument> = {}): Cons
   });
 }
 
-export function learningPolicy(
-  overrides: Partial<LearningPolicyDocument> = {},
-): LearningPolicy {
+export function learningPolicy(overrides: Partial<LearningPolicyDocument> = {}): LearningPolicy {
   const { document, policyHash } = compileLearningPolicy({
     ...defaultLearningDocument(),
     ...overrides,

@@ -34,6 +34,18 @@ export const analyticsEventNameSchema = z.enum([
   'consent_incident',
   'delivery_labour_recorded',
   'provider_cost_recorded',
+  // Real-time conversation. Counts and modes only — never a word of what was
+  // said, never a question, never a title.
+  'realtime_session_started',
+  'realtime_session_ended',
+  'realtime_turn_completed',
+  'realtime_turn_interrupted',
+  'realtime_answer_abstained',
+  'realtime_candidate_proposed',
+  'realtime_candidate_approved',
+  'realtime_candidate_rejected',
+  'learning_policy_updated',
+  'preference_auto_saved',
 ]);
 export type AnalyticsEventName = z.infer<typeof analyticsEventNameSchema>;
 

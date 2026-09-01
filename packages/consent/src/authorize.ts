@@ -340,9 +340,7 @@ export function authorize(input: AuthorizeInput): Decision {
     if (requirement.learning !== null) {
       if (!subject.learningPolicy) return deny('learning_policy_missing', policyVersion);
       if (learningExpired) return deny('learning_policy_expired', policyVersion);
-      if (
-        !learningGateSatisfied(requirement.learning, learning, context.usesProvider === true)
-      ) {
+      if (!learningGateSatisfied(requirement.learning, learning, context.usesProvider === true)) {
         return deny(LEARNING_DENIALS[requirement.learning], policyVersion);
       }
     }

@@ -259,13 +259,7 @@ export async function upsertInteractionPreference(
            learning_policy_version = EXCLUDED.learning_policy_version,
            updated_at = now()
      RETURNING *`,
-    [
-      input.userId,
-      input.key,
-      input.value,
-      input.origin,
-      input.learningPolicyVersion ?? null,
-    ],
+    [input.userId, input.key, input.value, input.origin, input.learningPolicyVersion ?? null],
   );
 }
 

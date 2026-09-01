@@ -1,60 +1,119 @@
 <div class="page-break"></div>
 <h2 id="sec-17">17&nbsp;&nbsp;What was measured</h2>
 
-<p class="lede">Every figure on this page came from running the code against a real
-PostgreSQL&nbsp;16 in the session that produced this repository. Reproduce with
-<code>pnpm verify</code>, then <code>pnpm test:e2e</code> against a running
-stack.</p>
+<p class="lede">
+  Every figure on this page came from running the code against a real PostgreSQL&nbsp;16 in the
+  session that produced this repository. Reproduce with <code>pnpm verify</code>, then
+  <code>pnpm test:e2e</code> against a running stack.
+</p>
 
 <table>
-  <thead><tr><th style="width:46%">What</th><th>Result</th></tr></thead>
+  <thead>
+    <tr>
+      <th style="width: 46%">What</th>
+      <th>Result</th>
+    </tr>
+  </thead>
   <tbody>
-    <tr><td>Unit and integration tests</td><td><strong>193 passing</strong> &mdash; 145 unit, 48 integration, <em>no mocks</em></td></tr>
-    <tr><td>Browser tests</td><td><strong>54 passing</strong> across desktop and tablet</td></tr>
-    <tr><td>Accessibility</td><td><strong>0 WCAG 2.2 AA violations</strong> on 8 public pages and 16 archive screens</td></tr>
-    <tr><td>AI evaluations</td><td><strong>32/32 cases passing</strong></td></tr>
-    <tr><td>Claim-to-citation correctness</td><td><strong>100%</strong> &nbsp;<span class="footnote">(target &ge; 95%)</span></td></tr>
-    <tr><td>Unsupported material claims</td><td><strong>0.00%</strong> &nbsp;<span class="footnote">(target &le; 1%)</span></td></tr>
-    <tr><td>Abstention on no-evidence and sensitive</td><td><strong>100%</strong> &nbsp;<span class="footnote">(target 100%)</span></td></tr>
-    <tr><td>Permission leaks</td><td><strong>0</strong> &nbsp;<span class="footnote">(target 0)</span></td></tr>
-    <tr><td>Lint, formatting, types</td><td>Clean</td></tr>
+    <tr>
+      <td>Unit and integration tests</td>
+      <td><strong>193 passing</strong> &mdash; 145 unit, 48 integration, <em>no mocks</em></td>
+    </tr>
+    <tr>
+      <td>Browser tests</td>
+      <td><strong>54 passing</strong> across desktop and tablet</td>
+    </tr>
+    <tr>
+      <td>Accessibility</td>
+      <td><strong>0 WCAG 2.2 AA violations</strong> on 8 public pages and 16 archive screens</td>
+    </tr>
+    <tr>
+      <td>AI evaluations</td>
+      <td><strong>32/32 cases passing</strong></td>
+    </tr>
+    <tr>
+      <td>Claim-to-citation correctness</td>
+      <td><strong>100%</strong> &nbsp;<span class="footnote">(target &ge; 95%)</span></td>
+    </tr>
+    <tr>
+      <td>Unsupported material claims</td>
+      <td><strong>0.00%</strong> &nbsp;<span class="footnote">(target &le; 1%)</span></td>
+    </tr>
+    <tr>
+      <td>Abstention on no-evidence and sensitive</td>
+      <td><strong>100%</strong> &nbsp;<span class="footnote">(target 100%)</span></td>
+    </tr>
+    <tr>
+      <td>Permission leaks</td>
+      <td><strong>0</strong> &nbsp;<span class="footnote">(target 0)</span></td>
+    </tr>
+    <tr>
+      <td>Lint, formatting, types</td>
+      <td>Clean</td>
+    </tr>
   </tbody>
 </table>
 
 <h3>Why "no mocks" is the load-bearing phrase</h3>
-<p>The 48 integration tests run against a real database. This is slower and more
-awkward than mocking the data layer, and it is the only way to test the things
-that actually matter here: row-level security is a property of PostgreSQL, not of
-application code, and a mocked database will happily confirm an isolation
-guarantee that does not exist. The same applies to the append-only audit trigger,
-the <code>FOR UPDATE SKIP LOCKED</code> queue semantics, the generated
-<code>tsvector</code> columns and the consent obligations compiled into
-<code>WHERE</code> clauses.</p>
+<p>
+  The 48 integration tests run against a real database. This is slower and more awkward than mocking
+  the data layer, and it is the only way to test the things that actually matter here: row-level
+  security is a property of PostgreSQL, not of application code, and a mocked database will happily
+  confirm an isolation guarantee that does not exist. The same applies to the append-only audit
+  trigger, the <code>FOR UPDATE SKIP LOCKED</code> queue semantics, the generated
+  <code>tsvector</code> columns and the consent obligations compiled into
+  <code>WHERE</code> clauses.
+</p>
 
 <h3>How the evaluation suite avoids grading its own homework</h3>
-<p>The 32 gold-set cases check citations <strong>against the database</strong>
-rather than against the response. An answer that cites a memory identifier it
-invented fails, because the harness looks the identifier up. The suite exits
-non-zero on any missed target, so a regression in grounding blocks the build
-rather than producing a slightly worse number in a report nobody reads.</p>
+<p>
+  The 32 gold-set cases check citations <strong>against the database</strong> rather than against
+  the response. An answer that cites a memory identifier it invented fails, because the harness
+  looks the identifier up. The suite exits non-zero on any missed target, so a regression in
+  grounding blocks the build rather than producing a slightly worse number in a report nobody reads.
+</p>
 
 <h3>Bugs the tests actually caught</h3>
 <p>Listed because a test suite that never caught anything is decoration:</p>
 <ul>
-  <li><strong>Consent (4 real bugs):</strong> reason codes returned in the wrong order so the buyer case reported a misleading denial; a mode&#8209;to&#8209;activity mapping that collapsed nine independent grants into a bundle; two roles missing their export actions, which put the decision in the role table instead of in consent; and <code>correction.propose</code> skipping the recipient-grant lookup entirely.</li>
-  <li><strong>Retrieval:</strong> <code>websearch_to_tsquery</code>'s AND semantics silently returning nothing for multi-word questions; non-deterministic ordering on ranking ties; no irregular-verb stemming, so "move" and "moved" did not converge.</li>
-  <li><strong>Safety:</strong> injection questions receiving cited answers because the check ran after retrieval rather than before it.</li>
-  <li><strong>Rate limiting:</strong> the limiter registered before session resolution, so every request was keyed by IP address &mdash; which meant all server-rendered traffic shared a single bucket and would have locked every user out under real load.</li>
-  <li><strong>Audit:</strong> denial records written inside the transaction that the denial rolled back, so no refusal was ever recorded.</li>
-  <li><strong>Seeding:</strong> consent rows written outside an archive scope &mdash; correctly rejected by RLS, which is the isolation working as designed.</li>
+  <li>
+    <strong>Consent (4 real bugs):</strong> reason codes returned in the wrong order so the buyer
+    case reported a misleading denial; a mode&#8209;to&#8209;activity mapping that collapsed nine
+    independent grants into a bundle; two roles missing their export actions, which put the decision
+    in the role table instead of in consent; and <code>correction.propose</code> skipping the
+    recipient-grant lookup entirely.
+  </li>
+  <li>
+    <strong>Retrieval:</strong> <code>websearch_to_tsquery</code>'s AND semantics silently returning
+    nothing for multi-word questions; non-deterministic ordering on ranking ties; no irregular-verb
+    stemming, so "move" and "moved" did not converge.
+  </li>
+  <li>
+    <strong>Safety:</strong> injection questions receiving cited answers because the check ran after
+    retrieval rather than before it.
+  </li>
+  <li>
+    <strong>Rate limiting:</strong> the limiter registered before session resolution, so every
+    request was keyed by IP address &mdash; which meant all server-rendered traffic shared a single
+    bucket and would have locked every user out under real load.
+  </li>
+  <li>
+    <strong>Audit:</strong> denial records written inside the transaction that the denial rolled
+    back, so no refusal was ever recorded.
+  </li>
+  <li>
+    <strong>Seeding:</strong> consent rows written outside an archive scope &mdash; correctly
+    rejected by RLS, which is the isolation working as designed.
+  </li>
 </ul>
 
 <div class="callout ok">
   <span class="label">The rate-limiting bug is the one to remember</span>
-  <p>It passed every test. It broke nothing in development. It would have taken
-  the product down on its first day of real traffic, and it was found by reading
-  the hook registration order while looking for something else. Not every class
-  of defect is reachable by a test suite.</p>
+  <p>
+    It passed every test. It broke nothing in development. It would have taken the product down on
+    its first day of real traffic, and it was found by reading the hook registration order while
+    looking for something else. Not every class of defect is reachable by a test suite.
+  </p>
 </div>
 
 <div class="page-break"></div>
@@ -62,40 +121,148 @@ rather than producing a slightly worse number in a report nobody reads.</p>
 
 <div class="callout warn">
   <span class="label">Verdict</span>
-  <p><strong>Not ready for a real family's memories. Ready to be run, reviewed and
-  piloted internally with synthetic data.</strong></p>
+  <p>
+    <strong
+      >Not ready for a real family's memories. Ready to be run, reviewed and piloted internally with
+      synthetic data.</strong
+    >
+  </p>
 </div>
 
 <h3>Blocking before real memories go in</h3>
 <table>
-  <thead><tr><th style="width:5%">#</th><th style="width:40%">What</th><th style="width:40%">Why it blocks</th><th>Who</th></tr></thead>
+  <thead>
+    <tr>
+      <th style="width: 5%">#</th>
+      <th style="width: 40%">What</th>
+      <th style="width: 40%">Why it blocks</th>
+      <th>Who</th>
+    </tr>
+  </thead>
   <tbody>
-    <tr><td class="t-num">1</td><td><strong>Legal review</strong> of consent copy, teach-back wording, terms and the succession screen &mdash; in India, the EU, the UK and the US</td><td>Every legal string is a draft. A consent flow that is not legally sound is not consent</td><td>Counsel</td></tr>
-    <tr><td class="t-num">2</td><td><strong>Independent security review</strong>, particularly the consent engine and RLS</td><td>The isolation is currently tested by the people who wrote it</td><td>External</td></tr>
-    <tr><td class="t-num">3</td><td><strong>Encryption at rest with a customer-managed key</strong></td><td>Anyone with database or backup access reads everything</td><td>Engineering</td></tr>
-    <tr><td class="t-num">4</td><td><strong>Production authentication</strong> &mdash; OIDC or passkeys, and MFA enrolment</td><td><code>AUTH_DRIVER=local</code> is refused in production, so there is currently no production auth path at all</td><td>Engineering</td></tr>
-    <tr><td class="t-num">5</td><td><strong>A real malware scanner</strong> (<code>SCAN_DRIVER=clamav</code>)</td><td>The local scanner catches EICAR and type mismatches; it is not an antivirus</td><td>Engineering</td></tr>
-    <tr><td class="t-num">6</td><td><strong>Rehearsed restore</strong></td><td>An unrehearsed backup is a plan. The recovery targets are stated, not measured</td><td>Operations</td></tr>
-    <tr><td class="t-num">7</td><td><strong>Accessibility review with disabled users</strong></td><td>Zero axe violations is a floor, not a finding. Nobody using a screen reader has tried this</td><td>Product</td></tr>
-    <tr><td class="t-num">8</td><td><strong>Named accountability</strong> for consent and safety incidents</td><td>The incident runbook says "escalate". There is no one to escalate to</td><td>Owner</td></tr>
+    <tr>
+      <td class="t-num">1</td>
+      <td>
+        <strong>Legal review</strong> of consent copy, teach-back wording, terms and the succession
+        screen &mdash; in India, the EU, the UK and the US
+      </td>
+      <td>
+        Every legal string is a draft. A consent flow that is not legally sound is not consent
+      </td>
+      <td>Counsel</td>
+    </tr>
+    <tr>
+      <td class="t-num">2</td>
+      <td><strong>Independent security review</strong>, particularly the consent engine and RLS</td>
+      <td>The isolation is currently tested by the people who wrote it</td>
+      <td>External</td>
+    </tr>
+    <tr>
+      <td class="t-num">3</td>
+      <td><strong>Encryption at rest with a customer-managed key</strong></td>
+      <td>Anyone with database or backup access reads everything</td>
+      <td>Engineering</td>
+    </tr>
+    <tr>
+      <td class="t-num">4</td>
+      <td>
+        <strong>Production authentication</strong> &mdash; OIDC or passkeys, and MFA enrolment
+      </td>
+      <td>
+        <code>AUTH_DRIVER=local</code> is refused in production, so there is currently no production
+        auth path at all
+      </td>
+      <td>Engineering</td>
+    </tr>
+    <tr>
+      <td class="t-num">5</td>
+      <td><strong>A real malware scanner</strong> (<code>SCAN_DRIVER=clamav</code>)</td>
+      <td>The local scanner catches EICAR and type mismatches; it is not an antivirus</td>
+      <td>Engineering</td>
+    </tr>
+    <tr>
+      <td class="t-num">6</td>
+      <td><strong>Rehearsed restore</strong></td>
+      <td>An unrehearsed backup is a plan. The recovery targets are stated, not measured</td>
+      <td>Operations</td>
+    </tr>
+    <tr>
+      <td class="t-num">7</td>
+      <td><strong>Accessibility review with disabled users</strong></td>
+      <td>
+        Zero axe violations is a floor, not a finding. Nobody using a screen reader has tried this
+      </td>
+      <td>Product</td>
+    </tr>
+    <tr>
+      <td class="t-num">8</td>
+      <td><strong>Named accountability</strong> for consent and safety incidents</td>
+      <td>The incident runbook says "escalate". There is no one to escalate to</td>
+      <td>Owner</td>
+    </tr>
   </tbody>
 </table>
 
 <h3>Complete but never executed here</h3>
-<p>Each is implemented and type-checked; none was run, because nothing was
-reachable from the build environment. Verify before relying on any of it.</p>
+<p>
+  Each is implemented and type-checked; none was run, because nothing was reachable from the build
+  environment. Verify before relying on any of it.
+</p>
 
 <table>
-  <thead><tr><th style="width:26%">Area</th><th style="width:34%">State</th><th>First thing to check</th></tr></thead>
+  <thead>
+    <tr>
+      <th style="width: 26%">Area</th>
+      <th style="width: 34%">State</th>
+      <th>First thing to check</th>
+    </tr>
+  </thead>
   <tbody>
-    <tr><td>Docker Compose and images</td><td>Config validates; never built</td><td><code>docker compose up</code>, and watch the migrate step</td></tr>
-    <tr><td>S3 / MinIO storage</td><td>Full adapter via the AWS SDK</td><td>Upload, then a presigned download, then deletion</td></tr>
-    <tr><td>Redis cache</td><td>Full adapter</td><td>That revocation clears keys across two API instances</td></tr>
-    <tr><td>pgvector</td><td>Optional migration, synced column, HNSW index</td><td>That results match the portable path</td></tr>
-    <tr><td>Hosted composition (Anthropic)</td><td>Official SDK, forced strict tool use</td><td>That verification still drops unsupported claims</td></tr>
-    <tr><td>Hosted speech-to-text and OCR</td><td>Complete</td><td>That locators still point at real spans</td></tr>
-    <tr><td>SMTP email</td><td>Complete</td><td>That no memory content appears in a subject line</td></tr>
-    <tr><td>Stripe billing</td><td>Checkout and refund complete; <strong><code>verifyWebhook</code> returns <code>null</code></strong></td><td>Wire signature verification before enabling. It fails closed, which is the safe direction</td></tr>
+    <tr>
+      <td>Docker Compose and images</td>
+      <td>Config validates; never built</td>
+      <td><code>docker compose up</code>, and watch the migrate step</td>
+    </tr>
+    <tr>
+      <td>S3 / MinIO storage</td>
+      <td>Full adapter via the AWS SDK</td>
+      <td>Upload, then a presigned download, then deletion</td>
+    </tr>
+    <tr>
+      <td>Redis cache</td>
+      <td>Full adapter</td>
+      <td>That revocation clears keys across two API instances</td>
+    </tr>
+    <tr>
+      <td>pgvector</td>
+      <td>Optional migration, synced column, HNSW index</td>
+      <td>That results match the portable path</td>
+    </tr>
+    <tr>
+      <td>Hosted composition (Anthropic)</td>
+      <td>Official SDK, forced strict tool use</td>
+      <td>That verification still drops unsupported claims</td>
+    </tr>
+    <tr>
+      <td>Hosted speech-to-text and OCR</td>
+      <td>Complete</td>
+      <td>That locators still point at real spans</td>
+    </tr>
+    <tr>
+      <td>SMTP email</td>
+      <td>Complete</td>
+      <td>That no memory content appears in a subject line</td>
+    </tr>
+    <tr>
+      <td>Stripe billing</td>
+      <td>
+        Checkout and refund complete;
+        <strong><code>verifyWebhook</code> returns <code>null</code></strong>
+      </td>
+      <td>
+        Wire signature verification before enabling. It fails closed, which is the safe direction
+      </td>
+    </tr>
   </tbody>
 </table>
 
@@ -103,12 +270,27 @@ reachable from the build environment. Verify before relying on any of it.</p>
 <ul>
   <li><strong>No password reset.</strong> A user who forgets their password has no route back.</li>
   <li><strong>No MFA enrolment</strong>, though the columns and the adapter boundary exist.</li>
-  <li><strong>No notification scheduling.</strong> Email is sent inline; there is no digest or reminder system &mdash; deliberately, given how easily reminders become nudges.</li>
+  <li>
+    <strong>No notification scheduling.</strong> Email is sent inline; there is no digest or
+    reminder system &mdash; deliberately, given how easily reminders become nudges.
+  </li>
   <li><strong>No admin UI for incidents</strong> beyond a read-only list.</li>
-  <li><strong>Contributor proposals are recorded but there is no review queue for them.</strong></li>
+  <li>
+    <strong>Contributor proposals are recorded but there is no review queue for them.</strong>
+  </li>
   <li><strong>OpenTelemetry is configured but not instrumented.</strong></li>
-  <li><strong>No backfill for changing the embedding model.</strong> Changing <code>EMBEDDINGS_DIM</code> invalidates stored vectors and needs a re-embed script that does not exist.</li>
-  <li><strong>The local speech adapter cannot recognise speech.</strong> It transcribes text captured alongside a recording and reports honestly otherwise. Real audio needs a provider.</li>
-  <li><strong>Interview audio capture has no automated test.</strong> <code>MediaRecorder</code> and browser speech recognition are exercised by hand only.</li>
+  <li>
+    <strong>No backfill for changing the embedding model.</strong> Changing
+    <code>EMBEDDINGS_DIM</code> invalidates stored vectors and needs a re-embed script that does not
+    exist.
+  </li>
+  <li>
+    <strong>The local speech adapter cannot recognise speech.</strong> It transcribes text captured
+    alongside a recording and reports honestly otherwise. Real audio needs a provider.
+  </li>
+  <li>
+    <strong>Interview audio capture has no automated test.</strong> <code>MediaRecorder</code> and
+    browser speech recognition are exercised by hand only.
+  </li>
   <li><strong>The ERD is a text diagram</strong>, not a rendered image.</li>
 </ul>

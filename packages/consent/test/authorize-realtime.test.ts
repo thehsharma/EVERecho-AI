@@ -22,8 +22,7 @@ const ask = (input: {
   subjectOverrides?: Parameters<typeof subject>[0];
 }) => {
   const who = input.who ?? 'storyteller';
-  const userId =
-    who === 'storyteller' ? STORYTELLER : who === 'buyer' ? BUYER : FAMILY;
+  const userId = who === 'storyteller' ? STORYTELLER : who === 'buyer' ? BUYER : FAMILY;
   return authorize({
     actor: actor(who === 'contributor' ? 'contributor' : who, userId),
     action: input.action,
@@ -204,9 +203,9 @@ describe('provider gates apply only when a provider is actually involved', () =>
   });
 
   it('permits provider use once the storyteller has named providers', () => {
-    expect(
-      ask({ action: 'realtime.session.transcribe', usesProvider: true }),
-    ).toMatchObject({ effect: 'ALLOW' });
+    expect(ask({ action: 'realtime.session.transcribe', usesProvider: true })).toMatchObject({
+      effect: 'ALLOW',
+    });
   });
 });
 
@@ -254,7 +253,10 @@ describe('obligations carry the resolved learning policy', () => {
 
   it('an administrator’s ALLOW learns nothing', () => {
     const decision = authorize({
-      actor: { ...actor('support_admin', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'), membership: null },
+      actor: {
+        ...actor('support_admin', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+        membership: null,
+      },
       action: 'admin.worker.read',
       resource: { type: 'worker', archiveId: ARCHIVE },
       subject: subject(),

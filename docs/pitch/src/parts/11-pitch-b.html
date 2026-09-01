@@ -1,80 +1,174 @@
 <div class="page-break"></div>
 <h2 id="sec-3">3&nbsp;&nbsp;What EverEcho is not</h2>
 
-<p class="lede">This list is the specification. Each item is refused somewhere in
-the code, and each refusal has a test that fails if somebody removes it.</p>
+<p class="lede">
+  This list is the specification. Each item is refused somewhere in the code, and each refusal has a
+  test that fails if somebody removes it.
+</p>
 
 <table>
-  <thead><tr><th style="width:38%">Prohibited</th><th>Where the refusal actually lives</th></tr></thead>
+  <thead>
+    <tr>
+      <th style="width: 38%">Prohibited</th>
+      <th>Where the refusal actually lives</th>
+    </tr>
+  </thead>
   <tbody>
-    <tr><td><strong>Voice cloning</strong></td><td>The consent document requires <code>voiceAndLikeness.cloning === false</code>; any policy that sets it true is refused at compile time with a named reason, before schema validation runs.</td></tr>
-    <tr><td><strong>Face cloning, avatars, lip&#8209;sync</strong></td><td>Same gate. There is no generation adapter, no model interface and no storage column for a synthesised likeness.</td></tr>
-    <tr><td><strong>First&#8209;person persona chat</strong></td><td><code>assertThirdPerson()</code> runs on every composed answer before it is returned. A response containing first-person voice attributed to the subject is discarded, not rewritten.</td></tr>
-    <tr><td><strong>Posthumous simulation</strong></td><td>Consent mode <code>perform</code> exists in the type so it can be named and refused; it is hard-disabled and every path that reaches it denies.</td></tr>
-    <tr><td><strong>Consciousness or continuity claims</strong></td><td>No product surface makes one. The composer is extractive &mdash; it can only quote and stitch retrieved passages, so it cannot originate a claim of any kind.</td></tr>
-    <tr><td><strong>Automatic death or incapacity transitions</strong></td><td>No inactivity timer changes an archive's lifecycle state. A succession directive requires a named steward and an explicit, recorded human action.</td></tr>
-    <tr><td><strong>Scraping private accounts</strong></td><td>There is no social ingestion path. Material enters only by upload or by a recorded interview session.</td></tr>
-    <tr><td><strong>Training shared models on private memories</strong></td><td><code>noModelTraining</code> defaults to true, and the compiler refuses a policy that sets it false. No memory content leaves the archive boundary for a training pipeline.</td></tr>
-    <tr><td><strong>Advertising on memories; selling data</strong></td><td>No ad surface, no third-party analytics, no data-sharing adapter exists to be enabled.</td></tr>
-    <tr><td><strong>Minors' profiles</strong></td><td>Refused at subject creation.</td></tr>
-    <tr><td><strong>Diagnosis or grief&#8209;treatment claims</strong></td><td>No clinical language anywhere in product copy; the abstention path is used instead of reassurance.</td></tr>
-    <tr><td><strong>Manipulative engagement loops, guilt notifications, dependency mechanics</strong></td><td>There is no notification scheduler at all. Email is sent inline in response to a specific action, never on a timer. This is a deliberate omission, not a gap.</td></tr>
-    <tr><td><strong>Fabricated memories, quotes or beliefs</strong></td><td>Every material claim in a generated answer is verified against its cited passage by content-word coverage. A claim that fails verification is dropped from the answer.</td></tr>
+    <tr>
+      <td><strong>Voice cloning</strong></td>
+      <td>
+        The consent document requires <code>voiceAndLikeness.cloning === false</code>; any policy
+        that sets it true is refused at compile time with a named reason, before schema validation
+        runs.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Face cloning, avatars, lip&#8209;sync</strong></td>
+      <td>
+        Same gate. There is no generation adapter, no model interface and no storage column for a
+        synthesised likeness.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>First&#8209;person persona chat</strong></td>
+      <td>
+        <code>assertThirdPerson()</code> runs on every composed answer before it is returned. A
+        response containing first-person voice attributed to the subject is discarded, not
+        rewritten.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Posthumous simulation</strong></td>
+      <td>
+        Consent mode <code>perform</code> exists in the type so it can be named and refused; it is
+        hard-disabled and every path that reaches it denies.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Consciousness or continuity claims</strong></td>
+      <td>
+        No product surface makes one. The composer is extractive &mdash; it can only quote and
+        stitch retrieved passages, so it cannot originate a claim of any kind.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Automatic death or incapacity transitions</strong></td>
+      <td>
+        No inactivity timer changes an archive's lifecycle state. A succession directive requires a
+        named steward and an explicit, recorded human action.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Scraping private accounts</strong></td>
+      <td>
+        There is no social ingestion path. Material enters only by upload or by a recorded interview
+        session.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Training shared models on private memories</strong></td>
+      <td>
+        <code>noModelTraining</code> defaults to true, and the compiler refuses a policy that sets
+        it false. No memory content leaves the archive boundary for a training pipeline.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Advertising on memories; selling data</strong></td>
+      <td>
+        No ad surface, no third-party analytics, no data-sharing adapter exists to be enabled.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Minors' profiles</strong></td>
+      <td>Refused at subject creation.</td>
+    </tr>
+    <tr>
+      <td><strong>Diagnosis or grief&#8209;treatment claims</strong></td>
+      <td>
+        No clinical language anywhere in product copy; the abstention path is used instead of
+        reassurance.
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Manipulative engagement loops, guilt notifications, dependency mechanics</strong>
+      </td>
+      <td>
+        There is no notification scheduler at all. Email is sent inline in response to a specific
+        action, never on a timer. This is a deliberate omission, not a gap.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Fabricated memories, quotes or beliefs</strong></td>
+      <td>
+        Every material claim in a generated answer is verified against its cited passage by
+        content-word coverage. A claim that fails verification is dropped from the answer.
+      </td>
+    </tr>
   </tbody>
 </table>
 
 <div class="callout">
   <span class="label">On the word "prohibited"</span>
-  <p>In most products, a list like this is a policy page. Here it is a set of
-  branches that return <code>DENY</code> with a named reason code, a set of
-  <code>CHECK</code> constraints, and a set of assertions in the answer pipeline.
-  The difference matters because policy pages are edited by anyone, and
-  <code>authorize()</code> is edited by someone who has to make 145 unit tests pass
-  afterwards.</p>
+  <p>
+    In most products, a list like this is a policy page. Here it is a set of branches that return
+    <code>DENY</code> with a named reason code, a set of <code>CHECK</code> constraints, and a set
+    of assertions in the answer pipeline. The difference matters because policy pages are edited by
+    anyone, and <code>authorize()</code> is edited by someone who has to make 145 unit tests pass
+    afterwards.
+  </p>
 </div>
 
 <div class="page-break"></div>
 <h2 id="sec-4">4&nbsp;&nbsp;Why the boundary is the product</h2>
 
-<p>The obvious commercial instinct is to treat the prohibitions as a launch
-position &mdash; ship the safe version, add the voice clone in v2 when the market
-asks. That instinct is wrong here for a reason that is structural rather than
-moral.</p>
+<p>
+  The obvious commercial instinct is to treat the prohibitions as a launch position &mdash; ship the
+  safe version, add the voice clone in v2 when the market asks. That instinct is wrong here for a
+  reason that is structural rather than moral.
+</p>
 
 <h3>The boundary is what makes the archive trustworthy to the person filling it</h3>
-<p>The storyteller is being asked to hand over the most private material they
-have: what they regretted, who they fell out with, what they were afraid of. They
-will do this only if they believe the material will be used the way they were
-told. A product that will one day simulate them is a product they must reason
-about differently today &mdash; and the reasoning ends with them telling the safe
-stories, the ones already told at every wedding. The archive fills up with
-anecdotes and none of the truth.</p>
+<p>
+  The storyteller is being asked to hand over the most private material they have: what they
+  regretted, who they fell out with, what they were afraid of. They will do this only if they
+  believe the material will be used the way they were told. A product that will one day simulate
+  them is a product they must reason about differently today &mdash; and the reasoning ends with
+  them telling the safe stories, the ones already told at every wedding. The archive fills up with
+  anecdotes and none of the truth.
+</p>
 
 <h3>The boundary is what makes the answers useful to the family</h3>
-<p>An answer that might be fabricated is worth nothing, because the family cannot
-tell which ones are. The moment the system is permitted to generate plausible
-content, every previous answer becomes retroactively suspect. Citation is not a
-trust feature bolted on the side; it is the only thing that makes the output
-mean anything.</p>
+<p>
+  An answer that might be fabricated is worth nothing, because the family cannot tell which ones
+  are. The moment the system is permitted to generate plausible content, every previous answer
+  becomes retroactively suspect. Citation is not a trust feature bolted on the side; it is the only
+  thing that makes the output mean anything.
+</p>
 
 <h3>The boundary is the defensible position</h3>
-<p>Anyone can build a griefbot &mdash; the components are commodity and the
-differentiation lasts one quarter. What is genuinely difficult to build, and
-therefore difficult to copy, is the machinery underneath the boundary: a consent
-model granular enough to be honest, an authorisation engine that cannot be
-bypassed, a retrieval path that respects both, a verification step that drops
-unsupported sentences, and a deletion system that actually deletes. That is
-eight months of unglamorous work, and it is the whole moat.</p>
+<p>
+  Anyone can build a griefbot &mdash; the components are commodity and the differentiation lasts one
+  quarter. What is genuinely difficult to build, and therefore difficult to copy, is the machinery
+  underneath the boundary: a consent model granular enough to be honest, an authorisation engine
+  that cannot be bypassed, a retrieval path that respects both, a verification step that drops
+  unsupported sentences, and a deletion system that actually deletes. That is eight months of
+  unglamorous work, and it is the whole moat.
+</p>
 
 <div class="callout ok">
   <span class="label">The one-sentence version</span>
-  <p>EverEcho refuses to simulate people not because simulation is difficult, but
-  because refusing is the only way the archive can be worth filling.</p>
+  <p>
+    EverEcho refuses to simulate people not because simulation is difficult, but because refusing is
+    the only way the archive can be worth filling.
+  </p>
 </div>
 
 <h3>What the refusal costs, stated plainly</h3>
-<p>It costs the demo. A voice clone demonstrates in fifteen seconds; a cited,
-abstaining, third-person archive takes ten minutes to explain and its most
-impressive behaviour is <em>declining to answer</em>. This is a real go-to-market
-problem and it is not solved by this build. It is named here because a pitch that
-hides its hardest problem is not a pitch, it is an advertisement.</p>
+<p>
+  It costs the demo. A voice clone demonstrates in fifteen seconds; a cited, abstaining,
+  third-person archive takes ten minutes to explain and its most impressive behaviour is
+  <em>declining to answer</em>. This is a real go-to-market problem and it is not solved by this
+  build. It is named here because a pitch that hides its hardest problem is not a pitch, it is an
+  advertisement.
+</p>

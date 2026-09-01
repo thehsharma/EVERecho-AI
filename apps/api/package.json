@@ -16,6 +16,8 @@
     "@everecho/consent": "workspace:*",
     "@everecho/contracts": "workspace:*",
     "@everecho/db": "workspace:*",
+    "@everecho/pipeline": "workspace:*",
+    "@everecho/realtime": "workspace:*",
     "@fastify/cookie": "11.1.2",
     "@fastify/cors": "11.2.0",
     "@fastify/helmet": "13.1.1",
@@ -23,7 +25,6 @@
     "@fastify/rate-limit": "11.2.0",
     "fastify": "5.12.1",
     "pino": "10.3.1",
-    "zod": "4.5.4",
-    "@everecho/pipeline": "workspace:*"
+    "zod": "4.5.4"
   }
 }

@@ -47,7 +47,10 @@ export function prohibitedLearningShapeIssues(input: unknown): string[] {
         'sensitiveMemory must be "always_review".',
     );
   }
-  if (doc.familySearchEligibility !== undefined && doc.familySearchEligibility !== 'approved_only') {
+  if (
+    doc.familySearchEligibility !== undefined &&
+    doc.familySearchEligibility !== 'approved_only'
+  ) {
     issues.push(
       'Only approved memories are ever searchable by family. ' +
         'familySearchEligibility must be "approved_only".',
@@ -202,11 +205,17 @@ export function resolveLearningObligations(input: {
     mayStoreAudio: doc.audioRetention !== 'never',
     mayExtractCandidates: doc.candidateExtraction,
     mayUseProviderSpeechToText:
-      providerAllowed && doc.providerProcessing.speechToText && input.consentAllowsProviderTranscription,
+      providerAllowed &&
+      doc.providerProcessing.speechToText &&
+      input.consentAllowsProviderTranscription,
     mayUseProviderSpeechSynthesis:
-      providerAllowed && doc.providerProcessing.speechSynthesis && input.consentAllowsProviderGeneration,
+      providerAllowed &&
+      doc.providerProcessing.speechSynthesis &&
+      input.consentAllowsProviderGeneration,
     mayUseProviderComposition:
-      providerAllowed && doc.providerProcessing.composition && input.consentAllowsProviderGeneration,
+      providerAllowed &&
+      doc.providerProcessing.composition &&
+      input.consentAllowsProviderGeneration,
     mayAutoSavePreferences: doc.lowRiskPreferenceMemory === 'auto_save',
     mayLearnFromCorrections: doc.correctionLearning,
     // Intersection, not union: a learning policy cannot widen the categories
@@ -255,7 +264,8 @@ export function diffLearningPolicies(
   if (!previous) return ['Learning policy created.'];
   const changes: string[] = [];
   const say = (label: string, a: unknown, b: unknown) => {
-    if (JSON.stringify(a) !== JSON.stringify(b)) changes.push(`${label}: ${String(a)} → ${String(b)}`);
+    if (JSON.stringify(a) !== JSON.stringify(b))
+      changes.push(`${label}: ${String(a)} → ${String(b)}`);
   };
   say('Session context', previous.sessionContext, next.sessionContext);
   say('Transcript retention', previous.transcriptRetention, next.transcriptRetention);
@@ -264,9 +274,7 @@ export function diffLearningPolicies(
   say('Preference auto-save', previous.lowRiskPreferenceMemory, next.lowRiskPreferenceMemory);
   say('Correction learning', previous.correctionLearning, next.correctionLearning);
   say('Provider mode', previous.providerProcessing.mode, next.providerProcessing.mode);
-  if (
-    JSON.stringify(previous.candidateCategories) !== JSON.stringify(next.candidateCategories)
-  ) {
+  if (JSON.stringify(previous.candidateCategories) !== JSON.stringify(next.candidateCategories)) {
     changes.push('Candidate categories changed.');
   }
   return changes.length > 0 ? changes : ['No change.'];
@@ -276,10 +284,7 @@ export function diffLearningPolicies(
  * True when the change narrows what a live session may do, which the session
  * must act on immediately rather than at the next turn.
  */
-export function isNarrowing(
-  previous: LearningObligations,
-  next: LearningObligations,
-): boolean {
+export function isNarrowing(previous: LearningObligations, next: LearningObligations): boolean {
   const keys = [
     'mayStoreTranscript',
     'mayStoreAudio',

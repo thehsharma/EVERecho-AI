@@ -35,7 +35,13 @@ export const forbidden = (message: string, reasonCode?: string, policyVersion?: 
  */
 export const notFound = (what = 'That was not found.') => new ApiError('not_found', what);
 
-export const conflict = (message: string) => new ApiError('conflict', message);
+/**
+ * `reasonCode` matters here: a client told only that a state change was refused
+ * cannot tell "you already paused this" from "someone else ended it", and will
+ * keep sending audio into a session that is no longer listening.
+ */
+export const conflict = (message: string, reasonCode?: string) =>
+  new ApiError('conflict', message, { reasonCode });
 
 export const validationFailed = (
   message: string,

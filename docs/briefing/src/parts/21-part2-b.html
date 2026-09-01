@@ -1,47 +1,108 @@
 <div class="page-break"></div>
 <h3>The brief for counsel</h3>
 
-<p>Send these as questions. A lawyer given a document to review returns
-comments; a lawyer given questions returns answers you can act on. Nothing below
-is legal advice &mdash; it is the list of things I would not launch without an
-answer to.</p>
+<p>
+  Send these as questions. A lawyer given a document to review returns comments; a lawyer given
+  questions returns answers you can act on. Nothing below is legal advice &mdash; it is the list of
+  things I would not launch without an answer to.
+</p>
 
 <p class="eyebrow">Consent itself</p>
 <ol class="runbook">
-  <li><strong>Does our consent flow constitute valid, informed consent</strong> in each jurisdiction we will operate in? We record a versioned, hashed policy document plus a &ldquo;teach-back&rdquo; in which the storyteller restates in their own words what they agreed to. <em>Does the teach-back help, hurt, or do nothing legally?</em></li>
-  <li><strong>Special-category data.</strong> The product explicitly recognises health, financial, religious, political, sexual-orientation and biometric categories, because life stories contain them. What lawful basis applies, and what additional safeguards are required? <span class="ev v">VERIFIED &mdash; these are enum values in the schema</span></li>
-  <li><strong>Withdrawal.</strong> Consent can be narrowed or revoked at any time and takes effect on the next authorisation check, including on queued background work. Does our implementation satisfy the withdrawal right, and what must we do about material already derived?</li>
+  <li>
+    <strong>Does our consent flow constitute valid, informed consent</strong> in each jurisdiction
+    we will operate in? We record a versioned, hashed policy document plus a
+    &ldquo;teach-back&rdquo; in which the storyteller restates in their own words what they agreed
+    to. <em>Does the teach-back help, hurt, or do nothing legally?</em>
+  </li>
+  <li>
+    <strong>Special-category data.</strong> The product explicitly recognises health, financial,
+    religious, political, sexual-orientation and biometric categories, because life stories contain
+    them. What lawful basis applies, and what additional safeguards are required?
+    <span class="ev v">VERIFIED &mdash; these are enum values in the schema</span>
+  </li>
+  <li>
+    <strong>Withdrawal.</strong> Consent can be narrowed or revoked at any time and takes effect on
+    the next authorisation check, including on queued background work. Does our implementation
+    satisfy the withdrawal right, and what must we do about material already derived?
+  </li>
 </ol>
 
 <p class="eyebrow">The people who never agreed</p>
 <ol class="runbook">
-  <li><strong>Third parties inside memories.</strong> A story about a living brother contains that brother's personal data, and he has not consented to anything. <em>What are our obligations to people who appear in someone else's memories?</em> This is the legal question I would ask first, because it has no obvious technical answer and it is present in essentially every archive.</li>
-  <li><strong>Minors appearing in memories.</strong> We refuse to create profiles for minors, but a grandmother's story mentions her grandchildren by name. What follows from that?</li>
-  <li><strong>Contributors.</strong> A contributor may propose corrections and context about the storyteller. What have they consented to, and what have they asserted about others?</li>
+  <li>
+    <strong>Third parties inside memories.</strong> A story about a living brother contains that
+    brother's personal data, and he has not consented to anything.
+    <em>What are our obligations to people who appear in someone else's memories?</em> This is the
+    legal question I would ask first, because it has no obvious technical answer and it is present
+    in essentially every archive.
+  </li>
+  <li>
+    <strong>Minors appearing in memories.</strong> We refuse to create profiles for minors, but a
+    grandmother's story mentions her grandchildren by name. What follows from that?
+  </li>
+  <li>
+    <strong>Contributors.</strong> A contributor may propose corrections and context about the
+    storyteller. What have they consented to, and what have they asserted about others?
+  </li>
 </ol>
 
 <p class="eyebrow">Death, which this product cannot avoid</p>
 <ol class="runbook">
-  <li><strong>Whose rights are they after death?</strong> Data-protection rights in a deceased person are treated differently across jurisdictions and we must not guess. Who may then exercise access, correction, export and deletion &mdash; and who may <em>refuse</em> those on the deceased's behalf?</li>
-  <li><strong>Is our succession directive legally effective?</strong> A storyteller names a steward with narrowly delegated tasks. How does that interact with a will, with probate, and with an executor who disagrees? What happens if the steward and the family conflict?</li>
-  <li><strong>Standing instructions.</strong> If a storyteller says &ldquo;never show this to my son&rdquo;, is that enforceable after death, and against whom?</li>
+  <li>
+    <strong>Whose rights are they after death?</strong> Data-protection rights in a deceased person
+    are treated differently across jurisdictions and we must not guess. Who may then exercise
+    access, correction, export and deletion &mdash; and who may <em>refuse</em> those on the
+    deceased's behalf?
+  </li>
+  <li>
+    <strong>Is our succession directive legally effective?</strong> A storyteller names a steward
+    with narrowly delegated tasks. How does that interact with a will, with probate, and with an
+    executor who disagrees? What happens if the steward and the family conflict?
+  </li>
+  <li>
+    <strong>Standing instructions.</strong> If a storyteller says &ldquo;never show this to my
+    son&rdquo;, is that enforceable after death, and against whom?
+  </li>
 </ol>
 
 <p class="eyebrow">Commercial and structural</p>
 <ol class="runbook">
-  <li><strong>Cross-border processing.</strong> If we enable a hosted speech-to-text or composition provider in another country, what is required? We can contractually forbid provider training and set zero retention &mdash; is that sufficient?</li>
-  <li><strong>The preservation model.</strong> If we take a one-time payment in exchange for storing something for a long or indefinite term, does that create trust, escrow or reserve obligations? (See §9.)</li>
-  <li><strong>The refundable deposit.</strong> We take a deposit refundable at any time, for any reason, with no conversation required. Confirm the terms, the accounting treatment, and any consumer-protection requirements.</li>
-  <li><strong>Binding the prohibitions.</strong> We want the refusal of voice cloning, likeness generation, persona chat and posthumous simulation to survive a change of management or an acquisition. What is the strongest available instrument &mdash; constitutional documents, a golden share, contractual covenants to customers, or something else? (This is §17 and it matters more than it sounds.)</li>
+  <li>
+    <strong>Cross-border processing.</strong> If we enable a hosted speech-to-text or composition
+    provider in another country, what is required? We can contractually forbid provider training and
+    set zero retention &mdash; is that sufficient?
+  </li>
+  <li>
+    <strong>The preservation model.</strong> If we take a one-time payment in exchange for storing
+    something for a long or indefinite term, does that create trust, escrow or reserve obligations?
+    (See §9.)
+  </li>
+  <li>
+    <strong>The refundable deposit.</strong> We take a deposit refundable at any time, for any
+    reason, with no conversation required. Confirm the terms, the accounting treatment, and any
+    consumer-protection requirements.
+  </li>
+  <li>
+    <strong>Binding the prohibitions.</strong> We want the refusal of voice cloning, likeness
+    generation, persona chat and posthumous simulation to survive a change of management or an
+    acquisition. What is the strongest available instrument &mdash; constitutional documents, a
+    golden share, contractual covenants to customers, or something else? (This is §17 and it matters
+    more than it sounds.)
+  </li>
 </ol>
 
 <div class="callout warn">
   <span class="label">Expect one of these answers to be expensive</span>
-  <p>My prediction, offered as a prediction and not a fact: <strong>question 4 &mdash;
-  third parties inside memories &mdash; will come back harder than you expect</strong>,
-  and may require a product change such as a redaction path, a named-person
-  objection route, or narrower default sharing. Better to learn that in week
-  three than in year two. <span class="ev i">INFERENCE</span></p>
+  <p>
+    My prediction, offered as a prediction and not a fact:
+    <strong
+      >question 4 &mdash; third parties inside memories &mdash; will come back harder than you
+      expect</strong
+    >, and may require a product change such as a redaction path, a named-person objection route, or
+    narrower default sharing. Better to learn that in week three than in year two.
+    <span class="ev i">INFERENCE</span>
+  </p>
 </div>
 
 <h3>What Horizon 0 produces</h3>

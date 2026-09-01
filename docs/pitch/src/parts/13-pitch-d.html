@@ -1,125 +1,195 @@
 <div class="page-break"></div>
 <h2 id="sec-7">7&nbsp;&nbsp;Provenance: every answer shows its work</h2>
 
-<p class="lede">Six evidence classes, numbered strongest first. The numbering is
-load-bearing: customer-facing answers may use P1&ndash;P3 only, P4 is off by
-default, and P5 is not implementable.</p>
+<p class="lede">
+  Six evidence classes, numbered strongest first. The numbering is load-bearing: customer-facing
+  answers may use P1&ndash;P3 only, P4 is off by default, and P5 is not implementable.
+</p>
 
 <table>
-  <thead><tr><th style="width:26%">Class</th><th>Meaning</th><th style="width:22%">In answers</th></tr></thead>
+  <thead>
+    <tr>
+      <th style="width: 26%">Class</th>
+      <th>Meaning</th>
+      <th style="width: 22%">In answers</th>
+    </tr>
+  </thead>
   <tbody>
-    <tr><td><code>P0_ORIGINAL_SOURCE</code></td><td>The original file or recording itself.</td><td><span class="badge done">stored, displayed</span></td></tr>
-    <tr><td><code>P1_DIRECT_STATEMENT</code></td><td>The storyteller said this, in their own words, in a source.</td><td><span class="badge done">yes</span></td></tr>
-    <tr><td><code>P2_CORROBORATED_FACT</code></td><td>Two or more independent sources agree.</td><td><span class="badge done">yes</span></td></tr>
-    <tr><td><code>P3_SUPPORTED_SYNTHESIS</code></td><td>A restatement that stays inside what the sources support.</td><td><span class="badge done">yes</span></td></tr>
-    <tr><td><code>P4_MODEL_INFERENCE</code></td><td>The model guessed.</td><td><span class="badge partial">off by default</span></td></tr>
-    <tr><td><code>P5_SIMULATED_SPEECH</code></td><td>Simulated speech or persona.</td><td><span class="badge no">prohibited</span></td></tr>
+    <tr>
+      <td><code>P0_ORIGINAL_SOURCE</code></td>
+      <td>The original file or recording itself.</td>
+      <td><span class="badge done">stored, displayed</span></td>
+    </tr>
+    <tr>
+      <td><code>P1_DIRECT_STATEMENT</code></td>
+      <td>The storyteller said this, in their own words, in a source.</td>
+      <td><span class="badge done">yes</span></td>
+    </tr>
+    <tr>
+      <td><code>P2_CORROBORATED_FACT</code></td>
+      <td>Two or more independent sources agree.</td>
+      <td><span class="badge done">yes</span></td>
+    </tr>
+    <tr>
+      <td><code>P3_SUPPORTED_SYNTHESIS</code></td>
+      <td>A restatement that stays inside what the sources support.</td>
+      <td><span class="badge done">yes</span></td>
+    </tr>
+    <tr>
+      <td><code>P4_MODEL_INFERENCE</code></td>
+      <td>The model guessed.</td>
+      <td><span class="badge partial">off by default</span></td>
+    </tr>
+    <tr>
+      <td><code>P5_SIMULATED_SPEECH</code></td>
+      <td>Simulated speech or persona.</td>
+      <td><span class="badge no">prohibited</span></td>
+    </tr>
   </tbody>
 </table>
 
 <h3>How an answer is actually produced</h3>
 
-<div class="flow">question
-  │
-  ├─ 1. prohibited-request check ──────── refuses "pretend to be her" etc.  ─▶ refusal
-  ├─ 2. prompt-injection check ────────── isolates instructions in content  ─▶ refusal
-  │
-  ├─ 3. authorize(actor, 'qa.ask', …) ─── ALLOW + obligations, or DENY
-  │        obligations: maxSensitivity, excludedSourceIds, restrictedTopics
-  │
-  ├─ 4. retrieval  ── obligations become part of the SQL WHERE clause,
-  │                   not a filter applied afterwards
-  │        lexical  : OR-based to_tsquery over generated tsvector columns
-  │        semantic : cosine distance over real[] embeddings (PL/pgSQL),
-  │                   or pgvector + HNSW where the extension is present
-  │        ranking  : 0.6 lexical + 0.4 semantic, deterministic tie-break
-  │
-  ├─ 5. composition ── extractive: quotes and stitches retrieved passages.
-  │                    Structurally cannot originate a claim.
-  │
-  ├─ 6. verifyClaim() ── content-word coverage of each material claim
-  │                      against its cited passage. Failures are dropped.
-  │
-  ├─ 7. assertThirdPerson() ── first-person voice as the subject → discard
-  │
-  └─ 8. answer + citations, or abstention
+<div class="flow">
+  question │ ├─ 1. prohibited-request check ──────── refuses "pretend to be her" etc. ─▶ refusal ├─
+  2. prompt-injection check ────────── isolates instructions in content ─▶ refusal │ ├─ 3.
+  authorize(actor, 'qa.ask', …) ─── ALLOW + obligations, or DENY │ obligations: maxSensitivity,
+  excludedSourceIds, restrictedTopics │ ├─ 4. retrieval ── obligations become part of the SQL WHERE
+  clause, │ not a filter applied afterwards │ lexical : OR-based to_tsquery over generated tsvector
+  columns │ semantic : cosine distance over real[] embeddings (PL/pgSQL), │ or pgvector + HNSW where
+  the extension is present │ ranking : 0.6 lexical + 0.4 semantic, deterministic tie-break │ ├─ 5.
+  composition ── extractive: quotes and stitches retrieved passages. │ Structurally cannot originate
+  a claim. │ ├─ 6. verifyClaim() ── content-word coverage of each material claim │ against its cited
+  passage. Failures are dropped. │ ├─ 7. assertThirdPerson() ── first-person voice as the subject →
+  discard │ └─ 8. answer + citations, or abstention
 </div>
 
 <div class="callout">
   <span class="label">The abstention sentence, verbatim</span>
-  <p style="font-family:Georgia,serif;font-size:11pt;margin-top:2mm">
-  &ldquo;I don't have enough evidence in this archive to answer that reliably.&rdquo;</p>
-  <p style="margin-top:2mm">It is a fixed string. It is not softened, not padded
-  with a suggestion, and not followed by a guess. In the evaluation suite,
-  <strong>100%</strong> of no-evidence and sensitive-topic cases produce it.</p>
+  <p style="font-family: Georgia, serif; font-size: 11pt; margin-top: 2mm">
+    &ldquo;I don't have enough evidence in this archive to answer that reliably.&rdquo;
+  </p>
+  <p style="margin-top: 2mm">
+    It is a fixed string. It is not softened, not padded with a suggestion, and not followed by a
+    guess. In the evaluation suite, <strong>100%</strong> of no-evidence and sensitive-topic cases
+    produce it.
+  </p>
 </div>
 
 <h3>Why the filter goes in the WHERE clause</h3>
-<p>The tempting implementation is to retrieve broadly and then remove results the
-viewer may not see. That is wrong in a way that is invisible until it matters:
-the ranking, the summary, and the model's context have all already been shaped by
-material the viewer is not permitted to know exists. A count, a date range, even a
-refusal phrased slightly differently can leak the presence of an embargoed
-memory. Here the obligations returned by <code>authorize()</code> are compiled
-into the query itself, so excluded material is never retrieved, never ranked and
-never seen by the composer. Decision <code>D&#8209;010</code>.</p>
+<p>
+  The tempting implementation is to retrieve broadly and then remove results the viewer may not see.
+  That is wrong in a way that is invisible until it matters: the ranking, the summary, and the
+  model's context have all already been shaped by material the viewer is not permitted to know
+  exists. A count, a date range, even a refusal phrased slightly differently can leak the presence
+  of an embargoed memory. Here the obligations returned by <code>authorize()</code> are compiled
+  into the query itself, so excluded material is never retrieved, never ranked and never seen by the
+  composer. Decision <code>D&#8209;010</code>.
+</p>
 
 <h3>Why the composer is extractive</h3>
-<p>The local composition adapter can quote retrieved passages and join them; it
-has no mechanism for producing a sentence that is not derived from retrieved
-text. This is a strictly weaker system than a hosted model, and the answers read
-more plainly as a result. It is also a system in which fabrication is not
-something to be measured and reduced &mdash; it is unavailable. The hosted
-Anthropic adapter is implemented with forced strict tool use and runs behind the
-same verification and third-person gates, so the safety property survives the
-upgrade; but it has never been executed in this build, and Part III says so.</p>
+<p>
+  The local composition adapter can quote retrieved passages and join them; it has no mechanism for
+  producing a sentence that is not derived from retrieved text. This is a strictly weaker system
+  than a hosted model, and the answers read more plainly as a result. It is also a system in which
+  fabrication is not something to be measured and reduced &mdash; it is unavailable. The hosted
+  Anthropic adapter is implemented with forced strict tool use and runs behind the same verification
+  and third-person gates, so the safety property survives the upgrade; but it has never been
+  executed in this build, and Part III says so.
+</p>
 
 <div class="page-break"></div>
 <h2 id="sec-8">8&nbsp;&nbsp;The evidence, stated honestly</h2>
 
-<p class="lede">Everything on this page was produced by running the code, against
-a real PostgreSQL&nbsp;16, in the session that built it. Nothing here is
-projected, estimated or aspirational.</p>
+<p class="lede">
+  Everything on this page was produced by running the code, against a real PostgreSQL&nbsp;16, in
+  the session that built it. Nothing here is projected, estimated or aspirational.
+</p>
 
 <div class="metric-row">
-  <div class="metric"><div class="n">193</div><div class="l">unit + integration tests<br>passing, no mocks</div></div>
-  <div class="metric"><div class="n">54</div><div class="l">browser tests<br>desktop and tablet</div></div>
-  <div class="metric"><div class="n">0</div><div class="l">WCAG 2.2 AA violations<br>24 pages scanned</div></div>
-  <div class="metric"><div class="n">32/32</div><div class="l">AI evaluation cases<br>all targets met</div></div>
+  <div class="metric">
+    <div class="n">193</div>
+    <div class="l">unit + integration tests<br />passing, no mocks</div>
+  </div>
+  <div class="metric">
+    <div class="n">54</div>
+    <div class="l">browser tests<br />desktop and tablet</div>
+  </div>
+  <div class="metric">
+    <div class="n">0</div>
+    <div class="l">WCAG 2.2 AA violations<br />24 pages scanned</div>
+  </div>
+  <div class="metric">
+    <div class="n">32/32</div>
+    <div class="l">AI evaluation cases<br />all targets met</div>
+  </div>
 </div>
 
 <table>
-  <thead><tr><th style="width:52%">Release-blocking target</th><th style="width:16%">Target</th><th style="width:16%">Measured</th><th>Verdict</th></tr></thead>
+  <thead>
+    <tr>
+      <th style="width: 52%">Release-blocking target</th>
+      <th style="width: 16%">Target</th>
+      <th style="width: 16%">Measured</th>
+      <th>Verdict</th>
+    </tr>
+  </thead>
   <tbody>
-    <tr><td>Claim-to-citation correctness</td><td class="t-num">&ge; 95%</td><td class="t-num"><strong>100%</strong></td><td><span class="badge done">met</span></td></tr>
-    <tr><td>Unsupported material claims</td><td class="t-num">&le; 1%</td><td class="t-num"><strong>0.00%</strong></td><td><span class="badge done">met</span></td></tr>
-    <tr><td>Abstention on no-evidence &amp; sensitive prompts</td><td class="t-num">100%</td><td class="t-num"><strong>100%</strong></td><td><span class="badge done">met</span></td></tr>
-    <tr><td>Permission leakage</td><td class="t-num">0</td><td class="t-num"><strong>0</strong></td><td><span class="badge done">met</span></td></tr>
+    <tr>
+      <td>Claim-to-citation correctness</td>
+      <td class="t-num">&ge; 95%</td>
+      <td class="t-num"><strong>100%</strong></td>
+      <td><span class="badge done">met</span></td>
+    </tr>
+    <tr>
+      <td>Unsupported material claims</td>
+      <td class="t-num">&le; 1%</td>
+      <td class="t-num"><strong>0.00%</strong></td>
+      <td><span class="badge done">met</span></td>
+    </tr>
+    <tr>
+      <td>Abstention on no-evidence &amp; sensitive prompts</td>
+      <td class="t-num">100%</td>
+      <td class="t-num"><strong>100%</strong></td>
+      <td><span class="badge done">met</span></td>
+    </tr>
+    <tr>
+      <td>Permission leakage</td>
+      <td class="t-num">0</td>
+      <td class="t-num"><strong>0</strong></td>
+      <td><span class="badge done">met</span></td>
+    </tr>
   </tbody>
 </table>
 
-<p class="footnote">The evaluation harness checks citations <em>against the
-database</em> rather than against the response, so an answer cannot pass by
-citing an identifier it invented. Any missed target exits the process non-zero
-and blocks release.</p>
+<p class="footnote">
+  The evaluation harness checks citations <em>against the database</em> rather than against the
+  response, so an answer cannot pass by citing an identifier it invented. Any missed target exits
+  the process non-zero and blocks release.
+</p>
 
 <h3>And what is not true</h3>
-<p>Eight integrations are complete and type-checked but were <strong>never
-executed</strong>, because nothing was reachable from the build environment:
-Docker Compose, S3/MinIO storage, Redis, pgvector, the hosted Anthropic composer,
-hosted speech-to-text and OCR, SMTP email, and Stripe. Stripe's
-<code>verifyWebhook</code> currently returns <code>null</code> &mdash; it fails
-closed, which is the safe direction, but it must be wired before billing is
-enabled.</p>
+<p>
+  Eight integrations are complete and type-checked but were <strong>never executed</strong>, because
+  nothing was reachable from the build environment: Docker Compose, S3/MinIO storage, Redis,
+  pgvector, the hosted Anthropic composer, hosted speech-to-text and OCR, SMTP email, and Stripe.
+  Stripe's <code>verifyWebhook</code> currently returns <code>null</code> &mdash; it fails closed,
+  which is the safe direction, but it must be wired before billing is enabled.
+</p>
 
 <div class="callout warn">
   <span class="label">The honest verdict</span>
-  <p><strong>Not ready for a real family's memories. Ready to be run, reviewed and
-  piloted internally with synthetic data.</strong></p>
-  <p>What is built is genuinely built &mdash; the consent engine, provenance,
-  isolation and deletion are the parts most likely to be faked in a project like
-  this, and they are the parts with the most tests behind them. What is missing is
-  largely operational, plus four things that need a person rather than an
-  engineer: legal review, a security review, an accessibility review with disabled
-  users, and a decision about who is accountable when something goes wrong.</p>
+  <p>
+    <strong
+      >Not ready for a real family's memories. Ready to be run, reviewed and piloted internally with
+      synthetic data.</strong
+    >
+  </p>
+  <p>
+    What is built is genuinely built &mdash; the consent engine, provenance, isolation and deletion
+    are the parts most likely to be faked in a project like this, and they are the parts with the
+    most tests behind them. What is missing is largely operational, plus four things that need a
+    person rather than an engineer: legal review, a security review, an accessibility review with
+    disabled users, and a decision about who is accountable when something goes wrong.
+  </p>
 </div>

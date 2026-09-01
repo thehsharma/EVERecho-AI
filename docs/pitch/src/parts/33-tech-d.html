@@ -1,47 +1,80 @@
 <div class="page-break"></div>
 <h2 id="sec-19">19&nbsp;&nbsp;The next five actions</h2>
 
-<p class="lede">In order. The first two are not engineering work, which is why they
-are first.</p>
+<p class="lede">In order. The first two are not engineering work, which is why they are first.</p>
 
 <table>
-  <thead><tr><th style="width:5%"></th><th style="width:30%">Action</th><th>Detail</th></tr></thead>
+  <thead>
+    <tr>
+      <th style="width: 5%"></th>
+      <th style="width: 30%">Action</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
   <tbody>
     <tr>
       <td class="t-num">1</td>
       <td><strong>Send the consent copy to counsel</strong></td>
-      <td>All of it: the five modes, the nine activities, the teach-back wording, the succession screen, the deletion warning and the terms. Four jurisdictions. Nothing else on this list matters if the consent is not sound, and the wording is currently a draft written by engineers.</td>
+      <td>
+        All of it: the five modes, the nine activities, the teach-back wording, the succession
+        screen, the deletion warning and the terms. Four jurisdictions. Nothing else on this list
+        matters if the consent is not sound, and the wording is currently a draft written by
+        engineers.
+      </td>
     </tr>
     <tr>
       <td class="t-num">2</td>
       <td><strong>Name the accountable person</strong></td>
-      <td>One human being who reads the audit trail weekly and who is escalated to when a consent or safety incident occurs. The runbook currently escalates into a vacuum. This is a decision, not a task.</td>
+      <td>
+        One human being who reads the audit trail weekly and who is escalated to when a consent or
+        safety incident occurs. The runbook currently escalates into a vacuum. This is a decision,
+        not a task.
+      </td>
     </tr>
     <tr>
       <td class="t-num">3</td>
       <td><strong>Build the production authentication path</strong></td>
-      <td>OIDC or passkeys, plus MFA enrolment. Today <code>AUTH_DRIVER=local</code> is refused when <code>NODE_ENV=production</code>, which means the product cannot be deployed at all. Add a password reset flow in the same piece of work &mdash; its absence is currently a support burden waiting to happen.</td>
+      <td>
+        OIDC or passkeys, plus MFA enrolment. Today <code>AUTH_DRIVER=local</code> is refused when
+        <code>NODE_ENV=production</code>, which means the product cannot be deployed at all. Add a
+        password reset flow in the same piece of work &mdash; its absence is currently a support
+        burden waiting to happen.
+      </td>
     </tr>
     <tr>
       <td class="t-num">4</td>
       <td><strong>Run the stack under Docker Compose, then wire the real providers</strong></td>
-      <td>In this order: Compose up and watch the migrate step; then S3 or MinIO with a real upload, presigned download and deletion; then Redis, verifying that revocation clears keys across two API instances; then pgvector, verifying that its results match the portable path. Each one is complete code that has never run.</td>
+      <td>
+        In this order: Compose up and watch the migrate step; then S3 or MinIO with a real upload,
+        presigned download and deletion; then Redis, verifying that revocation clears keys across
+        two API instances; then pgvector, verifying that its results match the portable path. Each
+        one is complete code that has never run.
+      </td>
     </tr>
     <tr>
       <td class="t-num">5</td>
-      <td><strong>Commission the independent security review, and rehearse a restore and a deletion</strong></td>
-      <td>The review should focus on the consent engine and the RLS boundary. The rehearsals should be performed by someone who did not build the system, end to end, with the deletion verified against the database afterwards rather than against the receipt.</td>
+      <td>
+        <strong
+          >Commission the independent security review, and rehearse a restore and a deletion</strong
+        >
+      </td>
+      <td>
+        The review should focus on the consent engine and the RLS boundary. The rehearsals should be
+        performed by someone who did not build the system, end to end, with the deletion verified
+        against the database afterwards rather than against the receipt.
+      </td>
     </tr>
   </tbody>
 </table>
 
 <div class="callout">
   <span class="label">What is deliberately not on this list</span>
-  <p>Features. There is no shortage of things this product could do &mdash; a
-  contributor review queue, notification digests, a rendered ERD, richer
-  biography editing. None of them should be built before items 1&ndash;5, because
-  every one of them adds surface area to a system whose foundations have not yet
-  been reviewed by anyone outside the team that wrote them.</p>
+  <p>
+    Features. There is no shortage of things this product could do &mdash; a contributor review
+    queue, notification digests, a rendered ERD, richer biography editing. None of them should be
+    built before items 1&ndash;5, because every one of them adds surface area to a system whose
+    foundations have not yet been reviewed by anyone outside the team that wrote them.
+  </p>
 </div>
 
 <div class="page-break"></div>
@@ -100,16 +133,29 @@ tests/e2e/      Playwright specs and the axe-core accessibility scan</code></pre
 <h3>Where to start reading the code</h3>
 <p>Three files carry most of the product's meaning. Read them in this order.</p>
 <ol>
-  <li><code>packages/consent/src/authorize.ts</code> &mdash; the single decision point. Pure, no I/O, and the order of its checks is deliberate: prohibited action, then unauthenticated, then the admin path, then archive lifecycle, then membership, then the buyer special case, then the role table, then consent. Every reordering the tests rejected is a bug that would have leaked something.</li>
-  <li><code>apps/api/src/lib/access.ts</code> &mdash; how a request becomes an archive-scoped transaction, and why the deny audit is written on a different connection.</li>
-  <li><code>apps/api/src/modules/qa.ts</code> &mdash; how a question becomes a cited answer or an abstention, with the safety checks ahead of retrieval rather than behind it.</li>
+  <li>
+    <code>packages/consent/src/authorize.ts</code> &mdash; the single decision point. Pure, no I/O,
+    and the order of its checks is deliberate: prohibited action, then unauthenticated, then the
+    admin path, then archive lifecycle, then membership, then the buyer special case, then the role
+    table, then consent. Every reordering the tests rejected is a bug that would have leaked
+    something.
+  </li>
+  <li>
+    <code>apps/api/src/lib/access.ts</code> &mdash; how a request becomes an archive-scoped
+    transaction, and why the deny audit is written on a different connection.
+  </li>
+  <li>
+    <code>apps/api/src/modules/qa.ts</code> &mdash; how a question becomes a cited answer or an
+    abstention, with the safety checks ahead of retrieval rather than behind it.
+  </li>
 </ol>
 
 <div class="callout ok">
   <span class="label">The last word</span>
-  <p>This document contains no projected figures, no mockups and no claims that
-  were not produced by running the code. Where something was built but never
-  executed, it says so; where something is missing, it is named. That discipline
-  is not incidental to the product &mdash; a system whose entire value rests on
-  refusing to state what it cannot support should be described the same way.</p>
+  <p>
+    This document contains no projected figures, no mockups and no claims that were not produced by
+    running the code. Where something was built but never executed, it says so; where something is
+    missing, it is named. That discipline is not incidental to the product &mdash; a system whose
+    entire value rests on refusing to state what it cannot support should be described the same way.
+  </p>
 </div>

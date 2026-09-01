@@ -162,7 +162,11 @@ export const ACTION_REQUIREMENTS: Record<Action, ActionRequirement> = {
     mutates: true,
     learning: 'candidateExtraction',
   }),
-  'learning.candidate.read': req({ minMode: 'organise', storytellerOnly: true, readsContent: true }),
+  'learning.candidate.read': req({
+    minMode: 'organise',
+    storytellerOnly: true,
+    readsContent: true,
+  }),
   'learning.candidate.edit': req({ minMode: 'organise', storytellerOnly: true, mutates: true }),
   // Approval is the moment a conversation becomes family history. Only the
   // storyteller, always, with no delegation path in v0.2.

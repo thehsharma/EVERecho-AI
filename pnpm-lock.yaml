@@ -65,6 +65,9 @@ importers:
       '@everecho/pipeline':
         specifier: workspace:*
         version: link:../../packages/pipeline
+      '@everecho/realtime':
+        specifier: workspace:*
+        version: link:../../packages/realtime
       '@fastify/cookie':
         specifier: 11.1.2
         version: 11.1.2

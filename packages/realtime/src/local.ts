@@ -175,8 +175,7 @@ export class RateCardCostMeter implements CostMeter {
     const tts = ((input.ttsCharacters ?? 0) / 1000) * this.rates.ttsPerThousandCharsMinor;
     const llmIn = ((input.llmInputTokens ?? 0) / 1_000_000) * this.rates.llmInputPerMillionMinor;
     const llmOut = ((input.llmOutputTokens ?? 0) / 1_000_000) * this.rates.llmOutputPerMillionMinor;
-    const transport =
-      ((input.transportSeconds ?? 0) / 60) * this.rates.transportPerMinuteMinor;
+    const transport = ((input.transportSeconds ?? 0) / 60) * this.rates.transportPerMinuteMinor;
     return Math.ceil(stt + tts + llmIn + llmOut + transport);
   }
 }

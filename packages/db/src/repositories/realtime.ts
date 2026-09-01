@@ -352,7 +352,14 @@ export async function mintReconnectToken(
        (archive_id, session_id, user_id, token_hash, mode, expires_at)
      VALUES ($1,$2,$3,$4,$5, now() + make_interval(secs => $6))
      RETURNING expires_at`,
-    [input.archiveId, input.sessionId, input.userId, hashToken(token), input.mode, input.ttlSeconds],
+    [
+      input.archiveId,
+      input.sessionId,
+      input.userId,
+      hashToken(token),
+      input.mode,
+      input.ttlSeconds,
+    ],
   );
   return { token, expiresAt: row.expires_at };
 }

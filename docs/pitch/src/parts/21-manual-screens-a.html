@@ -1,78 +1,124 @@
 <div class="page-break"></div>
 <h2 id="sec-10">10&nbsp;&nbsp;The demonstration archive</h2>
 
-<p class="lede">The seed builds a complete, synthetic archive for one invented
-person: <strong>Kamala Deshpande</strong>. Six recorded sessions, one scanned
-letter, a family around her, and one deliberate imperfection.</p>
+<p class="lede">
+  The seed builds a complete, synthetic archive for one invented person:
+  <strong>Kamala Deshpande</strong>. Six recorded sessions, one scanned letter, a family around her,
+  and one deliberate imperfection.
+</p>
 
-<p><code>pnpm db:seed</code> creates six audio sessions
-(<code>session-01-childhood</code>, <code>-02-school</code>, <code>-03-work</code>,
-<code>-04-family</code>, <code>-05-money</code>, <code>-06-partition</code>), one
-document (<code>letter-1974-transfer.txt</code>), the people and places they
-mention, and the memories derived from them. It then runs the real ingestion
-pipeline over that material &mdash; the same handlers a production upload
-goes through &mdash; so what you browse is genuinely derived, not
-pre-written rows.</p>
+<p>
+  <code>pnpm db:seed</code> creates six audio sessions (<code>session-01-childhood</code>,
+  <code>-02-school</code>, <code>-03-work</code>, <code>-04-family</code>, <code>-05-money</code>,
+  <code>-06-partition</code>), one document (<code>letter-1974-transfer.txt</code>), the people and
+  places they mention, and the memories derived from them. It then runs the real ingestion pipeline
+  over that material &mdash; the same handlers a production upload goes through &mdash; so what you
+  browse is genuinely derived, not pre-written rows.
+</p>
 
 <h3>Four things in the seed that exist to be found</h3>
 <table>
-  <thead><tr><th style="width:30%">What</th><th>Why it is there</th></tr></thead>
+  <thead>
+    <tr>
+      <th style="width: 30%">What</th>
+      <th>Why it is there</th>
+    </tr>
+  </thead>
   <tbody>
-    <tr><td><strong>An unapproved memory</strong><br><span class="footnote">from <code>session-04-family.webm</code></span></td><td>Sign in as Kamala and it appears in <em>Review stories</em>. Sign in as her daughter Anjali and it does not exist. This is the review boundary, demonstrable in two clicks.</td></tr>
-    <tr><td><strong>A restricted topic</strong><br><span class="footnote"><code>money</code></span></td><td>Ask about money and the system abstains rather than working around the restriction. It does not hint that there is material it is declining to use.</td></tr>
-    <tr><td><strong>A contradiction</strong></td><td>Two recordings disagree about when the family moved. The answer surfaces both and labels the disagreement rather than silently picking one.</td></tr>
-    <tr><td><strong>A buyer with no read access</strong><br><span class="footnote">Anil</span></td><td>He pays for the archive. Signing in as him shows membership and billing and no memories whatsoever &mdash; not an empty list, but no memory surfaces at all.</td></tr>
+    <tr>
+      <td>
+        <strong>An unapproved memory</strong><br /><span class="footnote"
+          >from <code>session-04-family.webm</code></span
+        >
+      </td>
+      <td>
+        Sign in as Kamala and it appears in <em>Review stories</em>. Sign in as her daughter Anjali
+        and it does not exist. This is the review boundary, demonstrable in two clicks.
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <strong>A restricted topic</strong><br /><span class="footnote"><code>money</code></span>
+      </td>
+      <td>
+        Ask about money and the system abstains rather than working around the restriction. It does
+        not hint that there is material it is declining to use.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>A contradiction</strong></td>
+      <td>
+        Two recordings disagree about when the family moved. The answer surfaces both and labels the
+        disagreement rather than silently picking one.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>A buyer with no read access</strong><br /><span class="footnote">Anil</span></td>
+      <td>
+        He pays for the archive. Signing in as him shows membership and billing and no memories
+        whatsoever &mdash; not an empty list, but no memory surfaces at all.
+      </td>
+    </tr>
   </tbody>
 </table>
 
 <div class="callout">
   <span class="label">Everything here is invented</span>
-  <p>No real personal information is bundled with this repository. The names,
-  dates, places, recordings and the letter are all fabricated for demonstration,
-  which is stated in the seed file itself and on the demo page in the product.</p>
+  <p>
+    No real personal information is bundled with this repository. The names, dates, places,
+    recordings and the letter are all fabricated for demonstration, which is stated in the seed file
+    itself and on the demo page in the product.
+  </p>
 </div>
 
 <div class="page-break"></div>
 <h2 id="sec-11">11&nbsp;&nbsp;Screen by screen</h2>
 
-<p class="lede">Every figure that follows is a screenshot of the application
-running locally against a real PostgreSQL&nbsp;16 database, captured with
-Playwright driving a real browser. There are no mockups in this document.</p>
+<p class="lede">
+  Every figure that follows is a screenshot of the application running locally against a real
+  PostgreSQL&nbsp;16 database, captured with Playwright driving a real browser. There are no mockups
+  in this document.
+</p>
 
 <h3>11.1&nbsp;&nbsp;What a visitor sees first</h3>
-<p>The public pages carry the boundary rather than burying it. The landing page
-states what the product will not do above the fold, because a person deciding
-whether to record their mother's stories needs that answer before they need the
-feature list.</p>
+<p>
+  The public pages carry the boundary rather than burying it. The landing page states what the
+  product will not do above the fold, because a person deciding whether to record their mother's
+  stories needs that answer before they need the feature list.
+</p>
 
 <figure>
   {{IMG:01-landing.png}}
-  <figcaption><strong>Figure 1 &mdash; Landing.</strong> The promise and the
-  refusal on the same screen. "EverEcho preserves what a living person actually
-  said" is paired immediately with what it does not do, and the primary action
-  leads to an explanation rather than a signup form.</figcaption>
+  <figcaption>
+    <strong>Figure 1 &mdash; Landing.</strong> The promise and the refusal on the same screen.
+    "EverEcho preserves what a living person actually said" is paired immediately with what it does
+    not do, and the primary action leads to an explanation rather than a signup form.
+  </figcaption>
 </figure>
 
 <figure class="tall">
   {{IMG:02-how-it-works.png}}
-  <figcaption><strong>Figure 2 &mdash; How it works.</strong> The four stages in
-  order: the person tells their stories, they review everything, the family reads
-  and asks, and the person keeps control permanently. Each stage names what
-  happens to the material rather than describing a benefit.</figcaption>
+  <figcaption>
+    <strong>Figure 2 &mdash; How it works.</strong> The four stages in order: the person tells their
+    stories, they review everything, the family reads and asks, and the person keeps control
+    permanently. Each stage names what happens to the material rather than describing a benefit.
+  </figcaption>
 </figure>
 
 <figure class="tall">
   {{IMG:03-trust.png}}
-  <figcaption><strong>Figure 3 &mdash; Trust and consent.</strong> The five modes,
-  the nine processing activities, the prohibitions, and what revocation actually
-  does. This page is the consent model written for a reader rather than for a
-  compiler; the two are kept in step deliberately.</figcaption>
+  <figcaption>
+    <strong>Figure 3 &mdash; Trust and consent.</strong> The five modes, the nine processing
+    activities, the prohibitions, and what revocation actually does. This page is the consent model
+    written for a reader rather than for a compiler; the two are kept in step deliberately.
+  </figcaption>
 </figure>
 
 <figure>
   {{IMG:04-demo-accounts.png}}
-  <figcaption><strong>Figure 4 &mdash; The demonstration accounts.</strong> Five
-  sign-ins, one shared passphrase, and an explicit statement that everyone in the
-  archive is invented. The differences between these five accounts are the fastest
-  way to see the authorisation model behave.</figcaption>
+  <figcaption>
+    <strong>Figure 4 &mdash; The demonstration accounts.</strong> Five sign-ins, one shared
+    passphrase, and an explicit statement that everyone in the archive is invented. The differences
+    between these five accounts are the fastest way to see the authorisation model behave.
+  </figcaption>
 </figure>

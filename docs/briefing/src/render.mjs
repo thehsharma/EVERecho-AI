@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const input = process.env.EVERECHO_DOC_HTML ?? path.join(here, 'document.html');
-const output = process.env.EVERECHO_DOC_PDF ??
+const output =
+  process.env.EVERECHO_DOC_PDF ??
   path.join(here, '..', '..', 'EverEcho-Chief-of-Staff-Briefing.pdf');
 
 const browser = await chromium.launch({
