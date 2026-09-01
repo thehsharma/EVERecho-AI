@@ -19,3 +19,5 @@ blob-report/
 *.log
 openapi.generated.json
 eval-report.json
+.next/
+next-env.d.ts
