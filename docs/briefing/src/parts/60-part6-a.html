@@ -1,0 +1,111 @@
+<div class="part-divider">
+  <div class="kicker">Part VI</div>
+  <h2>Your operating system</h2>
+  <p>The cadence that keeps this on track, the first thirty days in detail, and
+  every decision currently waiting on you.</p>
+</div>
+
+<h2 id="sec-20">20&nbsp;&nbsp;The cadence</h2>
+
+<p class="lede">Founders do not fail from lack of effort; they fail from
+losing the thread. A fixed cadence is how you notice a problem in week three
+instead of month five.</p>
+
+<h3>Every Monday &mdash; 45 minutes, alone</h3>
+<ol class="runbook">
+  <li><strong>Read the audit trail.</strong> Not a summary &mdash; the actual log, including refusals. Your own readiness document names this as a condition for piloting, and it is also how you find risk&nbsp;7 before someone else does. Fifteen minutes.</li>
+  <li><strong>The five metrics from §12.</strong> Written down, in the same place, every week, so the trend is visible rather than remembered.</li>
+  <li><strong>The abstention band.</strong> Movement in either direction is an incident until proven otherwise.</li>
+  <li><strong>Open decisions (§22).</strong> Anything sitting for more than two weeks is either not important or being avoided. Decide which, out loud.</li>
+  <li><strong>One sentence:</strong> what is the single most important thing this week? Write it where you will see it on Thursday.</li>
+</ol>
+
+<h3>Every month &mdash; 2 hours</h3>
+<ul>
+  <li><strong>Cohort margin.</strong> The §2 margin trap alarm. If it is not improving, say so plainly in writing rather than assuming next month.</li>
+  <li><strong>Unit costs against reality.</strong> Provider invoices attributed to archives. Hours logged and costed, including yours.</li>
+  <li><strong>The falsification thresholds from §8.</strong> Reread them. They were written by a more objective version of you.</li>
+  <li><strong>One customer conversation you did not need to have.</strong> Not a support ticket &mdash; a conversation.</li>
+  <li><strong>Update the decision log.</strong> The company deserves the same discipline the codebase got.</li>
+</ul>
+
+<h3>Every quarter &mdash; half a day</h3>
+<ul>
+  <li><strong>Are you at the stage you thought?</strong> Against §16, honestly.</li>
+  <li><strong>Risk register review (§18).</strong> Likelihoods change. So do the early-warning signs.</li>
+  <li><strong>The refusal audit.</strong> Has anything shipped that weakens it? Do the enforcing tests still exist and still run? Has anyone asked you to remove it, and what did you say?</li>
+  <li><strong>Governance progress (§17).</strong> Which instruments are in place, which are still intentions.</li>
+  <li><strong>Your own state.</strong> Risk&nbsp;5 is you. It is a real line item and it does not appear on any dashboard.</li>
+</ul>
+
+<div class="callout">
+  <span class="label">Keep a decision log for the company</span>
+  <p>The repository has one &mdash; fifteen decisions, each with its reasoning,
+  which is why the architecture is still coherent. Do the same for the business:
+  the decision, the date, the reasoning, what would change your mind. In eighteen
+  months you will not remember why you chose a price, a channel or a jurisdiction,
+  and the reasoning is worth more than the choice.</p>
+</div>
+
+<div class="page-break"></div>
+<h2 id="sec-21">21&nbsp;&nbsp;The first thirty days</h2>
+
+<div class="horizon">
+  <span class="h-n">Day 1 &ndash; Day 30</span>
+  <span>Concrete. In order. Start the external clocks first.</span>
+  <span class="h-when">Starting Monday</span>
+</div>
+
+<p class="eyebrow">Days 1&ndash;2 &mdash; things that cost hours and buy weeks</p>
+<ul class="check">
+  <li>Fix the pricing-page tense so the site claims no families you do not have</li>
+  <li>Name yourself as the accountable person in <code>INCIDENT_RUNBOOK.md</code>, commit it</li>
+  <li>Begin trademark clearance on the name</li>
+  <li>Send the §5 brief to two or three data-protection lawyers; ask each the deceased-persons question</li>
+  <li>Email three candidate security reviewers for availability and cost in week 6</li>
+  <li>Ask two disability organisations about a paid accessibility review in week 7</li>
+</ul>
+
+<p class="eyebrow">Days 3&ndash;7 &mdash; decide what is yours to decide</p>
+<ul class="check">
+  <li>Work through §5 decisions 2, 5, 6 and 7; write each into the company decision log with its reasoning</li>
+  <li>Draft the prohibitions as customer-facing terms (§17, instrument 1)</li>
+  <li>Choose the hosting provider and region</li>
+  <li>List every development secret that must be replaced</li>
+</ul>
+
+<p class="eyebrow">Days 8&ndash;14 &mdash; the biggest engineering piece</p>
+<ul class="check">
+  <li>Production authentication: OIDC or passkeys, MFA enrolment, <strong>and password reset</strong></li>
+  <li>Real secrets in a secret manager; no <code>dev-only-…</code> string survives</li>
+  <li>Deploy to a real environment for the first time, with synthetic data only</li>
+</ul>
+
+<p class="eyebrow">Days 15&ndash;21 &mdash; make the unproven things proven</p>
+<ul class="check">
+  <li>Run all eight integrations, in the §6 order, checking the stated first thing for each</li>
+  <li><strong>Record your real unit costs as you go</strong> &mdash; this is the week the §2 worksheet gets filled in</li>
+  <li>Wire Stripe webhook signature verification; test a payment and a refund end to end</li>
+  <li>Compare the local extractive composer against the hosted one, and decide whether you need the hosted one at all</li>
+</ul>
+
+<p class="eyebrow">Days 22&ndash;30 &mdash; the things that are skipped</p>
+<ul class="check">
+  <li>Encryption at rest with a customer-managed key</li>
+  <li>A real malware scanner in the upload path</li>
+  <li>Backups configured, and a restore <em>performed</em> into a clean environment and timed</li>
+  <li>A deletion performed end to end and verified against the database, not the receipt</li>
+  <li>Monitoring and alerting that reach your phone</li>
+  <li>Inspect logs, error reports and the support view for memory content; fix anything found</li>
+  <li><strong>Write the death runbook (§18) and read it aloud once</strong></li>
+  <li>Set the provisional price and update the pricing page</li>
+</ul>
+
+<div class="callout ok">
+  <span class="label">At the end of day 30 you should have</span>
+  <p>A deployed system with real authentication, proven integrations, known unit
+  costs, a price, working billing, and every external clock running. What you
+  will <em>not</em> have is a single real memory in the database &mdash; and that is
+  correct. Weeks 5&ndash;8 close the launch gate; the first family comes after
+  it, not before.</p>
+</div>

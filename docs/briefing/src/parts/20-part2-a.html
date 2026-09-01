@@ -1,0 +1,110 @@
+<div class="part-divider">
+  <div class="kicker">Part II</div>
+  <h2>Getting online safely</h2>
+  <p>The next eight weeks, in the order they must actually happen. This is the
+  part to act on this week.</p>
+</div>
+
+<h2 id="sec-5">5&nbsp;&nbsp;Horizon 0: the decisions only you can make</h2>
+
+<div class="horizon">
+  <span class="h-n">Horizon 0</span>
+  <span>Nothing here is engineering. All of it blocks engineering.</span>
+  <span class="h-when">Weeks 0&ndash;2</span>
+</div>
+
+<p class="lede">Seven decisions. Two of them have hard deadlines imposed by
+outside parties and should start on day one because they take weeks of somebody
+else's time.</p>
+
+<div class="decision">
+  <span class="d-label">Decision 1 &mdash; The name</span>
+  <p>Your own README says EverEcho is <em>&ldquo;a working codename pending
+  trademark clearance&rdquo;</em>. <span class="ev v">VERIFIED</span> You cannot
+  build a brand, buy a domain properly, print anything, or sign a channel
+  partner on a name you may have to abandon. Every week you delay makes the
+  eventual rename more expensive.</p>
+  <p>You did one thing very well here: the product name lives in configuration
+  (<code>PRODUCT_NAME</code>), so renaming the software is a settings change, not
+  a refactor. The expensive part is everything outside the repository.</p>
+  <p class="rec"><strong>Recommendation:</strong> start clearance
+  <strong>on day one</strong>, in every jurisdiction you intend to operate in, in
+  the relevant classes. If it is not clearly clearable within three weeks,
+  <strong>rename now</strong> rather than hope. Budget this as the first
+  professional-services money you spend.</p>
+</div>
+
+<div class="decision">
+  <span class="d-label">Decision 2 &mdash; Where the company and the data live</span>
+  <p>Configuration currently says <code>JURISDICTION=IN</code> and
+  <code>DATA_REGION=local</code>. <span class="ev v">VERIFIED</span> Those were
+  sensible development defaults and they are now a strategic choice with legal
+  consequences: which law governs consent, where the database physically sits,
+  whether using a US-hosted AI provider constitutes a cross-border transfer, and
+  which regulator you answer to.</p>
+  <p class="rec"><strong>Recommendation:</strong> incorporate and host where your
+  first ten families are, not where you imagine your hundred-thousandth will be.
+  Keep the region a configuration value, as it already is, and treat a second
+  region as a Horizon&nbsp;3 problem. Do not architect for a geography you have
+  no customers in.</p>
+</div>
+
+<div class="decision">
+  <span class="d-label">Decision 3 &mdash; Engage counsel, with a written brief</span>
+  <p>This is the highest-leverage thing you will do in the next month, it is
+  blocking item&nbsp;1 on your own readiness list, and it runs on somebody else's
+  calendar. Start it in week one. The brief is on the next page &mdash; do not send
+  &ldquo;please review our privacy policy&rdquo;, send the questions.</p>
+  <p class="rec"><strong>Recommendation:</strong> find counsel with
+  data-protection experience specifically, not a general commercial lawyer.
+  Ask them directly whether they have advised on special-category data and on
+  what happens to personal data when the subject dies. If they hesitate on the
+  second question, keep looking.</p>
+</div>
+
+<div class="decision">
+  <span class="d-label">Decision 4 &mdash; Name the accountable person</span>
+  <p>Blocking item&nbsp;8: <em>the incident runbook says &ldquo;escalate&rdquo;
+  and there is no one to escalate to.</em> <span class="ev v">VERIFIED</span>
+  If you are solo, the answer is you &mdash; but it must be written down, with a
+  name, in the runbook, on the support page, and in whatever you sign with a
+  customer. An accountability that is implied is an accountability that
+  evaporates at exactly the wrong moment.</p>
+  <p class="rec"><strong>Recommendation:</strong> name yourself today, in
+  writing, in <code>INCIDENT_RUNBOOK.md</code>, and commit it. Replace the name
+  when you hire someone; never let the field be empty.</p>
+</div>
+
+<div class="decision">
+  <span class="d-label">Decision 5 &mdash; Audio-first, or audio and video</span>
+  <p>From the storage arithmetic in §2: video can be one to two orders of
+  magnitude larger than audio for the same hour, and you are promising
+  preservation. This decision sets your cost base permanently and is very
+  painful to reverse once families have uploaded video.</p>
+  <p class="rec"><strong>Recommendation:</strong> <strong>audio by
+  default</strong>, video as an explicitly priced upgrade with its own storage
+  term stated. Photographs and documents are cheap; treat them as included and
+  encourage them, since they carry enormous emotional weight per megabyte.</p>
+</div>
+
+<div class="decision">
+  <span class="d-label">Decision 6 &mdash; Provisional price</span>
+  <p>Your pricing page currently sets no price at all. <span class="ev v">VERIFIED</span>
+  You cannot run §8 without one, and §2 established the one thing you must not
+  do: choose a cheap one.</p>
+  <p class="rec"><strong>Recommendation:</strong> pick a provisional number in
+  week two using §9, and hold it for the first ten families. Do not discount to
+  close &mdash; a discounted first cohort teaches you nothing about willingness to
+  pay, which is the only thing that cohort exists to teach you.</p>
+</div>
+
+<div class="decision">
+  <span class="d-label">Decision 7 &mdash; A stance, not a commitment, on money</span>
+  <p>Bootstrap or raise changes your hiring, your speed and how much of §6 you do
+  yourself. §14 argues it properly. You need a provisional stance now because it
+  determines whether you spend the next eight weeks building or talking.</p>
+  <p class="rec"><strong>Recommendation:</strong> assume bootstrap through
+  §8. Ten paying families is the cheapest, fastest, most honest fundraising
+  asset you can build, and it is worth more in a pitch than any deck you could
+  write instead.</p>
+</div>

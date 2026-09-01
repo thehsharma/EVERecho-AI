@@ -1,0 +1,63 @@
+<div class="part-divider">
+  <div class="kicker">Part I</div>
+  <h2>Where you actually are</h2>
+  <p>Four pieces of ground truth. Read this part once, carefully, before you act
+  on anything in the rest of the document.</p>
+</div>
+
+<h2 id="sec-1">1&nbsp;&nbsp;The honest position</h2>
+
+<p class="lede">You have built something most funded startups do not have: a
+complete, tested, running product with the hard parts genuinely finished. You
+have not yet built a company, and the gap between those two things is larger
+than it feels from inside the code.</p>
+
+<h3>What is real <span class="ev v">VERIFIED</span></h3>
+<p>All of this can be checked by anyone with the repository, today:</p>
+<div class="kv">
+  <div><span>A running application, end to end</span><span>3 apps, 7 packages, ~25,000 lines</span></div>
+  <div><span>Database schema with enforced isolation</span><span>50 tables, 28 under forced RLS</span></div>
+  <div><span>Versioned API, generated from its own validators</span><span>70 operations</span></div>
+  <div><span>Screens</span><span>33 routes</span></div>
+  <div><span>Tests that actually ran</span><span>193 unit and integration, no mocks</span></div>
+  <div><span>Browser and accessibility</span><span>54 tests, 0 WCAG 2.2 AA violations</span></div>
+  <div><span>AI evaluation</span><span>32/32, all four blocking targets met</span></div>
+  <div><span>Documentation</span><span>15 documents, plus a 57-page product PDF</span></div>
+</div>
+
+<p>That is a genuinely strong engineering position, and it is worth being precise
+about why: the parts you finished are the parts that are normally faked. Consent,
+provenance, isolation and deletion are usually a policy page and a hope. Here they
+are a pure authorisation function, forced row-level security, a verification step
+that drops unsupported sentences, and a resumable deletion that issues a receipt.
+That work is real and it is not easily copied.</p>
+
+<h3>What is not real, and must not be described as if it were</h3>
+
+<table>
+  <thead><tr><th style="width:34%">Claim someone might make</th><th>The actual position</th></tr></thead>
+  <tbody>
+    <tr><td>&ldquo;It's live&rdquo;</td><td>It runs locally. It has never been deployed. There is <strong>no production authentication path at all</strong> &mdash; <code>AUTH_DRIVER=local</code> is refused when <code>NODE_ENV=production</code>, by design. <span class="ev v">VERIFIED</span></td></tr>
+    <tr><td>&ldquo;We can take payment&rdquo;</td><td>Checkout and refund are written; <code>verifyWebhook</code> returns <code>null</code>. It fails closed, which is the safe direction, and it means billing is not wired. <span class="ev v">VERIFIED</span></td></tr>
+    <tr><td>&ldquo;We have users&rdquo;</td><td>Five demonstration accounts and one invented person. Every name, date and recording in the seed is fabricated for demonstration and says so. <span class="ev v">VERIFIED</span></td></tr>
+    <tr><td>&ldquo;It's compliant&rdquo;</td><td>Every legal string in the product is a draft written by engineers. No lawyer has read the consent copy, the teach-back wording, the terms or the succession screen. <span class="ev v">VERIFIED</span></td></tr>
+    <tr><td>&ldquo;It scales&rdquo;</td><td>Eight integrations &mdash; Docker, S3, Redis, pgvector, hosted composition, hosted speech-to-text, hosted OCR, SMTP &mdash; are complete, type-checked and <strong>have never been executed</strong>. <span class="ev v">VERIFIED</span></td></tr>
+    <tr><td>&ldquo;It transcribes recordings&rdquo;</td><td>The local speech adapter <strong>cannot recognise speech.</strong> Real audio requires a paid provider that has never been connected. This is a cost line, not just a task. <span class="ev v">VERIFIED</span></td></tr>
+  </tbody>
+</table>
+
+<div class="callout danger">
+  <span class="label">Fix this sentence before the site is public</span>
+  <p>Your pricing page currently reads: <em>&ldquo;We are working with a small
+  number of families and being honest about what that means.&rdquo;</em> Present
+  tense. You are not working with any families. It is a small thing and it is
+  exactly the kind of small thing that, in a product whose entire proposition is
+  that it does not overstate, will be the first thing a sharp journalist or
+  investor quotes back at you. Change it to the future or conditional tense
+  today. <span class="ev v">VERIFIED &mdash; <code>apps/web/src/app/pricing/page.tsx</code></span></p>
+</div>
+
+<h3>The one-line summary of your position</h3>
+<p>You have a finished engine, an unfinished car, and no road. The engine is the
+hard part and you already did it. Parts II and III of this document are about the
+car and the road, in that order, and the sequencing matters more than the speed.</p>
