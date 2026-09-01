@@ -1,0 +1,121 @@
+<div class="page-break"></div>
+<h2 id="sec-12">12&nbsp;&nbsp;Command reference</h2>
+
+<p class="lede">Every command is run from the repository root. There is no build
+step: packages are consumed as TypeScript source and executed through
+<code>tsx</code>.</p>
+
+<h3>Setting up and running</h3>
+<table>
+  <thead><tr><th style="width:34%">Command</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>pnpm setup</code></td><td>Install, migrate and seed in one step.</td></tr>
+    <tr><td><code>pnpm db:migrate</code></td><td>Applies the eight numbered SQL migrations. Each is checksummed; a migration whose contents changed after being applied is refused rather than re-run.</td></tr>
+    <tr><td><code>pnpm db:seed</code></td><td>Builds the synthetic demonstration archive by running the real ingestion pipeline.</td></tr>
+    <tr><td><code>pnpm db:reset</code></td><td><strong>Destructive.</strong> Drops and recreates the schema. Never point this at anything you care about.</td></tr>
+    <tr><td><code>pnpm dev:api</code></td><td>The Fastify API on <code>:4000</code>.</td></tr>
+    <tr><td><code>pnpm dev:worker</code></td><td>The background job runner.</td></tr>
+    <tr><td><code>pnpm dev:web</code></td><td>The Next.js application on <code>:3000</code>.</td></tr>
+    <tr><td><code>pnpm dev</code></td><td>All three in parallel, in one terminal.</td></tr>
+  </tbody>
+</table>
+
+<h3>Checking that it is sound</h3>
+<table>
+  <thead><tr><th style="width:34%">Command</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>pnpm verify</code></td><td><strong>The one that matters.</strong> Runs format check, lint, typecheck, all unit and integration tests, and the AI evaluation suite, in that order. This is what CI runs.</td></tr>
+    <tr><td><code>pnpm typecheck</code></td><td><code>tsc --noEmit</code> across the entire workspace graph, web application included.</td></tr>
+    <tr><td><code>pnpm lint</code></td><td>ESLint 9 flat config.</td></tr>
+    <tr><td><code>pnpm test</code></td><td>145 unit tests and 48 integration tests. The integration project runs against a real PostgreSQL &mdash; there are no database mocks anywhere in the suite.</td></tr>
+    <tr><td><code>pnpm test:unit</code></td><td>Unit project only; needs no database.</td></tr>
+    <tr><td><code>pnpm test:integration</code></td><td>Integration project only; needs <code>DATABASE_URL</code>.</td></tr>
+    <tr><td><code>pnpm test:e2e</code></td><td>54 Playwright tests including the axe-core accessibility scan. Needs the stack running.</td></tr>
+    <tr><td><code>pnpm eval</code></td><td>The 32-case AI evaluation suite. <strong>Exits non-zero if any release-blocking target is missed</strong>, which is what makes the targets blocking rather than advisory.</td></tr>
+    <tr><td><code>pnpm openapi</code></td><td>Regenerates <code>docs/openapi.json</code> from the same Zod schemas that validate requests at runtime, so the document cannot drift from the implementation.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <span class="label">Do not weaken a failing test to produce green CI</span>
+  <p>Four real bugs in the consent engine were found by tests written before the
+  engine was finished &mdash; a reason-code ordering error, a granularity collapse
+  in the mode-to-activity mapping, two roles missing their export actions, and a
+  code path that skipped the recipient-grant lookup entirely. Each looked, at
+  first, like an over-strict test.</p>
+</div>
+
+<h3>Verifying the isolation yourself</h3>
+<p>Row-level security is the claim most worth checking by hand. Two queries do it:</p>
+<pre><code>-- With no archive scope set, every content table returns nothing.
+SELECT count(*) FROM memory;                       -- 0
+
+-- Inside a scope, the archive's own rows are visible.
+BEGIN;
+SELECT set_config('everecho.archive_id', '&lt;archive-uuid&gt;', true);
+SELECT count(*) FROM memory;                       -- the real count
+-- and a write aimed at a different archive is rejected by the policy
+INSERT INTO memory (archive_id, ...) VALUES ('&lt;other-uuid&gt;', ...);  -- ERROR
+COMMIT;</code></pre>
+<p>Both were run directly against the database in the session that produced this
+repository, and both behaved as described. <code>FORCE ROW LEVEL SECURITY</code>
+means the table owner is subject to the policy too, so this holds even for a
+connection with database-owner privileges.</p>
+
+<div class="page-break"></div>
+<h2 id="sec-13">13&nbsp;&nbsp;When something goes wrong</h2>
+
+<table>
+  <thead><tr><th style="width:36%">Symptom</th><th>What it means, and what to do</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>/readyz</code> returns <strong>degraded</strong></td>
+      <td>Usually expected. With <code>CACHE_DRIVER=memory</code> and no pgvector extension, readiness reports degraded because the optional components are absent. Check the response body: it names which component. A degraded readiness with the portable retrieval path in use is the normal local state.</td>
+    </tr>
+    <tr>
+      <td>Uploads accepted but nothing appears</td>
+      <td>The worker is not running. Ingestion is queued in PostgreSQL, so the upload succeeds and the job simply waits. Start <code>pnpm dev:worker</code>; the queued jobs will drain. <em>Support tools</em> (Figure 15) shows the queue depth.</td>
+    </tr>
+    <tr>
+      <td>A job stays queued and never runs</td>
+      <td>Check <code>WORKER_MAX_ATTEMPTS</code> and the job's state. Jobs that exhausted their attempts show as <em>gave up</em> rather than being retried forever. The failure reason is recorded without any memory content in it.</td>
+    </tr>
+    <tr>
+      <td>Everything a user does is refused</td>
+      <td>Read the reason code in the <em>Activity</em> log. It names the specific gate &mdash; membership status, consent activity, sensitivity ceiling, restricted topic, embargo, missing recipient grant &mdash; rather than a generic denial.</td>
+    </tr>
+    <tr>
+      <td>An answer abstains when you expected content</td>
+      <td>Three likely causes, in order: the memory is not approved yet (check <em>Review stories</em>); the topic is restricted in <em>Permissions</em>; or the source is excluded there. The system deliberately does not hint at which, so check the storyteller's settings directly.</td>
+    </tr>
+    <tr>
+      <td>The database returns zero rows for everything</td>
+      <td>You are querying outside an archive scope. This is row-level security behaving correctly, not a data loss. Application code reaches data only through <code>withArchiveAccess</code>, which opens the scope; a manual <code>psql</code> session does not.</td>
+    </tr>
+    <tr>
+      <td>Migration refuses to apply</td>
+      <td>A migration file changed after it was applied and its checksum no longer matches. Do not edit an applied migration &mdash; add a new numbered one.</td>
+    </tr>
+    <tr>
+      <td>Startup fails with a configuration error</td>
+      <td>Working as intended. Configuration is validated by Zod at boot, so a missing or malformed value stops the process with a readable message instead of failing inside a request hours later. The message names the variable.</td>
+    </tr>
+    <tr>
+      <td><code>AUTH_DRIVER=local</code> refused in production</td>
+      <td>Also working as intended, and it means there is currently no production authentication path. See item 4 on the blocking list.</td>
+    </tr>
+    <tr>
+      <td>Playwright cannot find a browser</td>
+      <td>Set <code>PLAYWRIGHT_CHROMIUM_PATH</code> to the Chromium binary. The config reads it rather than assuming a downloaded revision, because the bundled revision and the installed one disagreed in the build environment.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout danger">
+  <span class="label">Never put memory content in an operational surface</span>
+  <p>Notification previews, email subject lines, analytics events, error logs and
+  support dashboards must never carry memory content. This is enforced in the
+  code that constructs each of them, and it is the rule most easily broken by a
+  well-meaning debugging change. If you add a log line while chasing a bug,
+  delete it before committing.</p>
+</div>

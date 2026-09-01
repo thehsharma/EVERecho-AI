@@ -1,0 +1,90 @@
+<div class="page-break"></div>
+<h3>11.5&nbsp;&nbsp;Who has access, and what happened</h3>
+
+<figure class="tall">
+  {{IMG:12-members.png}}
+  <figcaption><strong>Figure 12 &mdash; People with access.</strong> Four people,
+  four roles, and a <em>Withdraw access</em> button beside each &mdash; except the
+  storyteller, who cannot be removed from her own archive. Note the invitation
+  form's guidance on the optional note: <em>"Please keep it warm and unhurried
+  &mdash; an invitation that reads as pressure is worse than none."</em> The product's
+  refusal of engagement pressure extends to the copy it asks users to
+  write.</figcaption>
+</figure>
+
+<figure>
+  {{IMG:13-activity-log.png}}
+  <figcaption><strong>Figure 13 &mdash; Activity.</strong> Every action in the
+  archive, <em>including everything that was refused</em>. Two entries here read
+  <em>"refused &mdash; an off-limits topic"</em>. The design principle is stated on
+  the screen: being able to see that someone was turned away is half of trusting
+  that the permissions work. Refusals are written on a separate database
+  connection precisely so they survive the transaction rollback that a denial
+  causes &mdash; an early version of this build lost every refusal record to that
+  rollback.</figcaption>
+</figure>
+
+<div class="page-break"></div>
+<h3>11.6&nbsp;&nbsp;Leaving, and looking after it</h3>
+
+<figure>
+  {{IMG:14-delete-screen.png}}
+  <figcaption><strong>Figure 14 &mdash; Delete this archive.</strong> Three things
+  worth noticing. The warning is specific about what goes &mdash; stories, search
+  indexes, stored files, transcripts and every answer ever generated. It states
+  what is deliberately <em>kept</em>: a contentless record that the deletion
+  happened, because proving a deletion requires that the record of it survives.
+  And it suggests exporting first, in files that open without EverEcho: the
+  product actively tells the user how to leave with everything.</figcaption>
+</figure>
+
+<figure>
+  {{IMG:15-support-tools.png}}
+  <figcaption><strong>Figure 15 &mdash; Support tools.</strong> What an internal
+  support admin can reach: queue depth by job type, failures, the oldest waiting
+  item, and open incidents by category and severity. There is no route on this
+  screen &mdash; or anywhere else &mdash; that shows a customer's memories. Reaching
+  even operational detail about a specific archive requires a time-limited grant
+  tied to a stated reason, and that access is written into the archive's own
+  activity log where the storyteller can see it.</figcaption>
+</figure>
+
+<div class="callout ok">
+  <span class="label">Read Figure 15 against Figure 13</span>
+  <p>The support admin's break-glass access is not merely logged somewhere an
+  auditor could request. It appears in the storyteller's own <em>Activity</em>
+  screen, in the same list as everything else. The person whose memories they are
+  finds out by using the product.</p>
+</div>
+
+<div class="page-break"></div>
+<h3>11.7&nbsp;&nbsp;On a smaller screen</h3>
+<p>The interface is responsive rather than merely shrunk. Every screen was
+verified at tablet width in the browser test suite, and the accessibility scan
+runs at both sizes.</p>
+
+<figure class="full">
+  {{IMG:16-tablet-overview.png}}
+  <figcaption><strong>Figure 16 &mdash; Tablet, 810&nbsp;px.</strong> The archive
+  navigation collapses above the content rather than into a hamburger menu that
+  hides where you are. All 54 browser tests run across desktop and tablet
+  projects, and axe-core reports zero WCAG&nbsp;2.2&nbsp;AA violations at both
+  widths.</figcaption>
+</figure>
+
+<h3>The screens not pictured here</h3>
+<p>Thirty-three page routes exist; sixteen are shown above. The remainder are the
+supporting surfaces: sign-in and sign-up, account settings, the guided interview
+recorder, the upload screen, source and transcript detail, individual memory
+pages, the people and places browser, consent history, the continuity and
+succession screen, export status and download, billing, the invitation
+acceptance flow, incident detail, and the error and not-found pages. They are
+covered by the browser tests and the accessibility scan on the same terms as the
+screens pictured.</p>
+
+<div class="callout warn">
+  <span class="label">One journey has no automated coverage</span>
+  <p>Interview audio capture &mdash; <code>MediaRecorder</code> and the browser's
+  speech recognition &mdash; is exercised by hand only. It is not covered by the
+  browser suite, and this document does not claim otherwise.</p>
+</div>
