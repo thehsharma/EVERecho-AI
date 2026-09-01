@@ -14,7 +14,8 @@ const MODES = [
   {
     value: 'organise',
     title: 'Also write down what I said',
-    detail: 'Recordings are transcribed and documents read, so you can correct them and build story cards.',
+    detail:
+      'Recordings are transcribed and documents read, so you can correct them and build story cards.',
   },
   {
     value: 'explore',
@@ -111,10 +112,16 @@ export function ConsentEditor({
             // Provider flags follow the activities; the server clamps them too.
             providerProcessing: {
               ...doc.providerProcessing,
-              transcription: doc.activities.includes('transcription') && doc.activities.includes('provider_processing'),
+              transcription:
+                doc.activities.includes('transcription') &&
+                doc.activities.includes('provider_processing'),
               ocr: doc.activities.includes('ocr') && doc.activities.includes('provider_processing'),
-              embedding: doc.activities.includes('embedding') && doc.activities.includes('provider_processing'),
-              generation: doc.activities.includes('generation') && doc.activities.includes('provider_processing'),
+              embedding:
+                doc.activities.includes('embedding') &&
+                doc.activities.includes('provider_processing'),
+              generation:
+                doc.activities.includes('generation') &&
+                doc.activities.includes('provider_processing'),
               noModelTraining: true,
             },
             voiceAndLikeness: {
@@ -206,7 +213,9 @@ export function ConsentEditor({
 
       <fieldset>
         <legend>Who may see it?</legend>
-        <p className="hint">Nobody, until you say so here. Removing someone takes effect at once.</p>
+        <p className="hint">
+          Nobody, until you say so here. Removing someone takes effect at once.
+        </p>
         {RECIPIENT_ROLES.map((role) => {
           const grant = doc.recipients.find((r) => r.role === role.value);
           return (
@@ -327,7 +336,12 @@ export function ConsentEditor({
       </div>
 
       <div className="row">
-        <button type="button" className="btn btn-primary btn-lg" onClick={() => void save()} disabled={pending}>
+        <button
+          type="button"
+          className="btn btn-primary btn-lg"
+          onClick={() => void save()}
+          disabled={pending}
+        >
           {pending ? <span className="spinner-text">Saving</span> : 'Save these permissions'}
         </button>
         <p className="small muted" style={{ margin: 0 }}>

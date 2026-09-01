@@ -1,5 +1,11 @@
 import type { FastifyRequest } from 'fastify';
-import { authorize, type Actor, type Decision, type ResourceRef, type Subject } from '@everecho/consent';
+import {
+  authorize,
+  type Actor,
+  type Decision,
+  type ResourceRef,
+  type Subject,
+} from '@everecho/consent';
 import type { Action } from '@everecho/contracts';
 import {
   findArchive,
@@ -116,7 +122,11 @@ export async function withArchiveAccess<T>(
       action: input.action,
       resource,
       subject,
-      context: { now: new Date(), policyEngineVersion: ctx.branding.policyEngineVersion, requestId: request.id },
+      context: {
+        now: new Date(),
+        policyEngineVersion: ctx.branding.policyEngineVersion,
+        requestId: request.id,
+      },
     });
 
     if (decision.effect === 'DENY') {

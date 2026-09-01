@@ -70,25 +70,16 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "path",
-                    "message"
-                  ],
+                  "required": ["path", "message"],
                   "additionalProperties": false
                 }
               }
             },
-            "required": [
-              "code",
-              "message",
-              "requestId"
-            ],
+            "required": ["code", "message", "requestId"],
             "additionalProperties": false
           }
         },
-        "required": [
-          "error"
-        ],
+        "required": ["error"],
         "additionalProperties": false
       }
     }
@@ -140,9 +131,7 @@
   "paths": {
     "/readyz": {
       "get": {
-        "tags": [
-          "operations"
-        ],
+        "tags": ["operations"],
         "summary": "Readiness, including dependency checks",
         "description": "Reports whether the API can serve traffic. Deliberately free of versions, hostnames and connection strings.",
         "security": [],
@@ -158,11 +147,7 @@
                   "properties": {
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "ok",
-                        "degraded",
-                        "down"
-                      ]
+                      "enum": ["ok", "degraded", "down"]
                     },
                     "version": {
                       "type": "string"
@@ -177,33 +162,18 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "ok",
-                              "degraded",
-                              "down"
-                            ]
+                            "enum": ["ok", "degraded", "down"]
                           },
                           "detail": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           }
                         },
-                        "required": [
-                          "name",
-                          "status",
-                          "detail"
-                        ],
+                        "required": ["name", "status", "detail"],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": [
-                    "status",
-                    "version",
-                    "checks"
-                  ],
+                  "required": ["status", "version", "checks"],
                   "additionalProperties": false
                 }
               }
@@ -264,9 +234,7 @@
     },
     "/v1/meta": {
       "get": {
-        "tags": [
-          "operations"
-        ],
+        "tags": ["operations"],
         "summary": "Product branding, feature flags and limits",
         "description": "What the frontend needs to render itself consistently: the configurable product name, the copy versions in force, and which capabilities are enabled. Prohibited capabilities are reported as false so a client can never present them as available.",
         "security": [],
@@ -461,9 +429,7 @@
     },
     "/v1/operations/worker": {
       "get": {
-        "tags": [
-          "operations"
-        ],
+        "tags": ["operations"],
         "summary": "Background processing status",
         "description": "Queue depth and failures. Counts only — no archive identifiers, no content.",
         "security": [
@@ -532,11 +498,7 @@
                             "maximum": 9007199254740991
                           }
                         },
-                        "required": [
-                          "type",
-                          "queued",
-                          "failed"
-                        ],
+                        "required": ["type", "queued", "failed"],
                         "additionalProperties": false
                       }
                     }
@@ -609,9 +571,7 @@
     },
     "/v1/auth/sign-up": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Create an account",
         "security": [],
         "parameters": [],
@@ -644,12 +604,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "email",
-                  "password",
-                  "displayName",
-                  "acceptedLegalCopyVersion"
-                ],
+                "required": ["email", "password", "displayName", "acceptedLegalCopyVersion"],
                 "additionalProperties": false
               }
             }
@@ -673,10 +628,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "userId",
-                    "email"
-                  ],
+                  "required": ["userId", "email"],
                   "additionalProperties": false
                 }
               }
@@ -737,9 +689,7 @@
     },
     "/v1/auth/sign-in": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Sign in",
         "security": [],
         "parameters": [],
@@ -767,10 +717,7 @@
                     "pattern": "^\\d{6}$"
                   }
                 },
-                "required": [
-                  "email",
-                  "password"
-                ],
+                "required": ["email", "password"],
                 "additionalProperties": false
               }
             }
@@ -791,9 +738,7 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     }
                   },
-                  "required": [
-                    "userId"
-                  ],
+                  "required": ["userId"],
                   "additionalProperties": false
                 }
               }
@@ -854,9 +799,7 @@
     },
     "/v1/auth/sign-out": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Sign out of this session",
         "security": [
           {
@@ -878,9 +821,7 @@
                       "const": true
                     }
                   },
-                  "required": [
-                    "signedOut"
-                  ],
+                  "required": ["signedOut"],
                   "additionalProperties": false
                 }
               }
@@ -941,9 +882,7 @@
     },
     "/v1/me": {
       "get": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "The signed-in account and the archives it can reach",
         "security": [
           {
@@ -1019,20 +958,12 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "archiveId",
-                          "name",
-                          "role",
-                          "status"
-                        ],
+                        "required": ["archiveId", "name", "role", "status"],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": [
-                    "user",
-                    "archives"
-                  ],
+                  "required": ["user", "archives"],
                   "additionalProperties": false
                 }
               }
@@ -1093,9 +1024,7 @@
     },
     "/v1/me/sessions": {
       "get": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Active sessions for this account",
         "security": [
           {
@@ -1139,20 +1068,12 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "id",
-                          "createdAt",
-                          "expiresAt",
-                          "current",
-                          "userAgentFamily"
-                        ],
+                        "required": ["id", "createdAt", "expiresAt", "current", "userAgentFamily"],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": [
-                    "sessions"
-                  ],
+                  "required": ["sessions"],
                   "additionalProperties": false
                 }
               }
@@ -1213,9 +1134,7 @@
     },
     "/v1/me/sessions/revoke-all": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Sign out everywhere",
         "description": "Revokes every session for this account, including the current one.",
         "security": [
@@ -1239,9 +1158,7 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": [
-                    "revoked"
-                  ],
+                  "required": ["revoked"],
                   "additionalProperties": false
                 }
               }
@@ -1302,9 +1219,7 @@
     },
     "/v1/me/password": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Change password",
         "description": "Every other session is revoked, because a password change is often a response to a compromise.",
         "security": [
@@ -1331,10 +1246,7 @@
                     "maxLength": 256
                   }
                 },
-                "required": [
-                  "currentPassword",
-                  "newPassword"
-                ],
+                "required": ["currentPassword", "newPassword"],
                 "additionalProperties": false
               }
             }
@@ -1359,10 +1271,7 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": [
-                    "changed",
-                    "otherSessionsRevoked"
-                  ],
+                  "required": ["changed", "otherSessionsRevoked"],
                   "additionalProperties": false
                 }
               }
@@ -1423,9 +1332,7 @@
     },
     "/v1/archives": {
       "post": {
-        "tags": [
-          "archives"
-        ],
+        "tags": ["archives"],
         "summary": "Start a private archive",
         "description": "Creates the archive shell. It holds nothing and grants nobody access until the storyteller accepts an invitation and sets their own consent. Paying for an archive does not make the buyer its owner.",
         "security": [
@@ -1469,9 +1376,7 @@
                         "maximum": 2030
                       }
                     },
-                    "required": [
-                      "displayName"
-                    ],
+                    "required": ["displayName"],
                     "additionalProperties": false
                   },
                   "householdName": {
@@ -1484,11 +1389,7 @@
                     "const": true
                   }
                 },
-                "required": [
-                  "name",
-                  "subject",
-                  "subjectIsAdult"
-                ],
+                "required": ["name", "subject", "subjectIsAdult"],
                 "additionalProperties": false
               }
             }
@@ -1562,10 +1463,7 @@
                       ]
                     },
                     "consentMode": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     },
                     "dataRegion": {
                       "type": "string"
@@ -1672,9 +1570,7 @@
         }
       },
       "get": {
-        "tags": [
-          "archives"
-        ],
+        "tags": ["archives"],
         "summary": "Archives you can reach",
         "security": [
           {
@@ -1755,10 +1651,7 @@
                             ]
                           },
                           "consentMode": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "dataRegion": {
                             "type": "string"
@@ -1810,9 +1703,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "archives"
-                  ],
+                  "required": ["archives"],
                   "additionalProperties": false
                 }
               }
@@ -1873,9 +1764,7 @@
     },
     "/v1/archives/{archiveId}": {
       "get": {
-        "tags": [
-          "archives"
-        ],
+        "tags": ["archives"],
         "summary": "One archive, with what the caller may do in it",
         "description": "viewerCapabilities lists the actions this caller is permitted, so the interface never has to guess. It is a convenience for rendering, not the authorisation itself: every route re-checks server-side.",
         "security": [
@@ -1963,10 +1852,7 @@
                       ]
                     },
                     "consentMode": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     },
                     "dataRegion": {
                       "type": "string"
@@ -2075,9 +1961,7 @@
     },
     "/v1/archives/{archiveId}/members": {
       "get": {
-        "tags": [
-          "archives"
-        ],
+        "tags": ["archives"],
         "summary": "Who has access to this archive",
         "security": [
           {
@@ -2154,12 +2038,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "active",
-                              "revoked",
-                              "expired",
-                              "pending"
-                            ]
+                            "enum": ["active", "revoked", "expired", "pending"]
                           },
                           "invitedByUserId": {
                             "anyOf": [
@@ -2227,9 +2106,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "members"
-                  ],
+                  "required": ["members"],
                   "additionalProperties": false
                 }
               }
@@ -2290,9 +2167,7 @@
     },
     "/v1/archives/{archiveId}/members/{membershipId}": {
       "patch": {
-        "tags": [
-          "archives"
-        ],
+        "tags": ["archives"],
         "summary": "Withdraw or adjust someone’s access",
         "description": "Revocation takes effect immediately: caches for this archive are cleared, so no later request can be served from something computed while the access still existed.",
         "security": [
@@ -2332,10 +2207,7 @@
                 "properties": {
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "active",
-                      "revoked"
-                    ]
+                    "enum": ["active", "revoked"]
                   },
                   "expiresAt": {
                     "anyOf": [
@@ -2415,12 +2287,7 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "active",
-                            "revoked",
-                            "expired",
-                            "pending"
-                          ]
+                          "enum": ["active", "revoked", "expired", "pending"]
                         },
                         "invitedByUserId": {
                           "anyOf": [
@@ -2487,9 +2354,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "membership"
-                  ],
+                  "required": ["membership"],
                   "additionalProperties": false
                 }
               }
@@ -2550,9 +2415,7 @@
     },
     "/v1/archives/{archiveId}/invitations": {
       "post": {
-        "tags": [
-          "invitations"
-        ],
+        "tags": ["invitations"],
         "summary": "Invite someone to this archive",
         "description": "Sends an invitation link. The link discloses nothing about the archive’s contents to whoever holds it, and the invitee decides for themselves — a storyteller can decline privately, and the reason is never shown to the person who invited them.",
         "security": [
@@ -2588,13 +2451,7 @@
                   },
                   "role": {
                     "type": "string",
-                    "enum": [
-                      "storyteller",
-                      "buyer",
-                      "family",
-                      "contributor",
-                      "steward"
-                    ]
+                    "enum": ["storyteller", "buyer", "family", "contributor", "steward"]
                   },
                   "displayName": {
                     "type": "string",
@@ -2612,12 +2469,7 @@
                     "maximum": 60
                   }
                 },
-                "required": [
-                  "email",
-                  "role",
-                  "displayName",
-                  "expiresInDays"
-                ],
+                "required": ["email", "role", "displayName", "expiresInDays"],
                 "additionalProperties": false
               }
             }
@@ -2667,13 +2519,7 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "sent",
-                            "accepted",
-                            "declined",
-                            "revoked",
-                            "expired"
-                          ]
+                          "enum": ["sent", "accepted", "declined", "revoked", "expired"]
                         },
                         "createdAt": {
                           "type": "string",
@@ -2725,9 +2571,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "invitation"
-                  ],
+                  "required": ["invitation"],
                   "additionalProperties": false
                 }
               }
@@ -2786,9 +2630,7 @@
         }
       },
       "get": {
-        "tags": [
-          "invitations"
-        ],
+        "tags": ["invitations"],
         "summary": "Invitations sent for this archive",
         "security": [
           {
@@ -2853,13 +2695,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "sent",
-                              "accepted",
-                              "declined",
-                              "revoked",
-                              "expired"
-                            ]
+                            "enum": ["sent", "accepted", "declined", "revoked", "expired"]
                           },
                           "createdAt": {
                             "type": "string",
@@ -2912,9 +2748,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "invitations"
-                  ],
+                  "required": ["invitations"],
                   "additionalProperties": false
                 }
               }
@@ -2975,9 +2809,7 @@
     },
     "/v1/archives/{archiveId}/invitations/{invitationId}/revoke": {
       "post": {
-        "tags": [
-          "invitations"
-        ],
+        "tags": ["invitations"],
         "summary": "Withdraw an invitation that has not been answered",
         "security": [
           {
@@ -3020,9 +2852,7 @@
                       "const": true
                     }
                   },
-                  "required": [
-                    "revoked"
-                  ],
+                  "required": ["revoked"],
                   "additionalProperties": false
                 }
               }
@@ -3083,9 +2913,7 @@
     },
     "/v1/invitations/{token}": {
       "get": {
-        "tags": [
-          "invitations"
-        ],
+        "tags": ["invitations"],
         "summary": "What an invitation says, before signing in",
         "description": "Deliberately thin. Holding an invitation link must not disclose any archive content — only who invited you, about whom, and in what capacity.",
         "security": [],
@@ -3136,10 +2964,7 @@
                       "type": "string"
                     },
                     "personalNote": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     },
                     "expiresAt": {
                       "type": "string",
@@ -3224,9 +3049,7 @@
     },
     "/v1/invitations/{token}/respond": {
       "post": {
-        "tags": [
-          "invitations"
-        ],
+        "tags": ["invitations"],
         "summary": "Accept or decline an invitation",
         "description": "The decision belongs to the invitee alone. A decline records the reason for them only; the person who invited them is told that the invitation was not taken up, and nothing more.",
         "security": [
@@ -3256,19 +3079,14 @@
                 "properties": {
                   "decision": {
                     "type": "string",
-                    "enum": [
-                      "accept",
-                      "decline"
-                    ]
+                    "enum": ["accept", "decline"]
                   },
                   "declineReason": {
                     "type": "string",
                     "maxLength": 500
                   }
                 },
-                "required": [
-                  "decision"
-                ],
+                "required": ["decision"],
                 "additionalProperties": false
               }
             }
@@ -3285,10 +3103,7 @@
                   "properties": {
                     "decision": {
                       "type": "string",
-                      "enum": [
-                        "accept",
-                        "decline"
-                      ]
+                      "enum": ["accept", "decline"]
                     },
                     "archiveId": {
                       "type": "string",
@@ -3300,19 +3115,10 @@
                     },
                     "nextStep": {
                       "type": "string",
-                      "enum": [
-                        "teach_back",
-                        "archive",
-                        "none"
-                      ]
+                      "enum": ["teach_back", "archive", "none"]
                     }
                   },
-                  "required": [
-                    "decision",
-                    "archiveId",
-                    "role",
-                    "nextStep"
-                  ],
+                  "required": ["decision", "archiveId", "role", "nextStep"],
                   "additionalProperties": false
                 }
               }
@@ -3373,9 +3179,7 @@
     },
     "/v1/consent/teach-back": {
       "get": {
-        "tags": [
-          "consent"
-        ],
+        "tags": ["consent"],
         "summary": "The questions a storyteller answers before consenting",
         "description": "Teach-back, not a checkbox. Correct answers are omitted from this response so the questions cannot be auto-completed by a client.",
         "security": [],
@@ -3402,10 +3206,7 @@
                           }
                         }
                       },
-                      "required": [
-                        "heading",
-                        "points"
-                      ],
+                      "required": ["heading", "points"],
                       "additionalProperties": false
                     },
                     "consentCopyVersion": {
@@ -3436,28 +3237,17 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "id",
-                                "label"
-                              ],
+                              "required": ["id", "label"],
                               "additionalProperties": false
                             }
                           }
                         },
-                        "required": [
-                          "id",
-                          "prompt",
-                          "options"
-                        ],
+                        "required": ["id", "prompt", "options"],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": [
-                    "explanation",
-                    "consentCopyVersion",
-                    "questions"
-                  ],
+                  "required": ["explanation", "consentCopyVersion", "questions"],
                   "additionalProperties": false
                 }
               }
@@ -3518,9 +3308,7 @@
     },
     "/v1/archives/{archiveId}/consent/teach-back": {
       "post": {
-        "tags": [
-          "consent"
-        ],
+        "tags": ["consent"],
         "summary": "Submit teach-back answers",
         "description": "Every attempt is recorded, passed or not. A wrong answer returns the explanation for it so the storyteller can read it again — this teaches rather than gates.",
         "security": [
@@ -3561,17 +3349,12 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "questionId",
-                        "optionId"
-                      ],
+                      "required": ["questionId", "optionId"],
                       "additionalProperties": false
                     }
                   }
                 },
-                "required": [
-                  "answers"
-                ],
+                "required": ["answers"],
                 "additionalProperties": false
               }
             }
@@ -3639,18 +3422,12 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "questionId",
-                          "explanation"
-                        ],
+                        "required": ["questionId", "explanation"],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": [
-                    "result",
-                    "teaching"
-                  ],
+                  "required": ["result", "teaching"],
                   "additionalProperties": false
                 }
               }
@@ -3711,9 +3488,7 @@
     },
     "/v1/archives/{archiveId}/consent": {
       "get": {
-        "tags": [
-          "consent"
-        ],
+        "tags": ["consent"],
         "summary": "The consent policy in force",
         "security": [
           {
@@ -3766,13 +3541,7 @@
                               "properties": {
                                 "mode": {
                                   "type": "string",
-                                  "enum": [
-                                    "preserve",
-                                    "organise",
-                                    "explore",
-                                    "compose",
-                                    "perform"
-                                  ]
+                                  "enum": ["preserve", "organise", "explore", "compose", "perform"]
                                 },
                                 "dataCategories": {
                                   "type": "array",
@@ -3833,12 +3602,7 @@
                                       },
                                       "maxSensitivity": {
                                         "type": "string",
-                                        "enum": [
-                                          "normal",
-                                          "sensitive",
-                                          "restricted",
-                                          "embargoed"
-                                        ]
+                                        "enum": ["normal", "sensitive", "restricted", "embargoed"]
                                       },
                                       "accessStartsAt": {
                                         "type": "string",
@@ -3855,10 +3619,7 @@
                                         "type": "array",
                                         "items": {
                                           "type": "string",
-                                          "enum": [
-                                            "living",
-                                            "posthumous"
-                                          ]
+                                          "enum": ["living", "posthumous"]
                                         }
                                       },
                                       "mayExport": {
@@ -4036,11 +3797,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "policy",
-                    "defaultDocument",
-                    "teachBackPassed"
-                  ],
+                  "required": ["policy", "defaultDocument", "teachBackPassed"],
                   "additionalProperties": false
                 }
               }
@@ -4099,9 +3856,7 @@
         }
       },
       "put": {
-        "tags": [
-          "consent"
-        ],
+        "tags": ["consent"],
         "summary": "Grant or change consent",
         "description": "Writes a new, hashed policy version and supersedes the previous one; consent is never updated in place. Narrowing consent takes effect immediately — caches are cleared and queued processing that is no longer permitted is cancelled in the same transaction.",
         "security": [
@@ -4134,13 +3889,7 @@
                     "properties": {
                       "mode": {
                         "type": "string",
-                        "enum": [
-                          "preserve",
-                          "organise",
-                          "explore",
-                          "compose",
-                          "perform"
-                        ]
+                        "enum": ["preserve", "organise", "explore", "compose", "perform"]
                       },
                       "dataCategories": {
                         "type": "array",
@@ -4201,12 +3950,7 @@
                             },
                             "maxSensitivity": {
                               "type": "string",
-                              "enum": [
-                                "normal",
-                                "sensitive",
-                                "restricted",
-                                "embargoed"
-                              ]
+                              "enum": ["normal", "sensitive", "restricted", "embargoed"]
                             },
                             "accessStartsAt": {
                               "type": "string",
@@ -4223,10 +3967,7 @@
                               "type": "array",
                               "items": {
                                 "type": "string",
-                                "enum": [
-                                  "living",
-                                  "posthumous"
-                                ]
+                                "enum": ["living", "posthumous"]
                               }
                             },
                             "mayExport": {
@@ -4309,11 +4050,7 @@
                             "type": "boolean"
                           }
                         },
-                        "required": [
-                          "syntheticVoice",
-                          "syntheticLikeness",
-                          "personaSimulation"
-                        ],
+                        "required": ["syntheticVoice", "syntheticLikeness", "personaSimulation"],
                         "additionalProperties": false
                       },
                       "allowFutureChangesWithoutTeachBack": {
@@ -4342,9 +4079,7 @@
                     "maxLength": 500
                   }
                 },
-                "required": [
-                  "document"
-                ],
+                "required": ["document"],
                 "additionalProperties": false
               }
             }
@@ -4382,13 +4117,7 @@
                           "properties": {
                             "mode": {
                               "type": "string",
-                              "enum": [
-                                "preserve",
-                                "organise",
-                                "explore",
-                                "compose",
-                                "perform"
-                              ]
+                              "enum": ["preserve", "organise", "explore", "compose", "perform"]
                             },
                             "dataCategories": {
                               "type": "array",
@@ -4449,12 +4178,7 @@
                                   },
                                   "maxSensitivity": {
                                     "type": "string",
-                                    "enum": [
-                                      "normal",
-                                      "sensitive",
-                                      "restricted",
-                                      "embargoed"
-                                    ]
+                                    "enum": ["normal", "sensitive", "restricted", "embargoed"]
                                   },
                                   "accessStartsAt": {
                                     "type": "string",
@@ -4471,10 +4195,7 @@
                                     "type": "array",
                                     "items": {
                                       "type": "string",
-                                      "enum": [
-                                        "living",
-                                        "posthumous"
-                                      ]
+                                      "enum": ["living", "posthumous"]
                                     }
                                   },
                                   "mayExport": {
@@ -4654,11 +4375,7 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": [
-                    "policy",
-                    "changes",
-                    "cancelledJobs"
-                  ],
+                  "required": ["policy", "changes", "cancelledJobs"],
                   "additionalProperties": false
                 }
               }
@@ -4719,9 +4436,7 @@
     },
     "/v1/archives/{archiveId}/consent/history": {
       "get": {
-        "tags": [
-          "consent"
-        ],
+        "tags": ["consent"],
         "summary": "Every consent version and act, oldest change still visible",
         "security": [
           {
@@ -4774,13 +4489,7 @@
                             "properties": {
                               "mode": {
                                 "type": "string",
-                                "enum": [
-                                  "preserve",
-                                  "organise",
-                                  "explore",
-                                  "compose",
-                                  "perform"
-                                ]
+                                "enum": ["preserve", "organise", "explore", "compose", "perform"]
                               },
                               "dataCategories": {
                                 "type": "array",
@@ -4841,12 +4550,7 @@
                                     },
                                     "maxSensitivity": {
                                       "type": "string",
-                                      "enum": [
-                                        "normal",
-                                        "sensitive",
-                                        "restricted",
-                                        "embargoed"
-                                      ]
+                                      "enum": ["normal", "sensitive", "restricted", "embargoed"]
                                     },
                                     "accessStartsAt": {
                                       "type": "string",
@@ -4863,10 +4567,7 @@
                                       "type": "array",
                                       "items": {
                                         "type": "string",
-                                        "enum": [
-                                          "living",
-                                          "posthumous"
-                                        ]
+                                        "enum": ["living", "posthumous"]
                                       }
                                     },
                                     "mayExport": {
@@ -5049,10 +4750,7 @@
                             "type": "string"
                           },
                           "summary": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "createdAt": {
                             "type": "string",
@@ -5060,20 +4758,12 @@
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                           }
                         },
-                        "required": [
-                          "id",
-                          "action",
-                          "summary",
-                          "createdAt"
-                        ],
+                        "required": ["id", "action", "summary", "createdAt"],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": [
-                    "versions",
-                    "records"
-                  ],
+                  "required": ["versions", "records"],
                   "additionalProperties": false
                 }
               }
@@ -5134,9 +4824,7 @@
     },
     "/v1/archives/{archiveId}/succession": {
       "get": {
-        "tags": [
-          "consent"
-        ],
+        "tags": ["consent"],
         "summary": "Recorded continuity directive",
         "description": "A record of intent only. v0.1 never transitions an archive automatically, and never from inactivity. Execution is disabled in configuration, in the policy engine and by a database constraint, pending qualified legal review.",
         "security": [
@@ -5182,23 +4870,13 @@
                             },
                             "status": {
                               "type": "string",
-                              "enum": [
-                                "recorded",
-                                "under_review",
-                                "not_executable"
-                              ]
+                              "enum": ["recorded", "under_review", "not_executable"]
                             },
                             "stewardEmail": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": ["string", "null"]
                             },
                             "instructions": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": ["string", "null"]
                             },
                             "recipientOptInRequired": {
                               "type": "boolean",
@@ -5249,9 +4927,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "directive"
-                  ],
+                  "required": ["directive"],
                   "additionalProperties": false
                 }
               }
@@ -5310,9 +4986,7 @@
         }
       },
       "put": {
-        "tags": [
-          "consent"
-        ],
+        "tags": ["consent"],
         "summary": "Record a continuity directive",
         "security": [
           {
@@ -5397,23 +5071,13 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "recorded",
-                            "under_review",
-                            "not_executable"
-                          ]
+                          "enum": ["recorded", "under_review", "not_executable"]
                         },
                         "stewardEmail": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "instructions": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "recipientOptInRequired": {
                           "type": "boolean",
@@ -5459,9 +5123,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "directive"
-                  ],
+                  "required": ["directive"],
                   "additionalProperties": false
                 }
               }
@@ -5522,9 +5184,7 @@
     },
     "/v1/archives/{archiveId}/sources": {
       "post": {
-        "tags": [
-          "sources"
-        ],
+        "tags": ["sources"],
         "summary": "Reserve an upload and get a short-lived signed link",
         "description": "Creates the source record and returns an expiring, signed upload URL. Nothing is processed on arrival: the bytes land in quarantine and are scanned before anything else may touch them.",
         "security": [
@@ -5569,13 +5229,7 @@
                   },
                   "kind": {
                     "type": "string",
-                    "enum": [
-                      "audio",
-                      "video",
-                      "photo",
-                      "document",
-                      "text"
-                    ]
+                    "enum": ["audio", "video", "photo", "document", "text"]
                   },
                   "privacy": {
                     "type": "object",
@@ -5597,12 +5251,7 @@
                       },
                       "sensitivity": {
                         "type": "string",
-                        "enum": [
-                          "normal",
-                          "sensitive",
-                          "restricted",
-                          "embargoed"
-                        ]
+                        "enum": ["normal", "sensitive", "restricted", "embargoed"]
                       },
                       "dataCategories": {
                         "type": "array",
@@ -5659,10 +5308,7 @@
                         "pattern": "^[0-9a-f]{64}$"
                       }
                     },
-                    "required": [
-                      "algorithm",
-                      "value"
-                    ],
+                    "required": ["algorithm", "value"],
                     "additionalProperties": false
                   },
                   "idempotencyKey": {
@@ -5710,10 +5356,7 @@
                         },
                         "method": {
                           "type": "string",
-                          "enum": [
-                            "PUT",
-                            "POST"
-                          ]
+                          "enum": ["PUT", "POST"]
                         },
                         "headers": {
                           "type": "object",
@@ -5760,13 +5403,7 @@
                         },
                         "kind": {
                           "type": "string",
-                          "enum": [
-                            "audio",
-                            "video",
-                            "photo",
-                            "document",
-                            "text"
-                          ]
+                          "enum": ["audio", "video", "photo", "document", "text"]
                         },
                         "status": {
                           "type": "string",
@@ -5807,10 +5444,7 @@
                                   "pattern": "^[0-9a-f]{64}$"
                                 }
                               },
-                              "required": [
-                                "algorithm",
-                                "value"
-                              ],
+                              "required": ["algorithm", "value"],
                               "additionalProperties": false
                             },
                             {
@@ -5838,12 +5472,7 @@
                             },
                             "sensitivity": {
                               "type": "string",
-                              "enum": [
-                                "normal",
-                                "sensitive",
-                                "restricted",
-                                "embargoed"
-                              ]
+                              "enum": ["normal", "sensitive", "restricted", "embargoed"]
                             },
                             "dataCategories": {
                               "type": "array",
@@ -5889,20 +5518,11 @@
                           "additionalProperties": false
                         },
                         "caption": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "scanResult": {
                           "type": "string",
-                          "enum": [
-                            "pending",
-                            "clean",
-                            "infected",
-                            "unsupported",
-                            "error"
-                          ]
+                          "enum": ["pending", "clean", "infected", "unsupported", "error"]
                         },
                         "uploadedByUserId": {
                           "anyOf": [
@@ -5949,10 +5569,7 @@
                               ]
                             },
                             "detail": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": ["string", "null"]
                             },
                             "attempts": {
                               "type": "integer",
@@ -5960,11 +5577,7 @@
                               "maximum": 9007199254740991
                             }
                           },
-                          "required": [
-                            "stage",
-                            "detail",
-                            "attempts"
-                          ],
+                          "required": ["stage", "detail", "attempts"],
                           "additionalProperties": false
                         },
                         "transcriptId": {
@@ -6001,10 +5614,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "ticket",
-                    "source"
-                  ],
+                  "required": ["ticket", "source"],
                   "additionalProperties": false
                 }
               }
@@ -6063,9 +5673,7 @@
         }
       },
       "get": {
-        "tags": [
-          "sources"
-        ],
+        "tags": ["sources"],
         "summary": "Sources in this archive",
         "security": [
           {
@@ -6121,13 +5729,7 @@
                           },
                           "kind": {
                             "type": "string",
-                            "enum": [
-                              "audio",
-                              "video",
-                              "photo",
-                              "document",
-                              "text"
-                            ]
+                            "enum": ["audio", "video", "photo", "document", "text"]
                           },
                           "status": {
                             "type": "string",
@@ -6168,10 +5770,7 @@
                                     "pattern": "^[0-9a-f]{64}$"
                                   }
                                 },
-                                "required": [
-                                  "algorithm",
-                                  "value"
-                                ],
+                                "required": ["algorithm", "value"],
                                 "additionalProperties": false
                               },
                               {
@@ -6199,12 +5798,7 @@
                               },
                               "sensitivity": {
                                 "type": "string",
-                                "enum": [
-                                  "normal",
-                                  "sensitive",
-                                  "restricted",
-                                  "embargoed"
-                                ]
+                                "enum": ["normal", "sensitive", "restricted", "embargoed"]
                               },
                               "dataCategories": {
                                 "type": "array",
@@ -6250,20 +5844,11 @@
                             "additionalProperties": false
                           },
                           "caption": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "scanResult": {
                             "type": "string",
-                            "enum": [
-                              "pending",
-                              "clean",
-                              "infected",
-                              "unsupported",
-                              "error"
-                            ]
+                            "enum": ["pending", "clean", "infected", "unsupported", "error"]
                           },
                           "uploadedByUserId": {
                             "anyOf": [
@@ -6310,10 +5895,7 @@
                                 ]
                               },
                               "detail": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
+                                "type": ["string", "null"]
                               },
                               "attempts": {
                                 "type": "integer",
@@ -6321,11 +5903,7 @@
                                 "maximum": 9007199254740991
                               }
                             },
-                            "required": [
-                              "stage",
-                              "detail",
-                              "attempts"
-                            ],
+                            "required": ["stage", "detail", "attempts"],
                             "additionalProperties": false
                           },
                           "transcriptId": {
@@ -6363,9 +5941,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "sources"
-                  ],
+                  "required": ["sources"],
                   "additionalProperties": false
                 }
               }
@@ -6426,9 +6002,7 @@
     },
     "/v1/archives/{archiveId}/sources/{sourceId}/complete": {
       "post": {
-        "tags": [
-          "sources"
-        ],
+        "tags": ["sources"],
         "summary": "Confirm the bytes arrived, and start processing",
         "description": "Verifies the stored object, records its checksum as the immutable original, and queues a malware scan. The scan job is enqueued in the same transaction as the state change, so a source can never exist with no work scheduled for it.",
         "security": [
@@ -6505,13 +6079,7 @@
                         },
                         "kind": {
                           "type": "string",
-                          "enum": [
-                            "audio",
-                            "video",
-                            "photo",
-                            "document",
-                            "text"
-                          ]
+                          "enum": ["audio", "video", "photo", "document", "text"]
                         },
                         "status": {
                           "type": "string",
@@ -6552,10 +6120,7 @@
                                   "pattern": "^[0-9a-f]{64}$"
                                 }
                               },
-                              "required": [
-                                "algorithm",
-                                "value"
-                              ],
+                              "required": ["algorithm", "value"],
                               "additionalProperties": false
                             },
                             {
@@ -6583,12 +6148,7 @@
                             },
                             "sensitivity": {
                               "type": "string",
-                              "enum": [
-                                "normal",
-                                "sensitive",
-                                "restricted",
-                                "embargoed"
-                              ]
+                              "enum": ["normal", "sensitive", "restricted", "embargoed"]
                             },
                             "dataCategories": {
                               "type": "array",
@@ -6634,20 +6194,11 @@
                           "additionalProperties": false
                         },
                         "caption": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "scanResult": {
                           "type": "string",
-                          "enum": [
-                            "pending",
-                            "clean",
-                            "infected",
-                            "unsupported",
-                            "error"
-                          ]
+                          "enum": ["pending", "clean", "infected", "unsupported", "error"]
                         },
                         "uploadedByUserId": {
                           "anyOf": [
@@ -6694,10 +6245,7 @@
                               ]
                             },
                             "detail": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": ["string", "null"]
                             },
                             "attempts": {
                               "type": "integer",
@@ -6705,11 +6253,7 @@
                               "maximum": 9007199254740991
                             }
                           },
-                          "required": [
-                            "stage",
-                            "detail",
-                            "attempts"
-                          ],
+                          "required": ["stage", "detail", "attempts"],
                           "additionalProperties": false
                         },
                         "transcriptId": {
@@ -6746,9 +6290,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "source"
-                  ],
+                  "required": ["source"],
                   "additionalProperties": false
                 }
               }
@@ -6809,9 +6351,7 @@
     },
     "/v1/archives/{archiveId}/sources/{sourceId}/download": {
       "get": {
-        "tags": [
-          "sources"
-        ],
+        "tags": ["sources"],
         "summary": "A short-lived link to the original file",
         "description": "Issued only after the consent policy permits this reader to see this source, and the access is written to the audit trail before the link is returned.",
         "security": [
@@ -6859,10 +6399,7 @@
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                     }
                   },
-                  "required": [
-                    "url",
-                    "expiresAt"
-                  ],
+                  "required": ["url", "expiresAt"],
                   "additionalProperties": false
                 }
               }
@@ -6923,9 +6460,7 @@
     },
     "/v1/archives/{archiveId}/sources/{sourceId}/privacy": {
       "patch": {
-        "tags": [
-          "sources"
-        ],
+        "tags": ["sources"],
         "summary": "Change what may be done with one source",
         "security": [
           {
@@ -6979,12 +6514,7 @@
                   },
                   "sensitivity": {
                     "type": "string",
-                    "enum": [
-                      "normal",
-                      "sensitive",
-                      "restricted",
-                      "embargoed"
-                    ]
+                    "enum": ["normal", "sensitive", "restricted", "embargoed"]
                   },
                   "dataCategories": {
                     "type": "array",
@@ -7056,13 +6586,7 @@
                         },
                         "kind": {
                           "type": "string",
-                          "enum": [
-                            "audio",
-                            "video",
-                            "photo",
-                            "document",
-                            "text"
-                          ]
+                          "enum": ["audio", "video", "photo", "document", "text"]
                         },
                         "status": {
                           "type": "string",
@@ -7103,10 +6627,7 @@
                                   "pattern": "^[0-9a-f]{64}$"
                                 }
                               },
-                              "required": [
-                                "algorithm",
-                                "value"
-                              ],
+                              "required": ["algorithm", "value"],
                               "additionalProperties": false
                             },
                             {
@@ -7134,12 +6655,7 @@
                             },
                             "sensitivity": {
                               "type": "string",
-                              "enum": [
-                                "normal",
-                                "sensitive",
-                                "restricted",
-                                "embargoed"
-                              ]
+                              "enum": ["normal", "sensitive", "restricted", "embargoed"]
                             },
                             "dataCategories": {
                               "type": "array",
@@ -7185,20 +6701,11 @@
                           "additionalProperties": false
                         },
                         "caption": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "scanResult": {
                           "type": "string",
-                          "enum": [
-                            "pending",
-                            "clean",
-                            "infected",
-                            "unsupported",
-                            "error"
-                          ]
+                          "enum": ["pending", "clean", "infected", "unsupported", "error"]
                         },
                         "uploadedByUserId": {
                           "anyOf": [
@@ -7245,10 +6752,7 @@
                               ]
                             },
                             "detail": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": ["string", "null"]
                             },
                             "attempts": {
                               "type": "integer",
@@ -7256,11 +6760,7 @@
                               "maximum": 9007199254740991
                             }
                           },
-                          "required": [
-                            "stage",
-                            "detail",
-                            "attempts"
-                          ],
+                          "required": ["stage", "detail", "attempts"],
                           "additionalProperties": false
                         },
                         "transcriptId": {
@@ -7297,9 +6797,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "source"
-                  ],
+                  "required": ["source"],
                   "additionalProperties": false
                 }
               }
@@ -7360,9 +6858,7 @@
     },
     "/v1/archives/{archiveId}/sources/{sourceId}/transcript": {
       "get": {
-        "tags": [
-          "sources"
-        ],
+        "tags": ["sources"],
         "summary": "The transcript for a source, with corrections applied",
         "security": [
           {
@@ -7426,11 +6922,7 @@
                             },
                             "status": {
                               "type": "string",
-                              "enum": [
-                                "pending",
-                                "ready",
-                                "failed"
-                              ]
+                              "enum": ["pending", "ready", "failed"]
                             },
                             "segments": {
                               "type": "array",
@@ -7499,10 +6991,7 @@
                                     ]
                                   },
                                   "correctedText": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
+                                    "type": ["string", "null"]
                                   }
                                 },
                                 "required": [
@@ -7542,9 +7031,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "transcript"
-                  ],
+                  "required": ["transcript"],
                   "additionalProperties": false
                 }
               }
@@ -7605,9 +7092,7 @@
     },
     "/v1/archives/{archiveId}/transcript-segments/{segmentId}": {
       "patch": {
-        "tags": [
-          "sources"
-        ],
+        "tags": ["sources"],
         "summary": "Correct a line of a transcript",
         "description": "The machine transcript is kept alongside the correction rather than replaced. Nothing about the original source is ever rewritten.",
         "security": [
@@ -7655,9 +7140,7 @@
                     "maxLength": 500
                   }
                 },
-                "required": [
-                  "correctedText"
-                ],
+                "required": ["correctedText"],
                 "additionalProperties": false
               }
             }
@@ -7681,10 +7164,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "segmentId",
-                    "correctedText"
-                  ],
+                  "required": ["segmentId", "correctedText"],
                   "additionalProperties": false
                 }
               }
@@ -7745,9 +7225,7 @@
     },
     "/v1/archives/{archiveId}/sources/{sourceId}": {
       "delete": {
-        "tags": [
-          "sources"
-        ],
+        "tags": ["sources"],
         "summary": "Delete a source and everything derived from it",
         "security": [
           {
@@ -7791,9 +7269,7 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     }
                   },
-                  "required": [
-                    "deletionRequestId"
-                  ],
+                  "required": ["deletionRequestId"],
                   "additionalProperties": false
                 }
               }
@@ -7854,9 +7330,7 @@
     },
     "/v1/archives/{archiveId}/interviews": {
       "post": {
-        "tags": [
-          "interviews"
-        ],
+        "tags": ["interviews"],
         "summary": "Begin a guided interview",
         "security": [
           {
@@ -7885,10 +7359,7 @@
                 "properties": {
                   "mode": {
                     "type": "string",
-                    "enum": [
-                      "text",
-                      "audio"
-                    ]
+                    "enum": ["text", "audio"]
                   },
                   "topic": {
                     "type": "string",
@@ -7915,9 +7386,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "mode"
-                ],
+                "required": ["mode"],
                 "additionalProperties": false
               }
             }
@@ -7947,19 +7416,11 @@
                         },
                         "mode": {
                           "type": "string",
-                          "enum": [
-                            "text",
-                            "audio"
-                          ]
+                          "enum": ["text", "audio"]
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "active",
-                            "paused",
-                            "completed",
-                            "abandoned"
-                          ]
+                          "enum": ["active", "paused", "completed", "abandoned"]
                         },
                         "startedAt": {
                           "type": "string",
@@ -8065,10 +7526,7 @@
                                   "const": true
                                 },
                                 "sensitivityNotice": {
-                                  "type": [
-                                    "string",
-                                    "null"
-                                  ]
+                                  "type": ["string", "null"]
                                 }
                               },
                               "required": [
@@ -8088,10 +7546,7 @@
                           ]
                         },
                         "summaryText": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "summaryApproved": {
                           "type": "boolean"
@@ -8122,20 +7577,12 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "label",
-                                      "contact"
-                                    ],
+                                    "required": ["label", "contact"],
                                     "additionalProperties": false
                                   }
                                 }
                               },
-                              "required": [
-                                "shown",
-                                "region",
-                                "message",
-                                "resources"
-                              ],
+                              "required": ["shown", "region", "message", "resources"],
                               "additionalProperties": false
                             },
                             {
@@ -8162,9 +7609,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "session"
-                  ],
+                  "required": ["session"],
                   "additionalProperties": false
                 }
               }
@@ -8225,9 +7670,7 @@
     },
     "/v1/archives/{archiveId}/interviews/{sessionId}": {
       "get": {
-        "tags": [
-          "interviews"
-        ],
+        "tags": ["interviews"],
         "summary": "An interview session and its current question",
         "security": [
           {
@@ -8280,19 +7723,11 @@
                         },
                         "mode": {
                           "type": "string",
-                          "enum": [
-                            "text",
-                            "audio"
-                          ]
+                          "enum": ["text", "audio"]
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "active",
-                            "paused",
-                            "completed",
-                            "abandoned"
-                          ]
+                          "enum": ["active", "paused", "completed", "abandoned"]
                         },
                         "startedAt": {
                           "type": "string",
@@ -8398,10 +7833,7 @@
                                   "const": true
                                 },
                                 "sensitivityNotice": {
-                                  "type": [
-                                    "string",
-                                    "null"
-                                  ]
+                                  "type": ["string", "null"]
                                 }
                               },
                               "required": [
@@ -8421,10 +7853,7 @@
                           ]
                         },
                         "summaryText": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "summaryApproved": {
                           "type": "boolean"
@@ -8455,20 +7884,12 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "label",
-                                      "contact"
-                                    ],
+                                    "required": ["label", "contact"],
                                     "additionalProperties": false
                                   }
                                 }
                               },
-                              "required": [
-                                "shown",
-                                "region",
-                                "message",
-                                "resources"
-                              ],
+                              "required": ["shown", "region", "message", "resources"],
                               "additionalProperties": false
                             },
                             {
@@ -8495,9 +7916,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "session"
-                  ],
+                  "required": ["session"],
                   "additionalProperties": false
                 }
               }
@@ -8558,9 +7977,7 @@
     },
     "/v1/archives/{archiveId}/interviews/{sessionId}/answer": {
       "post": {
-        "tags": [
-          "interviews"
-        ],
+        "tags": ["interviews"],
         "summary": "Answer, skip, decline or pause",
         "description": "Every question can be skipped, and \"I would rather not answer\" is recorded as a choice rather than a gap to be chased. If the answer contains language suggesting the storyteller is in danger, the interview stops and region-appropriate emergency information is returned instead of a next question.",
         "security": [
@@ -8614,18 +8031,10 @@
                   },
                   "action": {
                     "type": "string",
-                    "enum": [
-                      "answer",
-                      "skip",
-                      "prefer_not_to_answer",
-                      "pause"
-                    ]
+                    "enum": ["answer", "skip", "prefer_not_to_answer", "pause"]
                   }
                 },
-                "required": [
-                  "promptId",
-                  "action"
-                ],
+                "required": ["promptId", "action"],
                 "additionalProperties": false
               }
             }
@@ -8655,19 +8064,11 @@
                         },
                         "mode": {
                           "type": "string",
-                          "enum": [
-                            "text",
-                            "audio"
-                          ]
+                          "enum": ["text", "audio"]
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "active",
-                            "paused",
-                            "completed",
-                            "abandoned"
-                          ]
+                          "enum": ["active", "paused", "completed", "abandoned"]
                         },
                         "startedAt": {
                           "type": "string",
@@ -8773,10 +8174,7 @@
                                   "const": true
                                 },
                                 "sensitivityNotice": {
-                                  "type": [
-                                    "string",
-                                    "null"
-                                  ]
+                                  "type": ["string", "null"]
                                 }
                               },
                               "required": [
@@ -8796,10 +8194,7 @@
                           ]
                         },
                         "summaryText": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "summaryApproved": {
                           "type": "boolean"
@@ -8830,20 +8225,12 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "label",
-                                      "contact"
-                                    ],
+                                    "required": ["label", "contact"],
                                     "additionalProperties": false
                                   }
                                 }
                               },
-                              "required": [
-                                "shown",
-                                "region",
-                                "message",
-                                "resources"
-                              ],
+                              "required": ["shown", "region", "message", "resources"],
                               "additionalProperties": false
                             },
                             {
@@ -8870,9 +8257,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "session"
-                  ],
+                  "required": ["session"],
                   "additionalProperties": false
                 }
               }
@@ -8933,9 +8318,7 @@
     },
     "/v1/archives/{archiveId}/interviews/{sessionId}/finish": {
       "post": {
-        "tags": [
-          "interviews"
-        ],
+        "tags": ["interviews"],
         "summary": "End the session and draft a correctable summary",
         "description": "The summary is a draft in the storyteller’s own words, quoted. It becomes part of the archive only when they approve it.",
         "security": [
@@ -8989,19 +8372,11 @@
                         },
                         "mode": {
                           "type": "string",
-                          "enum": [
-                            "text",
-                            "audio"
-                          ]
+                          "enum": ["text", "audio"]
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "active",
-                            "paused",
-                            "completed",
-                            "abandoned"
-                          ]
+                          "enum": ["active", "paused", "completed", "abandoned"]
                         },
                         "startedAt": {
                           "type": "string",
@@ -9107,10 +8482,7 @@
                                   "const": true
                                 },
                                 "sensitivityNotice": {
-                                  "type": [
-                                    "string",
-                                    "null"
-                                  ]
+                                  "type": ["string", "null"]
                                 }
                               },
                               "required": [
@@ -9130,10 +8502,7 @@
                           ]
                         },
                         "summaryText": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "summaryApproved": {
                           "type": "boolean"
@@ -9164,20 +8533,12 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "label",
-                                      "contact"
-                                    ],
+                                    "required": ["label", "contact"],
                                     "additionalProperties": false
                                   }
                                 }
                               },
-                              "required": [
-                                "shown",
-                                "region",
-                                "message",
-                                "resources"
-                              ],
+                              "required": ["shown", "region", "message", "resources"],
                               "additionalProperties": false
                             },
                             {
@@ -9204,9 +8565,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "session"
-                  ],
+                  "required": ["session"],
                   "additionalProperties": false
                 }
               }
@@ -9267,9 +8626,7 @@
     },
     "/v1/archives/{archiveId}/interviews/{sessionId}/approve-summary": {
       "post": {
-        "tags": [
-          "interviews"
-        ],
+        "tags": ["interviews"],
         "summary": "Approve the session summary, turning answers into story cards",
         "security": [
           {
@@ -9340,19 +8697,11 @@
                         },
                         "mode": {
                           "type": "string",
-                          "enum": [
-                            "text",
-                            "audio"
-                          ]
+                          "enum": ["text", "audio"]
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "active",
-                            "paused",
-                            "completed",
-                            "abandoned"
-                          ]
+                          "enum": ["active", "paused", "completed", "abandoned"]
                         },
                         "startedAt": {
                           "type": "string",
@@ -9458,10 +8807,7 @@
                                   "const": true
                                 },
                                 "sensitivityNotice": {
-                                  "type": [
-                                    "string",
-                                    "null"
-                                  ]
+                                  "type": ["string", "null"]
                                 }
                               },
                               "required": [
@@ -9481,10 +8827,7 @@
                           ]
                         },
                         "summaryText": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "summaryApproved": {
                           "type": "boolean"
@@ -9515,20 +8858,12 @@
                                         "type": "string"
                                       }
                                     },
-                                    "required": [
-                                      "label",
-                                      "contact"
-                                    ],
+                                    "required": ["label", "contact"],
                                     "additionalProperties": false
                                   }
                                 }
                               },
-                              "required": [
-                                "shown",
-                                "region",
-                                "message",
-                                "resources"
-                              ],
+                              "required": ["shown", "region", "message", "resources"],
                               "additionalProperties": false
                             },
                             {
@@ -9560,10 +8895,7 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": [
-                    "session",
-                    "memoriesCreated"
-                  ],
+                  "required": ["session", "memoriesCreated"],
                   "additionalProperties": false
                 }
               }
@@ -9624,9 +8956,7 @@
     },
     "/v1/archives/{archiveId}/memories": {
       "get": {
-        "tags": [
-          "memories"
-        ],
+        "tags": ["memories"],
         "summary": "Story cards",
         "description": "Candidates are visible to the storyteller only. Everyone else sees approved memories, filtered to the sensitivity their grant allows — the filter is built from the policy decision itself, so it cannot drift from the authorisation.",
         "security": [
@@ -9652,11 +8982,7 @@
             "schema": {
               "default": "approved",
               "type": "string",
-              "enum": [
-                "candidate",
-                "approved",
-                "all"
-              ]
+              "enum": ["candidate", "approved", "all"]
             }
           },
           {
@@ -9703,21 +9029,11 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "candidate",
-                              "approved",
-                              "rejected",
-                              "superseded"
-                            ]
+                            "enum": ["candidate", "approved", "rejected", "superseded"]
                           },
                           "sensitivity": {
                             "type": "string",
-                            "enum": [
-                              "normal",
-                              "sensitive",
-                              "restricted",
-                              "embargoed"
-                            ]
+                            "enum": ["normal", "sensitive", "restricted", "embargoed"]
                           },
                           "evidenceClass": {
                             "type": "string",
@@ -9741,19 +9057,10 @@
                                   },
                                   "precision": {
                                     "type": "string",
-                                    "enum": [
-                                      "day",
-                                      "month",
-                                      "year",
-                                      "decade",
-                                      "unknown"
-                                    ]
+                                    "enum": ["day", "month", "year", "decade", "unknown"]
                                   }
                                 },
-                                "required": [
-                                  "value",
-                                  "precision"
-                                ],
+                                "required": ["value", "precision"],
                                 "additionalProperties": false
                               },
                               {
@@ -9774,10 +9081,7 @@
                             ]
                           },
                           "placeName": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "entityIds": {
                             "type": "array",
@@ -9830,21 +9134,11 @@
                                 },
                                 "status": {
                                   "type": "string",
-                                  "enum": [
-                                    "candidate",
-                                    "approved",
-                                    "rejected",
-                                    "superseded"
-                                  ]
+                                  "enum": ["candidate", "approved", "rejected", "superseded"]
                                 },
                                 "sensitivity": {
                                   "type": "string",
-                                  "enum": [
-                                    "normal",
-                                    "sensitive",
-                                    "restricted",
-                                    "embargoed"
-                                  ]
+                                  "enum": ["normal", "sensitive", "restricted", "embargoed"]
                                 },
                                 "evidence": {
                                   "type": "array",
@@ -9923,9 +9217,7 @@
                                             "maximum": 9007199254740991
                                           }
                                         },
-                                        "required": [
-                                          "kind"
-                                        ],
+                                        "required": ["kind"],
                                         "additionalProperties": false
                                       },
                                       "quotedText": {
@@ -10080,10 +9372,7 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": [
-                    "memories",
-                    "candidateCount"
-                  ],
+                  "required": ["memories", "candidateCount"],
                   "additionalProperties": false
                 }
               }
@@ -10144,9 +9433,7 @@
     },
     "/v1/archives/{archiveId}/memories/{memoryId}": {
       "get": {
-        "tags": [
-          "memories"
-        ],
+        "tags": ["memories"],
         "summary": "One story card with all of its claims and evidence",
         "security": [
           {
@@ -10205,21 +9492,11 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "candidate",
-                            "approved",
-                            "rejected",
-                            "superseded"
-                          ]
+                          "enum": ["candidate", "approved", "rejected", "superseded"]
                         },
                         "sensitivity": {
                           "type": "string",
-                          "enum": [
-                            "normal",
-                            "sensitive",
-                            "restricted",
-                            "embargoed"
-                          ]
+                          "enum": ["normal", "sensitive", "restricted", "embargoed"]
                         },
                         "evidenceClass": {
                           "type": "string",
@@ -10243,19 +9520,10 @@
                                 },
                                 "precision": {
                                   "type": "string",
-                                  "enum": [
-                                    "day",
-                                    "month",
-                                    "year",
-                                    "decade",
-                                    "unknown"
-                                  ]
+                                  "enum": ["day", "month", "year", "decade", "unknown"]
                                 }
                               },
-                              "required": [
-                                "value",
-                                "precision"
-                              ],
+                              "required": ["value", "precision"],
                               "additionalProperties": false
                             },
                             {
@@ -10276,10 +9544,7 @@
                           ]
                         },
                         "placeName": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "entityIds": {
                           "type": "array",
@@ -10332,21 +9597,11 @@
                               },
                               "status": {
                                 "type": "string",
-                                "enum": [
-                                  "candidate",
-                                  "approved",
-                                  "rejected",
-                                  "superseded"
-                                ]
+                                "enum": ["candidate", "approved", "rejected", "superseded"]
                               },
                               "sensitivity": {
                                 "type": "string",
-                                "enum": [
-                                  "normal",
-                                  "sensitive",
-                                  "restricted",
-                                  "embargoed"
-                                ]
+                                "enum": ["normal", "sensitive", "restricted", "embargoed"]
                               },
                               "evidence": {
                                 "type": "array",
@@ -10425,9 +9680,7 @@
                                           "maximum": 9007199254740991
                                         }
                                       },
-                                      "required": [
-                                        "kind"
-                                      ],
+                                      "required": ["kind"],
                                       "additionalProperties": false
                                     },
                                     "quotedText": {
@@ -10576,9 +9829,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "memory"
-                  ],
+                  "required": ["memory"],
                   "additionalProperties": false
                 }
               }
@@ -10637,9 +9888,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "memories"
-        ],
+        "tags": ["memories"],
         "summary": "Correct a story card",
         "description": "The previous version is kept as a correction record; nothing is overwritten silently.",
         "security": [
@@ -10698,19 +9947,10 @@
                           },
                           "precision": {
                             "type": "string",
-                            "enum": [
-                              "day",
-                              "month",
-                              "year",
-                              "decade",
-                              "unknown"
-                            ]
+                            "enum": ["day", "month", "year", "decade", "unknown"]
                           }
                         },
-                        "required": [
-                          "value",
-                          "precision"
-                        ],
+                        "required": ["value", "precision"],
                         "additionalProperties": false
                       },
                       {
@@ -10720,12 +9960,7 @@
                   },
                   "sensitivity": {
                     "type": "string",
-                    "enum": [
-                      "normal",
-                      "sensitive",
-                      "restricted",
-                      "embargoed"
-                    ]
+                    "enum": ["normal", "sensitive", "restricted", "embargoed"]
                   },
                   "placeName": {
                     "anyOf": [
@@ -10778,21 +10013,11 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "candidate",
-                            "approved",
-                            "rejected",
-                            "superseded"
-                          ]
+                          "enum": ["candidate", "approved", "rejected", "superseded"]
                         },
                         "sensitivity": {
                           "type": "string",
-                          "enum": [
-                            "normal",
-                            "sensitive",
-                            "restricted",
-                            "embargoed"
-                          ]
+                          "enum": ["normal", "sensitive", "restricted", "embargoed"]
                         },
                         "evidenceClass": {
                           "type": "string",
@@ -10816,19 +10041,10 @@
                                 },
                                 "precision": {
                                   "type": "string",
-                                  "enum": [
-                                    "day",
-                                    "month",
-                                    "year",
-                                    "decade",
-                                    "unknown"
-                                  ]
+                                  "enum": ["day", "month", "year", "decade", "unknown"]
                                 }
                               },
-                              "required": [
-                                "value",
-                                "precision"
-                              ],
+                              "required": ["value", "precision"],
                               "additionalProperties": false
                             },
                             {
@@ -10849,10 +10065,7 @@
                           ]
                         },
                         "placeName": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "entityIds": {
                           "type": "array",
@@ -10905,21 +10118,11 @@
                               },
                               "status": {
                                 "type": "string",
-                                "enum": [
-                                  "candidate",
-                                  "approved",
-                                  "rejected",
-                                  "superseded"
-                                ]
+                                "enum": ["candidate", "approved", "rejected", "superseded"]
                               },
                               "sensitivity": {
                                 "type": "string",
-                                "enum": [
-                                  "normal",
-                                  "sensitive",
-                                  "restricted",
-                                  "embargoed"
-                                ]
+                                "enum": ["normal", "sensitive", "restricted", "embargoed"]
                               },
                               "evidence": {
                                 "type": "array",
@@ -10998,9 +10201,7 @@
                                           "maximum": 9007199254740991
                                         }
                                       },
-                                      "required": [
-                                        "kind"
-                                      ],
+                                      "required": ["kind"],
                                       "additionalProperties": false
                                     },
                                     "quotedText": {
@@ -11149,9 +10350,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "memory"
-                  ],
+                  "required": ["memory"],
                   "additionalProperties": false
                 }
               }
@@ -11212,9 +10411,7 @@
     },
     "/v1/archives/{archiveId}/memories/{memoryId}/review": {
       "post": {
-        "tags": [
-          "memories"
-        ],
+        "tags": ["memories"],
         "summary": "Approve or reject a candidate story",
         "description": "Approval is what makes a memory searchable and answerable. Until then it exists only for the storyteller to read, and no answer can draw on it.",
         "security": [
@@ -11254,19 +10451,14 @@
                 "properties": {
                   "decision": {
                     "type": "string",
-                    "enum": [
-                      "approve",
-                      "reject"
-                    ]
+                    "enum": ["approve", "reject"]
                   },
                   "reason": {
                     "type": "string",
                     "maxLength": 500
                   }
                 },
-                "required": [
-                  "decision"
-                ],
+                "required": ["decision"],
                 "additionalProperties": false
               }
             }
@@ -11302,21 +10494,11 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "candidate",
-                            "approved",
-                            "rejected",
-                            "superseded"
-                          ]
+                          "enum": ["candidate", "approved", "rejected", "superseded"]
                         },
                         "sensitivity": {
                           "type": "string",
-                          "enum": [
-                            "normal",
-                            "sensitive",
-                            "restricted",
-                            "embargoed"
-                          ]
+                          "enum": ["normal", "sensitive", "restricted", "embargoed"]
                         },
                         "evidenceClass": {
                           "type": "string",
@@ -11340,19 +10522,10 @@
                                 },
                                 "precision": {
                                   "type": "string",
-                                  "enum": [
-                                    "day",
-                                    "month",
-                                    "year",
-                                    "decade",
-                                    "unknown"
-                                  ]
+                                  "enum": ["day", "month", "year", "decade", "unknown"]
                                 }
                               },
-                              "required": [
-                                "value",
-                                "precision"
-                              ],
+                              "required": ["value", "precision"],
                               "additionalProperties": false
                             },
                             {
@@ -11373,10 +10546,7 @@
                           ]
                         },
                         "placeName": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "entityIds": {
                           "type": "array",
@@ -11429,21 +10599,11 @@
                               },
                               "status": {
                                 "type": "string",
-                                "enum": [
-                                  "candidate",
-                                  "approved",
-                                  "rejected",
-                                  "superseded"
-                                ]
+                                "enum": ["candidate", "approved", "rejected", "superseded"]
                               },
                               "sensitivity": {
                                 "type": "string",
-                                "enum": [
-                                  "normal",
-                                  "sensitive",
-                                  "restricted",
-                                  "embargoed"
-                                ]
+                                "enum": ["normal", "sensitive", "restricted", "embargoed"]
                               },
                               "evidence": {
                                 "type": "array",
@@ -11522,9 +10682,7 @@
                                           "maximum": 9007199254740991
                                         }
                                       },
-                                      "required": [
-                                        "kind"
-                                      ],
+                                      "required": ["kind"],
                                       "additionalProperties": false
                                     },
                                     "quotedText": {
@@ -11673,9 +10831,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "memory"
-                  ],
+                  "required": ["memory"],
                   "additionalProperties": false
                 }
               }
@@ -11736,9 +10892,7 @@
     },
     "/v1/archives/{archiveId}/people": {
       "get": {
-        "tags": [
-          "memories"
-        ],
+        "tags": ["memories"],
         "summary": "People, organisations and their relationships",
         "security": [
           {
@@ -11783,11 +10937,7 @@
                           },
                           "kind": {
                             "type": "string",
-                            "enum": [
-                              "person",
-                              "organisation",
-                              "object"
-                            ]
+                            "enum": ["person", "organisation", "object"]
                           },
                           "name": {
                             "type": "string"
@@ -11799,19 +10949,11 @@
                             }
                           },
                           "notes": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "candidate",
-                              "approved",
-                              "rejected",
-                              "superseded"
-                            ]
+                            "enum": ["candidate", "approved", "rejected", "superseded"]
                           },
                           "mentionCount": {
                             "type": "integer",
@@ -11863,18 +11005,10 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "candidate",
-                              "approved",
-                              "rejected",
-                              "superseded"
-                            ]
+                            "enum": ["candidate", "approved", "rejected", "superseded"]
                           },
                           "notes": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           }
                         },
                         "required": [
@@ -11891,10 +11025,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "entities",
-                    "relationships"
-                  ],
+                  "required": ["entities", "relationships"],
                   "additionalProperties": false
                 }
               }
@@ -11955,9 +11086,7 @@
     },
     "/v1/archives/{archiveId}/contradictions": {
       "get": {
-        "tags": [
-          "memories"
-        ],
+        "tags": ["memories"],
         "summary": "Accounts that cannot both be true",
         "description": "Surfaced for the storyteller to resolve, never silently reconciled. An answer that touches an open contradiction says so and cites both sides.",
         "security": [
@@ -12023,11 +11152,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "open",
-                              "resolved",
-                              "accepted"
-                            ]
+                            "enum": ["open", "resolved", "accepted"]
                           },
                           "detectedAt": {
                             "type": "string",
@@ -12049,9 +11174,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "contradictions"
-                  ],
+                  "required": ["contradictions"],
                   "additionalProperties": false
                 }
               }
@@ -12112,9 +11235,7 @@
     },
     "/v1/archives/{archiveId}/contradictions/{contradictionId}/resolve": {
       "post": {
-        "tags": [
-          "memories"
-        ],
+        "tags": ["memories"],
         "summary": "Say which account is right, or that both are",
         "security": [
           {
@@ -12153,21 +11274,14 @@
                 "properties": {
                   "resolution": {
                     "type": "string",
-                    "enum": [
-                      "prefer_a",
-                      "prefer_b",
-                      "both_true",
-                      "neither"
-                    ]
+                    "enum": ["prefer_a", "prefer_b", "both_true", "neither"]
                   },
                   "note": {
                     "type": "string",
                     "maxLength": 1000
                   }
                 },
-                "required": [
-                  "resolution"
-                ],
+                "required": ["resolution"],
                 "additionalProperties": false
               }
             }
@@ -12187,9 +11301,7 @@
                       "const": true
                     }
                   },
-                  "required": [
-                    "resolved"
-                  ],
+                  "required": ["resolved"],
                   "additionalProperties": false
                 }
               }
@@ -12250,9 +11362,7 @@
     },
     "/v1/archives/{archiveId}/corrections": {
       "get": {
-        "tags": [
-          "memories"
-        ],
+        "tags": ["memories"],
         "summary": "Every correction ever made",
         "security": [
           {
@@ -12314,10 +11424,7 @@
                             "type": "string"
                           },
                           "reason": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "previous": {},
                           "next": {},
@@ -12342,9 +11449,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "corrections"
-                  ],
+                  "required": ["corrections"],
                   "additionalProperties": false
                 }
               }
@@ -12405,9 +11510,7 @@
     },
     "/v1/archives/{archiveId}/events": {
       "get": {
-        "tags": [
-          "memories"
-        ],
+        "tags": ["memories"],
         "summary": "Dated life events",
         "security": [
           {
@@ -12476,19 +11579,10 @@
                                   },
                                   "precision": {
                                     "type": "string",
-                                    "enum": [
-                                      "day",
-                                      "month",
-                                      "year",
-                                      "decade",
-                                      "unknown"
-                                    ]
+                                    "enum": ["day", "month", "year", "decade", "unknown"]
                                   }
                                 },
-                                "required": [
-                                  "value",
-                                  "precision"
-                                ],
+                                "required": ["value", "precision"],
                                 "additionalProperties": false
                               },
                               {
@@ -12507,19 +11601,10 @@
                                   },
                                   "precision": {
                                     "type": "string",
-                                    "enum": [
-                                      "day",
-                                      "month",
-                                      "year",
-                                      "decade",
-                                      "unknown"
-                                    ]
+                                    "enum": ["day", "month", "year", "decade", "unknown"]
                                   }
                                 },
-                                "required": [
-                                  "value",
-                                  "precision"
-                                ],
+                                "required": ["value", "precision"],
                                 "additionalProperties": false
                               },
                               {
@@ -12540,19 +11625,11 @@
                             ]
                           },
                           "placeName": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "candidate",
-                              "approved",
-                              "rejected",
-                              "superseded"
-                            ]
+                            "enum": ["candidate", "approved", "rejected", "superseded"]
                           },
                           "evidenceClass": {
                             "type": "string",
@@ -12582,9 +11659,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "events"
-                  ],
+                  "required": ["events"],
                   "additionalProperties": false
                 }
               }
@@ -12645,9 +11720,7 @@
     },
     "/v1/archives/{archiveId}/claims/{claimId}": {
       "get": {
-        "tags": [
-          "memories"
-        ],
+        "tags": ["memories"],
         "summary": "One claim with the exact source passage behind it",
         "description": "What the inspect-source panel opens when a citation is clicked.",
         "security": [
@@ -12727,21 +11800,11 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "candidate",
-                            "approved",
-                            "rejected",
-                            "superseded"
-                          ]
+                          "enum": ["candidate", "approved", "rejected", "superseded"]
                         },
                         "sensitivity": {
                           "type": "string",
-                          "enum": [
-                            "normal",
-                            "sensitive",
-                            "restricted",
-                            "embargoed"
-                          ]
+                          "enum": ["normal", "sensitive", "restricted", "embargoed"]
                         },
                         "evidence": {
                           "type": "array",
@@ -12820,9 +11883,7 @@
                                     "maximum": 9007199254740991
                                   }
                                 },
-                                "required": [
-                                  "kind"
-                                ],
+                                "required": ["kind"],
                                 "additionalProperties": false
                               },
                               "quotedText": {
@@ -12901,9 +11962,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "claim"
-                  ],
+                  "required": ["claim"],
                   "additionalProperties": false
                 }
               }
@@ -12964,9 +12023,7 @@
     },
     "/v1/archives/{archiveId}/timeline": {
       "get": {
-        "tags": [
-          "timeline"
-        ],
+        "tags": ["timeline"],
         "summary": "The life timeline, with its gaps stated honestly",
         "description": "Undated material is listed separately rather than placed at a guessed year, and decades with no material are reported as gaps — the most useful thing the next interview can know.",
         "security": [
@@ -13017,10 +12074,7 @@
                                   },
                                   "kind": {
                                     "type": "string",
-                                    "enum": [
-                                      "event",
-                                      "memory"
-                                    ]
+                                    "enum": ["event", "memory"]
                                   },
                                   "title": {
                                     "type": "string"
@@ -13039,19 +12093,10 @@
                                           },
                                           "precision": {
                                             "type": "string",
-                                            "enum": [
-                                              "day",
-                                              "month",
-                                              "year",
-                                              "decade",
-                                              "unknown"
-                                            ]
+                                            "enum": ["day", "month", "year", "decade", "unknown"]
                                           }
                                         },
-                                        "required": [
-                                          "value",
-                                          "precision"
-                                        ],
+                                        "required": ["value", "precision"],
                                         "additionalProperties": false
                                       },
                                       {
@@ -13060,10 +12105,7 @@
                                     ]
                                   },
                                   "placeName": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
+                                    "type": ["string", "null"]
                                   },
                                   "evidenceClass": {
                                     "type": "string",
@@ -13123,10 +12165,7 @@
                                   },
                                   "kind": {
                                     "type": "string",
-                                    "enum": [
-                                      "event",
-                                      "memory"
-                                    ]
+                                    "enum": ["event", "memory"]
                                   },
                                   "title": {
                                     "type": "string"
@@ -13145,19 +12184,10 @@
                                           },
                                           "precision": {
                                             "type": "string",
-                                            "enum": [
-                                              "day",
-                                              "month",
-                                              "year",
-                                              "decade",
-                                              "unknown"
-                                            ]
+                                            "enum": ["day", "month", "year", "decade", "unknown"]
                                           }
                                         },
-                                        "required": [
-                                          "value",
-                                          "precision"
-                                        ],
+                                        "required": ["value", "precision"],
                                         "additionalProperties": false
                                       },
                                       {
@@ -13166,10 +12196,7 @@
                                     ]
                                   },
                                   "placeName": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
+                                    "type": ["string", "null"]
                                   },
                                   "evidenceClass": {
                                     "type": "string",
@@ -13290,9 +12317,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "timeline"
-                  ],
+                  "required": ["timeline"],
                   "additionalProperties": false
                 }
               }
@@ -13353,9 +12378,7 @@
     },
     "/v1/archives/{archiveId}/biography": {
       "get": {
-        "tags": [
-          "biography"
-        ],
+        "tags": ["biography"],
         "summary": "The editable third-person biography draft",
         "description": "Always labelled AI-assisted, always third person, always citing the memories each section drew on. It is a draft for the storyteller to correct, not a finished portrait.",
         "security": [
@@ -13446,11 +12469,7 @@
                             },
                             "status": {
                               "type": "string",
-                              "enum": [
-                                "draft",
-                                "edited",
-                                "approved"
-                              ]
+                              "enum": ["draft", "edited", "approved"]
                             },
                             "modelVersion": {
                               "type": "string"
@@ -13496,9 +12515,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "biography"
-                  ],
+                  "required": ["biography"],
                   "additionalProperties": false
                 }
               }
@@ -13559,9 +12576,7 @@
     },
     "/v1/archives/{archiveId}/biography/generate": {
       "post": {
-        "tags": [
-          "biography"
-        ],
+        "tags": ["biography"],
         "summary": "Draft or redraft the biography from approved memories",
         "security": [
           {
@@ -13594,9 +12609,7 @@
                       "const": true
                     }
                   },
-                  "required": [
-                    "queued"
-                  ],
+                  "required": ["queued"],
                   "additionalProperties": false
                 }
               }
@@ -13657,9 +12670,7 @@
     },
     "/v1/archives/{archiveId}/biography/sections/{sectionId}": {
       "patch": {
-        "tags": [
-          "biography"
-        ],
+        "tags": ["biography"],
         "summary": "Edit one section in the storyteller’s own words",
         "description": "An edited section is marked as edited, so a reader can tell it apart from a draft.",
         "security": [
@@ -13727,9 +12738,7 @@
                       "const": true
                     }
                   },
-                  "required": [
-                    "updated"
-                  ],
+                  "required": ["updated"],
                   "additionalProperties": false
                 }
               }
@@ -13790,9 +12799,7 @@
     },
     "/v1/archives/{archiveId}/questions": {
       "post": {
-        "tags": [
-          "questions"
-        ],
+        "tags": ["questions"],
         "summary": "Ask a question about the storyteller",
         "description": "Answers are assembled only from approved memories this reader is permitted to see, in the third person, with claim-level citations. When the evidence does not support an answer, the system abstains rather than producing something plausible.",
         "security": [
@@ -13835,9 +12842,7 @@
                     }
                   }
                 },
-                "required": [
-                  "question"
-                ],
+                "required": ["question"],
                 "additionalProperties": false
               }
             }
@@ -13867,10 +12872,7 @@
                         },
                         "answerMode": {
                           "type": "string",
-                          "enum": [
-                            "grounded",
-                            "abstained"
-                          ]
+                          "enum": ["grounded", "abstained"]
                         },
                         "answerText": {
                           "type": "string"
@@ -13967,9 +12969,7 @@
                                           "maximum": 9007199254740991
                                         }
                                       },
-                                      "required": [
-                                        "kind"
-                                      ],
+                                      "required": ["kind"],
                                       "additionalProperties": false
                                     },
                                     "quotedText": {
@@ -14095,9 +13095,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "response"
-                  ],
+                  "required": ["response"],
                   "additionalProperties": false
                 }
               }
@@ -14158,9 +13156,7 @@
     },
     "/v1/archives/{archiveId}/responses/{responseId}": {
       "get": {
-        "tags": [
-          "questions"
-        ],
+        "tags": ["questions"],
         "summary": "A previously generated answer, with its citations",
         "security": [
           {
@@ -14213,10 +13209,7 @@
                         },
                         "answerMode": {
                           "type": "string",
-                          "enum": [
-                            "grounded",
-                            "abstained"
-                          ]
+                          "enum": ["grounded", "abstained"]
                         },
                         "answerText": {
                           "type": "string"
@@ -14313,9 +13306,7 @@
                                           "maximum": 9007199254740991
                                         }
                                       },
-                                      "required": [
-                                        "kind"
-                                      ],
+                                      "required": ["kind"],
                                       "additionalProperties": false
                                     },
                                     "quotedText": {
@@ -14441,9 +13432,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "response"
-                  ],
+                  "required": ["response"],
                   "additionalProperties": false
                 }
               }
@@ -14504,9 +13493,7 @@
     },
     "/v1/archives/{archiveId}/search": {
       "get": {
-        "tags": [
-          "questions"
-        ],
+        "tags": ["questions"],
         "summary": "Search approved memories",
         "description": "Available at consent mode \"explore\". Returns the storyteller’s own words with the sources they came from; it composes nothing.",
         "security": [
@@ -14595,10 +13582,7 @@
                             }
                           },
                           "occurredAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           }
                         },
                         "required": [
@@ -14614,9 +13598,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "results"
-                  ],
+                  "required": ["results"],
                   "additionalProperties": false
                 }
               }
@@ -14677,9 +13659,7 @@
     },
     "/v1/archives/{archiveId}/exports": {
       "post": {
-        "tags": [
-          "lifecycle"
-        ],
+        "tags": ["lifecycle"],
         "summary": "Export everything, in open formats",
         "description": "Produces a .zip containing every original file, the memories and claims with their evidence, the permission history, and a manifest with a checksum for each file. It opens without EverEcho and without any software a family would have to install.",
         "security": [
@@ -14722,9 +13702,7 @@
                   "format": {
                     "default": "zip",
                     "type": "string",
-                    "enum": [
-                      "zip"
-                    ]
+                    "enum": ["zip"]
                   }
                 },
                 "required": [
@@ -14762,13 +13740,7 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "queued",
-                            "running",
-                            "ready",
-                            "failed",
-                            "expired"
-                          ]
+                          "enum": ["queued", "running", "ready", "failed", "expired"]
                         },
                         "requestedByUserId": {
                           "type": "string",
@@ -14793,10 +13765,7 @@
                           ]
                         },
                         "downloadUrl": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "expiresAt": {
                           "anyOf": [
@@ -14824,10 +13793,7 @@
                                   "pattern": "^[0-9a-f]{64}$"
                                 }
                               },
-                              "required": [
-                                "algorithm",
-                                "value"
-                              ],
+                              "required": ["algorithm", "value"],
                               "additionalProperties": false
                             },
                             {
@@ -14893,10 +13859,7 @@
                           ]
                         },
                         "error": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         }
                       },
                       "required": [
@@ -14916,9 +13879,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "export"
-                  ],
+                  "required": ["export"],
                   "additionalProperties": false
                 }
               }
@@ -14977,9 +13938,7 @@
         }
       },
       "get": {
-        "tags": [
-          "lifecycle"
-        ],
+        "tags": ["lifecycle"],
         "summary": "Export history and download links",
         "security": [
           {
@@ -15024,13 +13983,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "queued",
-                              "running",
-                              "ready",
-                              "failed",
-                              "expired"
-                            ]
+                            "enum": ["queued", "running", "ready", "failed", "expired"]
                           },
                           "requestedByUserId": {
                             "type": "string",
@@ -15055,10 +14008,7 @@
                             ]
                           },
                           "downloadUrl": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "expiresAt": {
                             "anyOf": [
@@ -15086,10 +14036,7 @@
                                     "pattern": "^[0-9a-f]{64}$"
                                   }
                                 },
-                                "required": [
-                                  "algorithm",
-                                  "value"
-                                ],
+                                "required": ["algorithm", "value"],
                                 "additionalProperties": false
                               },
                               {
@@ -15155,10 +14102,7 @@
                             ]
                           },
                           "error": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           }
                         },
                         "required": [
@@ -15179,9 +14123,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "exports"
-                  ],
+                  "required": ["exports"],
                   "additionalProperties": false
                 }
               }
@@ -15242,9 +14184,7 @@
     },
     "/v1/archives/{archiveId}/deletion-requests": {
       "post": {
-        "tags": [
-          "lifecycle"
-        ],
+        "tags": ["lifecycle"],
         "summary": "Delete an archive, a source, or one story",
         "description": "Deletion runs as a recorded, resumable plan whose progress the requester can watch. Derived content goes first and originals last, so nothing is left pointing at a file that is already gone. An audit record that the deletion happened is kept by design.",
         "security": [
@@ -15274,11 +14214,7 @@
                 "properties": {
                   "scope": {
                     "type": "string",
-                    "enum": [
-                      "archive",
-                      "source",
-                      "memory"
-                    ]
+                    "enum": ["archive", "source", "memory"]
                   },
                   "targetId": {
                     "type": "string",
@@ -15294,10 +14230,7 @@
                     "maxLength": 500
                   }
                 },
-                "required": [
-                  "scope",
-                  "confirmationPhrase"
-                ],
+                "required": ["scope", "confirmationPhrase"],
                 "additionalProperties": false
               }
             }
@@ -15327,11 +14260,7 @@
                         },
                         "scope": {
                           "type": "string",
-                          "enum": [
-                            "archive",
-                            "source",
-                            "memory"
-                          ]
+                          "enum": ["archive", "source", "memory"]
                         },
                         "targetId": {
                           "anyOf": [
@@ -15347,13 +14276,7 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "pending",
-                            "running",
-                            "completed",
-                            "failed",
-                            "cancelled"
-                          ]
+                          "enum": ["pending", "running", "completed", "failed", "cancelled"]
                         },
                         "requestedByUserId": {
                           "type": "string",
@@ -15390,13 +14313,7 @@
                               },
                               "status": {
                                 "type": "string",
-                                "enum": [
-                                  "pending",
-                                  "running",
-                                  "done",
-                                  "failed",
-                                  "skipped"
-                                ]
+                                "enum": ["pending", "running", "done", "failed", "skipped"]
                               },
                               "affectedCount": {
                                 "anyOf": [
@@ -15423,10 +14340,7 @@
                                 ]
                               },
                               "error": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
+                                "type": ["string", "null"]
                               }
                             },
                             "required": [
@@ -15455,9 +14369,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "deletionRequest"
-                  ],
+                  "required": ["deletionRequest"],
                   "additionalProperties": false
                 }
               }
@@ -15516,9 +14428,7 @@
         }
       },
       "get": {
-        "tags": [
-          "lifecycle"
-        ],
+        "tags": ["lifecycle"],
         "summary": "Deletion progress, step by step",
         "security": [
           {
@@ -15563,11 +14473,7 @@
                           },
                           "scope": {
                             "type": "string",
-                            "enum": [
-                              "archive",
-                              "source",
-                              "memory"
-                            ]
+                            "enum": ["archive", "source", "memory"]
                           },
                           "targetId": {
                             "anyOf": [
@@ -15583,13 +14489,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "pending",
-                              "running",
-                              "completed",
-                              "failed",
-                              "cancelled"
-                            ]
+                            "enum": ["pending", "running", "completed", "failed", "cancelled"]
                           },
                           "requestedByUserId": {
                             "type": "string",
@@ -15626,13 +14526,7 @@
                                 },
                                 "status": {
                                   "type": "string",
-                                  "enum": [
-                                    "pending",
-                                    "running",
-                                    "done",
-                                    "failed",
-                                    "skipped"
-                                  ]
+                                  "enum": ["pending", "running", "done", "failed", "skipped"]
                                 },
                                 "affectedCount": {
                                   "anyOf": [
@@ -15659,10 +14553,7 @@
                                   ]
                                 },
                                 "error": {
-                                  "type": [
-                                    "string",
-                                    "null"
-                                  ]
+                                  "type": ["string", "null"]
                                 }
                               },
                               "required": [
@@ -15692,9 +14583,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "deletionRequests"
-                  ],
+                  "required": ["deletionRequests"],
                   "additionalProperties": false
                 }
               }
@@ -15755,9 +14644,7 @@
     },
     "/v1/archives/{archiveId}/audit": {
       "get": {
-        "tags": [
-          "lifecycle"
-        ],
+        "tags": ["lifecycle"],
         "summary": "Who did what, and what was refused",
         "description": "Refusals are recorded as well as successes: being able to see that someone was turned away is part of trusting that the permissions work.",
         "security": [
@@ -15864,30 +14751,16 @@
                           },
                           "outcome": {
                             "type": "string",
-                            "enum": [
-                              "allow",
-                              "deny",
-                              "success",
-                              "failure"
-                            ]
+                            "enum": ["allow", "deny", "success", "failure"]
                           },
                           "reasonCode": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "policyVersion": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "requestId": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "createdAt": {
                             "type": "string",
@@ -15921,9 +14794,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "events"
-                  ],
+                  "required": ["events"],
                   "additionalProperties": false
                 }
               }
@@ -15984,9 +14855,7 @@
     },
     "/v1/billing/reservations": {
       "post": {
-        "tags": [
-          "billing"
-        ],
+        "tags": ["billing"],
         "summary": "Place a refundable reservation",
         "description": "A deposit is a signal of intent, not a lock-in: it is refundable by design and the refund needs no justification. No card details ever reach EverEcho.",
         "security": [
@@ -16005,10 +14874,7 @@
                 "properties": {
                   "currency": {
                     "type": "string",
-                    "enum": [
-                      "INR",
-                      "USD"
-                    ]
+                    "enum": ["INR", "USD"]
                   },
                   "archiveId": {
                     "type": "string",
@@ -16021,10 +14887,7 @@
                     "maxLength": 200
                   }
                 },
-                "required": [
-                  "currency",
-                  "idempotencyKey"
-                ],
+                "required": ["currency", "idempotencyKey"],
                 "additionalProperties": false
               }
             }
@@ -16041,9 +14904,7 @@
                   "properties": {
                     "reservation": {}
                   },
-                  "required": [
-                    "reservation"
-                  ],
+                  "required": ["reservation"],
                   "additionalProperties": false
                 }
               }
@@ -16104,9 +14965,7 @@
     },
     "/v1/billing": {
       "get": {
-        "tags": [
-          "billing"
-        ],
+        "tags": ["billing"],
         "summary": "Reservations and subscription state",
         "security": [
           {
@@ -16131,10 +14990,7 @@
                     },
                     "currency": {
                       "type": "string",
-                      "enum": [
-                        "INR",
-                        "USD"
-                      ]
+                      "enum": ["INR", "USD"]
                     },
                     "reservationAmountMinor": {
                       "type": "integer",
@@ -16153,20 +15009,11 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "pending",
-                              "paid",
-                              "refunded",
-                              "failed",
-                              "cancelled"
-                            ]
+                            "enum": ["pending", "paid", "refunded", "failed", "cancelled"]
                           },
                           "currency": {
                             "type": "string",
-                            "enum": [
-                              "INR",
-                              "USD"
-                            ]
+                            "enum": ["INR", "USD"]
                           },
                           "amountMinor": {
                             "type": "integer",
@@ -16178,16 +15025,10 @@
                             "const": true
                           },
                           "checkoutUrl": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "providerRef": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "createdAt": {
                             "type": "string",
@@ -16249,12 +15090,7 @@
                             },
                             "status": {
                               "type": "string",
-                              "enum": [
-                                "active",
-                                "past_due",
-                                "cancelled",
-                                "none"
-                              ]
+                              "enum": ["active", "past_due", "cancelled", "none"]
                             },
                             "currentPeriodEnd": {
                               "anyOf": [
@@ -16269,12 +15105,7 @@
                               ]
                             }
                           },
-                          "required": [
-                            "id",
-                            "plan",
-                            "status",
-                            "currentPeriodEnd"
-                          ],
+                          "required": ["id", "plan", "status", "currentPeriodEnd"],
                           "additionalProperties": false
                         },
                         {
@@ -16351,9 +15182,7 @@
     },
     "/v1/billing/reservations/{reservationId}/refund": {
       "post": {
-        "tags": [
-          "billing"
-        ],
+        "tags": ["billing"],
         "summary": "Refund a reservation",
         "description": "No reason required. Asking for one would make the refund a negotiation.",
         "security": [
@@ -16387,9 +15216,7 @@
                       "const": true
                     }
                   },
-                  "required": [
-                    "refunded"
-                  ],
+                  "required": ["refunded"],
                   "additionalProperties": false
                 }
               }
@@ -16450,9 +15277,7 @@
     },
     "/v1/billing/local-checkout/complete": {
       "post": {
-        "tags": [
-          "billing"
-        ],
+        "tags": ["billing"],
         "summary": "Complete a local test checkout (development only)",
         "description": "Signs and posts the same webhook a real provider would send, so the signature check and the idempotent replay path are exercised rather than bypassed.",
         "security": [
@@ -16475,16 +15300,10 @@
                   },
                   "outcome": {
                     "type": "string",
-                    "enum": [
-                      "paid",
-                      "failed"
-                    ]
+                    "enum": ["paid", "failed"]
                   }
                 },
-                "required": [
-                  "providerRef",
-                  "outcome"
-                ],
+                "required": ["providerRef", "outcome"],
                 "additionalProperties": false
               }
             }
@@ -16506,10 +15325,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "signature",
-                    "payload"
-                  ],
+                  "required": ["signature", "payload"],
                   "additionalProperties": false
                 }
               }
@@ -16570,9 +15386,7 @@
     },
     "/v1/admin/incidents": {
       "get": {
-        "tags": [
-          "admin"
-        ],
+        "tags": ["admin"],
         "summary": "Safety, security, accuracy, consent and availability incidents",
         "description": "Incident records carry operational metadata only. None of them contains memory content.",
         "security": [
@@ -16588,12 +15402,7 @@
             "schema": {
               "default": "open",
               "type": "string",
-              "enum": [
-                "open",
-                "acknowledged",
-                "resolved",
-                "all"
-              ]
+              "enum": ["open", "acknowledged", "resolved", "all"]
             }
           },
           {
@@ -16629,39 +15438,21 @@
                           },
                           "kind": {
                             "type": "string",
-                            "enum": [
-                              "safety",
-                              "security",
-                              "accuracy",
-                              "consent",
-                              "availability"
-                            ]
+                            "enum": ["safety", "security", "accuracy", "consent", "availability"]
                           },
                           "severity": {
                             "type": "string",
-                            "enum": [
-                              "low",
-                              "medium",
-                              "high",
-                              "critical"
-                            ]
+                            "enum": ["low", "medium", "high", "critical"]
                           },
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "open",
-                              "acknowledged",
-                              "resolved"
-                            ]
+                            "enum": ["open", "acknowledged", "resolved"]
                           },
                           "summary": {
                             "type": "string"
                           },
                           "archiveRef": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "createdAt": {
                             "type": "string",
@@ -16708,9 +15499,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "incidents"
-                  ],
+                  "required": ["incidents"],
                   "additionalProperties": false
                 }
               }
@@ -16771,9 +15560,7 @@
     },
     "/v1/admin/incidents/{incidentId}": {
       "post": {
-        "tags": [
-          "admin"
-        ],
+        "tags": ["admin"],
         "summary": "Acknowledge or resolve an incident",
         "security": [
           {
@@ -16802,19 +15589,14 @@
                 "properties": {
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "acknowledged",
-                      "resolved"
-                    ]
+                    "enum": ["acknowledged", "resolved"]
                   },
                   "resolutionNote": {
                     "type": "string",
                     "maxLength": 2000
                   }
                 },
-                "required": [
-                  "status"
-                ],
+                "required": ["status"],
                 "additionalProperties": false
               }
             }
@@ -16834,9 +15616,7 @@
                       "const": true
                     }
                   },
-                  "required": [
-                    "updated"
-                  ],
+                  "required": ["updated"],
                   "additionalProperties": false
                 }
               }
@@ -16897,9 +15677,7 @@
     },
     "/v1/admin/break-glass": {
       "post": {
-        "tags": [
-          "admin"
-        ],
+        "tags": ["admin"],
         "summary": "Request time-limited, purpose-limited access to one archive",
         "description": "There is no route anywhere that grants an administrator general browsing of customer memories. This grants operational metadata for one archive, for a stated purpose, for a bounded time, and it is written to that archive’s own audit trail where the storyteller can see it.",
         "security": [
@@ -16937,12 +15715,7 @@
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
-                "required": [
-                  "archiveId",
-                  "purpose",
-                  "durationMinutes",
-                  "incidentId"
-                ],
+                "required": ["archiveId", "purpose", "durationMinutes", "incidentId"],
                 "additionalProperties": false
               }
             }
@@ -17012,9 +15785,7 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "grant"
-                  ],
+                  "required": ["grant"],
                   "additionalProperties": false
                 }
               }
@@ -17075,9 +15846,7 @@
     },
     "/v1/admin/archives/{archiveId}/operational": {
       "get": {
-        "tags": [
-          "admin"
-        ],
+        "tags": ["admin"],
         "summary": "Operational metadata for one archive, under a live grant",
         "description": "Counts and states only. There is no field here that can carry a memory, a filename or a transcript, and the policy engine refuses the request without an unexpired grant.",
         "security": [
@@ -17118,10 +15887,7 @@
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                     },
                     "consentMode": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     },
                     "counts": {
                       "type": "object",
@@ -17147,12 +15913,7 @@
                           "maximum": 9007199254740991
                         }
                       },
-                      "required": [
-                        "sources",
-                        "memories",
-                        "members",
-                        "failedJobs"
-                      ],
+                      "required": ["sources", "memories", "members", "failedJobs"],
                       "additionalProperties": false
                     },
                     "lastActivityAt": {

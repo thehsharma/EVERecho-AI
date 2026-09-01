@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
-import { biographySchema, timelineSchema, updateBiographySectionRequestSchema } from '@everecho/contracts';
+import {
+  biographySchema,
+  timelineSchema,
+  updateBiographySectionRequestSchema,
+} from '@everecho/contracts';
 import { enqueueJob } from '@everecho/db';
 import { defineRoute } from '../http/route';
 import { withArchiveAccess } from '../lib/access';
@@ -43,7 +47,11 @@ export function registerDerivedRoutes(app: FastifyInstance, ctx: AppContext): vo
           );
           if (!row) {
             // Nothing built yet: queue it rather than returning a broken shell.
-            await enqueueJob(tx, { archiveId: params.archiveId, type: 'build_timeline', payload: {} });
+            await enqueueJob(tx, {
+              archiveId: params.archiveId,
+              type: 'build_timeline',
+              payload: {},
+            });
             return { timeline: null };
           }
           const content = row.content as {
@@ -125,7 +133,11 @@ export function registerDerivedRoutes(app: FastifyInstance, ctx: AppContext): vo
           auditOnAllow: true,
         },
         async ({ tx }) => {
-          await enqueueJob(tx, { archiveId: params.archiveId, type: 'compose_biography', payload: {} });
+          await enqueueJob(tx, {
+            archiveId: params.archiveId,
+            type: 'compose_biography',
+            payload: {},
+          });
           return { queued: true as const };
         },
       ),
@@ -136,7 +148,8 @@ export function registerDerivedRoutes(app: FastifyInstance, ctx: AppContext): vo
     url: '/v1/archives/:archiveId/biography/sections/:sectionId',
     tag: 'biography',
     summary: 'Edit one section in the storyteller’s own words',
-    description: 'An edited section is marked as edited, so a reader can tell it apart from a draft.',
+    description:
+      'An edited section is marked as edited, so a reader can tell it apart from a draft.',
     auth: 'required',
     params: archiveParams.extend({ sectionId: z.string().min(1).max(80) }),
     body: updateBiographySectionRequestSchema,
@@ -169,7 +182,10 @@ export function registerDerivedRoutes(app: FastifyInstance, ctx: AppContext): vo
           section.heading = body.heading ?? section.heading;
           section.text = body.text ?? section.text;
           section.edited = true;
-          content.wordCount = content.sections.reduce((sum, s) => sum + s.text.split(/\s+/).length, 0);
+          content.wordCount = content.sections.reduce(
+            (sum, s) => sum + s.text.split(/\s+/).length,
+            0,
+          );
 
           await tx.query(
             `UPDATE generated_artifact SET content = $2, status = 'edited', updated_at = now() WHERE id = $1`,

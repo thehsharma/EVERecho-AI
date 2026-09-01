@@ -12,7 +12,11 @@ export default async function SignInPage() {
       <h1>Sign in</h1>
       <Card>
         <Suspense fallback={<p className="spinner-text">Loading</p>}>
-          <AuthForm mode="sign-in" legalCopyVersion={meta.legalCopyVersion} productName={meta.productName} />
+          <AuthForm
+            mode="sign-in"
+            legalCopyVersion={meta.legalCopyVersion}
+            productName={meta.productName}
+          />
         </Suspense>
       </Card>
     </div>

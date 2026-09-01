@@ -128,7 +128,12 @@ export function registerInvitationRoutes(app: FastifyInstance, ctx: AppContext):
             archiveId: params.archiveId,
           });
 
-          return { invitation: toInvitation({ ...invitation, accepted_at: null, declined_at: null }, params.archiveId) };
+          return {
+            invitation: toInvitation(
+              { ...invitation, accepted_at: null, declined_at: null },
+              params.archiveId,
+            ),
+          };
         },
       ),
   });
@@ -145,7 +150,11 @@ export function registerInvitationRoutes(app: FastifyInstance, ctx: AppContext):
       withArchiveAccess(
         ctx,
         request,
-        { archiveId: params.archiveId, action: 'invitation.read', resource: { type: 'invitation' } },
+        {
+          archiveId: params.archiveId,
+          action: 'invitation.read',
+          resource: { type: 'invitation' },
+        },
         async ({ tx }) => {
           const rows = await tx.query<Parameters<typeof toInvitation>[0]>(
             `SELECT id, email, display_name, role, status, created_at, expires_at, accepted_at, declined_at
@@ -275,7 +284,11 @@ export function registerInvitationRoutes(app: FastifyInstance, ctx: AppContext):
           [hashOpaqueToken(params.token)],
         );
 
-        if (!invitation || invitation.status !== 'sent' || invitation.expires_at.getTime() < Date.now()) {
+        if (
+          !invitation ||
+          invitation.status !== 'sent' ||
+          invitation.expires_at.getTime() < Date.now()
+        ) {
           throw notFound('This invitation link is no longer valid.');
         }
         // The invitation is addressed to a person, not transferable to whoever
@@ -371,7 +384,10 @@ export function registerInvitationRoutes(app: FastifyInstance, ctx: AppContext):
             to: inviter.email,
             template: 'invitation_accepted',
             templateVersion: 'email-2026-01',
-            variables: { productName: ctx.branding.productName, recipientName: invitation.display_name },
+            variables: {
+              productName: ctx.branding.productName,
+              recipientName: invitation.display_name,
+            },
           });
         }
         await ctx.analytics.track('invitation_accepted', {
@@ -383,7 +399,8 @@ export function registerInvitationRoutes(app: FastifyInstance, ctx: AppContext):
           decision: 'accept' as const,
           archiveId: invitation.archive_id,
           role: invitation.role,
-          nextStep: invitation.role === 'storyteller' ? ('teach_back' as const) : ('archive' as const),
+          nextStep:
+            invitation.role === 'storyteller' ? ('teach_back' as const) : ('archive' as const),
         };
       });
     },

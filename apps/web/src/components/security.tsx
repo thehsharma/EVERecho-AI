@@ -54,12 +54,26 @@ export function SecurityPanel() {
       <Card>
         <h2>Change your password</h2>
         <form onSubmit={changePassword} className="stack" noValidate>
-          {error ? <div className="notice notice-danger" role="alert">{error}</div> : null}
-          {done ? <div className="notice notice-ok" role="status">{done}</div> : null}
+          {error ? (
+            <div className="notice notice-danger" role="alert">
+              {error}
+            </div>
+          ) : null}
+          {done ? (
+            <div className="notice notice-ok" role="status">
+              {done}
+            </div>
+          ) : null}
 
           <div>
             <label htmlFor="currentPassword">Current password</label>
-            <input id="currentPassword" name="currentPassword" type="password" autoComplete="current-password" required />
+            <input
+              id="currentPassword"
+              name="currentPassword"
+              type="password"
+              autoComplete="current-password"
+              required
+            />
           </div>
           <div>
             <label htmlFor="newPassword">New password</label>
@@ -86,7 +100,12 @@ export function SecurityPanel() {
       <Card>
         <h2>Sign out everywhere</h2>
         <p>Ends every session, including this one.</p>
-        <button type="button" className="btn" onClick={() => void signOutEverywhere()} disabled={pending}>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => void signOutEverywhere()}
+          disabled={pending}
+        >
           Sign out of all devices
         </button>
       </Card>

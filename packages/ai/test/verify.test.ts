@@ -24,7 +24,10 @@ describe('claim verification', () => {
   ];
 
   it('accepts a claim whose words are all in the cited evidence', () => {
-    const result = verifyClaim({ text: 'They moved to Pune in 1962.', evidenceIds: ['e1'] }, evidence);
+    const result = verifyClaim(
+      { text: 'They moved to Pune in 1962.', evidenceIds: ['e1'] },
+      evidence,
+    );
     expect(result.verified).toBe(true);
     expect(result.evidenceClass).toBe('P1_DIRECT_STATEMENT');
   });
@@ -53,7 +56,10 @@ describe('claim verification', () => {
   });
 
   it('never returns a prohibited evidence class', () => {
-    const result = verifyClaim({ text: 'They moved to Pune in 1962.', evidenceIds: ['e1'] }, evidence);
+    const result = verifyClaim(
+      { text: 'They moved to Pune in 1962.', evidenceIds: ['e1'] },
+      evidence,
+    );
     expect(result.evidenceClass).not.toBe('P5_GENERATED_SIMULATION');
     expect(result.evidenceClass).not.toBe('P4_MODEL_INFERENCE');
   });
@@ -106,8 +112,14 @@ describe('contradiction detection', () => {
 describe('contradiction detection across real phrasing', () => {
   it('spots two accounts of the same move that share only a place name', () => {
     const finding = detectContradiction(
-      { text: 'We moved to Pune in 1962 because my father took a job on the railways.', years: [1962] },
-      { text: 'We moved to Pune in 1968, before we were married, when his work brought him there.', years: [1968] },
+      {
+        text: 'We moved to Pune in 1962 because my father took a job on the railways.',
+        years: [1962],
+      },
+      {
+        text: 'We moved to Pune in 1968, before we were married, when his work brought him there.',
+        years: [1968],
+      },
     );
     expect(finding?.kind).toBe('date_conflict');
   });
@@ -116,7 +128,10 @@ describe('contradiction detection across real phrasing', () => {
     expect(
       detectContradiction(
         { text: 'She was born in Nagpur in 1948.', years: [1948] },
-        { text: 'Her first teaching post was near the Nagpur cantonment, which she took in 1971 after finishing college.', years: [1971] },
+        {
+          text: 'Her first teaching post was near the Nagpur cantonment, which she took in 1971 after finishing college.',
+          years: [1971],
+        },
       ),
     ).toBeNull();
   });

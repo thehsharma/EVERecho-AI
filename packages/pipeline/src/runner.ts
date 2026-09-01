@@ -44,7 +44,7 @@ export interface RunResult {
  */
 export async function runJobBatch(
   ctx: PipelineContext,
-  options: { workerId: string; limit?: number; visibilityTimeoutMs?: number } ,
+  options: { workerId: string; limit?: number; visibilityTimeoutMs?: number },
 ): Promise<RunResult> {
   const jobs = await claimJobs(ctx.db, {
     workerId: options.workerId,
@@ -69,7 +69,11 @@ export async function runJobBatch(
         result.stopped += 1;
         continue;
       }
-      const outcome = await failJob(ctx.db, job, error instanceof Error ? error.message : String(error));
+      const outcome = await failJob(
+        ctx.db,
+        job,
+        error instanceof Error ? error.message : String(error),
+      );
       if (outcome === 'dead_lettered') {
         result.deadLettered += 1;
         await ctx.db.query(

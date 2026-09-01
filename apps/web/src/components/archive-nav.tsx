@@ -21,7 +21,7 @@ interface Group {
  * caller, so people are not shown doors that will not open. It is a courtesy,
  * not a control: every route re-checks server-side regardless.
  */
-function groupsFor(archive: Archive): Group[] {
+function groupsFor(): Group[] {
   return [
     {
       heading: 'The archive',
@@ -72,7 +72,7 @@ export function ArchiveNav({ archive }: { archive: Archive }) {
       <p className="small muted" style={{ marginBottom: '0.5rem' }}>
         {archive.subjectDisplayName}
       </p>
-      {groupsFor(archive).map((group) => {
+      {groupsFor().map((group) => {
         const items = group.items.filter((item) => can(item.requires));
         if (items.length === 0) return null;
         return (

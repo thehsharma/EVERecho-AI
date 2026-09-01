@@ -76,7 +76,10 @@ export async function createMembership(
   );
 }
 
-export async function revokeMembership(q: Queryable, membershipId: string): Promise<MembershipRow | null> {
+export async function revokeMembership(
+  q: Queryable,
+  membershipId: string,
+): Promise<MembershipRow | null> {
   return q.maybeOne<MembershipRow>(
     `UPDATE membership SET status = 'revoked', revoked_at = now(), updated_at = now()
      WHERE id = $1 AND status <> 'revoked' RETURNING *`,

@@ -36,7 +36,11 @@ describe('prohibited consent is refused at compile time', () => {
     expect(() =>
       compileConsentPolicy({
         ...base,
-        voiceAndLikeness: { syntheticVoice: true, syntheticLikeness: false, personaSimulation: false },
+        voiceAndLikeness: {
+          syntheticVoice: true,
+          syntheticLikeness: false,
+          personaSimulation: false,
+        },
       }),
     ).toThrow(/voice and likeness/i);
   });
@@ -73,7 +77,12 @@ describe('normalisation', () => {
       ...base,
       mode: 'compose',
       activities: ['storage', 'export', 'transcription', 'embedding', 'generation'],
-      providerProcessing: { ...base.providerProcessing, transcription: true, embedding: true, generation: true },
+      providerProcessing: {
+        ...base.providerProcessing,
+        transcription: true,
+        embedding: true,
+        generation: true,
+      },
     });
     // Composition enabled, OCR still refused: documents simply go unprocessed.
     expect(document.mode).toBe('compose');
@@ -92,8 +101,16 @@ describe('normalisation', () => {
 
 describe('hashing', () => {
   it('is stable across key and array order', () => {
-    const a = compileConsentPolicy({ ...base, restrictedTopics: ['b', 'a'], dataCategories: ['photo', 'audio'] });
-    const b = compileConsentPolicy({ ...base, dataCategories: ['audio', 'photo'], restrictedTopics: ['a', 'b'] });
+    const a = compileConsentPolicy({
+      ...base,
+      restrictedTopics: ['b', 'a'],
+      dataCategories: ['photo', 'audio'],
+    });
+    const b = compileConsentPolicy({
+      ...base,
+      dataCategories: ['audio', 'photo'],
+      restrictedTopics: ['a', 'b'],
+    });
     expect(a.policyHash).toBe(b.policyHash);
   });
 
@@ -118,7 +135,10 @@ describe('policy diffs read as plain English', () => {
   });
 
   it('names what was withdrawn', () => {
-    const before = compileConsentPolicy({ ...base, activities: ['storage', 'export', 'transcription'] }).document;
+    const before = compileConsentPolicy({
+      ...base,
+      activities: ['storage', 'export', 'transcription'],
+    }).document;
     const after = compileConsentPolicy({ ...base, activities: ['storage', 'export'] }).document;
     expect(diffPolicies(before, after).join(' ')).toMatch(/Withdrawn: transcription/);
   });
@@ -138,14 +158,19 @@ describe('policy diffs read as plain English', () => {
 });
 
 describe('teach-back', () => {
-  const allCorrect = TEACH_BACK_QUESTIONS.map((q) => ({ questionId: q.id, optionId: q.correctOptionId }));
+  const allCorrect = TEACH_BACK_QUESTIONS.map((q) => ({
+    questionId: q.id,
+    optionId: q.correctOptionId,
+  }));
 
   it('passes only when every answer is right', () => {
     expect(evaluateTeachBack(allCorrect).passed).toBe(true);
   });
 
   it('fails and teaches when the storyteller thinks the AI will speak as them', () => {
-    const answers = allCorrect.map((a) => (a.questionId === 'ai_role' ? { ...a, optionId: 'speak_as_me' } : a));
+    const answers = allCorrect.map((a) =>
+      a.questionId === 'ai_role' ? { ...a, optionId: 'speak_as_me' } : a,
+    );
     const result = evaluateTeachBack(answers);
     expect(result.passed).toBe(false);
     expect(result.incorrectQuestionIds).toEqual(['ai_role']);
@@ -159,7 +184,14 @@ describe('teach-back', () => {
   it('covers the points that matter: control, skipping, AI limits, reversal, privacy', () => {
     const ids = TEACH_BACK_QUESTIONS.map((q) => q.id);
     expect(ids).toEqual(
-      expect.arrayContaining(['who_decides', 'can_i_skip', 'ai_role', 'change_mind', 'who_sees_now', 'sensitive']),
+      expect.arrayContaining([
+        'who_decides',
+        'can_i_skip',
+        'ai_role',
+        'change_mind',
+        'who_sees_now',
+        'sensitive',
+      ]),
     );
   });
 });

@@ -21,7 +21,9 @@ describe('sentence splitting survives real writing', () => {
   });
 
   it('does not split on decimals or ellipses', () => {
-    expect(splitSentences('It cost 12.50 rupees... I still remember. Then we left.')).toHaveLength(2);
+    expect(splitSentences('It cost 12.50 rupees... I still remember. Then we left.')).toHaveLength(
+      2,
+    );
   });
 });
 

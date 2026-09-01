@@ -42,7 +42,10 @@ export interface ArchiveSummaryRow extends ArchiveRow {
  * inside an archive scope rather than joined here; this listing is intentionally
  * usable outside any archive scope.
  */
-export async function listArchivesForUser(q: Queryable, userId: string): Promise<ArchiveSummaryRow[]> {
+export async function listArchivesForUser(
+  q: Queryable,
+  userId: string,
+): Promise<ArchiveSummaryRow[]> {
   return q.query<ArchiveSummaryRow>(
     `SELECT a.*, p.display_name AS subject_display_name,
             m.role AS role, m.status AS membership_status,
@@ -62,7 +65,10 @@ export async function updateArchiveStatus(
   archiveId: string,
   status: ArchiveStatus,
 ): Promise<void> {
-  await q.query(`UPDATE archive SET status = $2, updated_at = now() WHERE id = $1`, [archiveId, status]);
+  await q.query(`UPDATE archive SET status = $2, updated_at = now() WHERE id = $1`, [
+    archiveId,
+    status,
+  ]);
 }
 
 export async function hasActiveDisputeHold(q: Queryable, archiveId: string): Promise<boolean> {

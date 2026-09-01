@@ -2,7 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { PROHIBITED_ACTIONS, type Action } from '@everecho/contracts';
 import { authorize } from '../src/authorize';
 import { ACTION_REQUIREMENTS, ROLE_ACTIONS } from '../src/matrix';
-import { ARCHIVE, BUYER, FAMILY, SOURCE, STORYTELLER, actor, context, openPolicy, policy, resource, subject } from './helpers';
+import {
+  ARCHIVE,
+  BUYER,
+  FAMILY,
+  SOURCE,
+  STORYTELLER,
+  actor,
+  context,
+  openPolicy,
+  resource,
+  subject,
+} from './helpers';
 
 const ask = (a: Partial<Parameters<typeof authorize>[0]>) =>
   authorize({
@@ -57,7 +68,11 @@ describe('authentication and membership', () => {
     ['pending', 'membership_pending'],
   ] as const)('denies a %s membership', (status, reason) => {
     const d = ask({
-      actor: { userId: FAMILY, isPlatformAdmin: false, membership: { role: 'family', status, grantedAt: null, expiresAt: null } },
+      actor: {
+        userId: FAMILY,
+        isPlatformAdmin: false,
+        membership: { role: 'family', status, grantedAt: null, expiresAt: null },
+      },
     });
     expect(d.reasonCode).toBe(reason);
   });
@@ -67,7 +82,12 @@ describe('authentication and membership', () => {
       actor: {
         userId: FAMILY,
         isPlatformAdmin: false,
-        membership: { role: 'family', status: 'active', grantedAt: null, expiresAt: '2026-01-01T00:00:00.000Z' },
+        membership: {
+          role: 'family',
+          status: 'active',
+          grantedAt: null,
+          expiresAt: '2026-01-01T00:00:00.000Z',
+        },
       },
     });
     expect(d.reasonCode).toBe('membership_expired');
@@ -78,7 +98,12 @@ describe('authentication and membership', () => {
       actor: {
         userId: FAMILY,
         isPlatformAdmin: false,
-        membership: { role: 'family', status: 'active', grantedAt: '2027-01-01T00:00:00.000Z', expiresAt: null },
+        membership: {
+          role: 'family',
+          status: 'active',
+          grantedAt: '2027-01-01T00:00:00.000Z',
+          expiresAt: null,
+        },
       },
     });
     expect(d.reasonCode).toBe('access_window_not_started');
@@ -86,14 +111,16 @@ describe('authentication and membership', () => {
 });
 
 describe('the buyer cannot consent for the storyteller', () => {
-  it.each(['consent.grant', 'consent.update', 'consent.revoke', 'consent.teachback.submit'] as Action[])(
-    'refuses %s',
-    (action) => {
-      const d = ask({ actor: actor('buyer', BUYER), action });
-      expect(d.effect).toBe('DENY');
-      expect(d.reasonCode).toBe('buyer_cannot_consent_for_storyteller');
-    },
-  );
+  it.each([
+    'consent.grant',
+    'consent.update',
+    'consent.revoke',
+    'consent.teachback.submit',
+  ] as Action[])('refuses %s', (action) => {
+    const d = ask({ actor: actor('buyer', BUYER), action });
+    expect(d.effect).toBe('DENY');
+    expect(d.reasonCode).toBe('buyer_cannot_consent_for_storyteller');
+  });
 
   it('refuses a buyer who is not a named recipient any memory content', () => {
     const d = ask({ actor: actor('buyer', BUYER), action: 'memory.read' });
@@ -103,10 +130,21 @@ describe('the buyer cannot consent for the storyteller', () => {
   it('allows a buyer the storyteller deliberately named as a recipient', () => {
     const p = openPolicy({
       recipients: [
-        { role: 'buyer', userId: BUYER, maxSensitivity: 'normal', lifeStates: ['living'], mayExport: false, mayContribute: false },
+        {
+          role: 'buyer',
+          userId: BUYER,
+          maxSensitivity: 'normal',
+          lifeStates: ['living'],
+          mayExport: false,
+          mayContribute: false,
+        },
       ],
     });
-    const d = ask({ actor: actor('buyer', BUYER), action: 'memory.read', subject: subject({ policy: p }) });
+    const d = ask({
+      actor: actor('buyer', BUYER),
+      action: 'memory.read',
+      subject: subject({ policy: p }),
+    });
     expect(d.effect).toBe('ALLOW');
   });
 
@@ -165,7 +203,14 @@ describe('activities and provider processing are consented separately', () => {
 
   it('refuses transcription when the activity is granted but the provider is not', () => {
     const p = openPolicy({
-      providerProcessing: { transcription: false, ocr: true, embedding: true, generation: true, retentionDays: 0, noModelTraining: true },
+      providerProcessing: {
+        transcription: false,
+        ocr: true,
+        embedding: true,
+        generation: true,
+        retentionDays: 0,
+        noModelTraining: true,
+      },
     });
     const d = ask({ action: 'processing.transcribe', subject: subject({ policy: p }) });
     expect(d.reasonCode).toBe('provider_processing_not_consented');
@@ -173,7 +218,14 @@ describe('activities and provider processing are consented separately', () => {
 
   it('refuses a question when generation may not reach a provider', () => {
     const p = openPolicy({
-      providerProcessing: { transcription: true, ocr: true, embedding: true, generation: false, retentionDays: 0, noModelTraining: true },
+      providerProcessing: {
+        transcription: true,
+        ocr: true,
+        embedding: true,
+        generation: false,
+        retentionDays: 0,
+        noModelTraining: true,
+      },
     });
     const d = ask({ action: 'question.ask', subject: subject({ policy: p }) });
     expect(d.reasonCode).toBe('provider_processing_not_consented');
@@ -277,7 +329,11 @@ describe('recipient grants', () => {
   });
 
   it('reports the grant ceiling as an obligation so retrieval filters identically', () => {
-    const d = ask({ actor: actor('family', FAMILY), action: 'search.query', resource: resource({ type: 'search' }) });
+    const d = ask({
+      actor: actor('family', FAMILY),
+      action: 'search.query',
+      resource: resource({ type: 'search' }),
+    });
     expect(d.effect).toBe('ALLOW');
     if (d.effect === 'ALLOW') expect(d.obligations.maxSensitivity).toBe('normal');
   });
@@ -290,10 +346,20 @@ describe('recipient grants', () => {
   it('honours a grant that only applies after death', () => {
     const p = openPolicy({
       recipients: [
-        { role: 'family', maxSensitivity: 'normal', lifeStates: ['posthumous'], mayExport: false, mayContribute: false },
+        {
+          role: 'family',
+          maxSensitivity: 'normal',
+          lifeStates: ['posthumous'],
+          mayExport: false,
+          mayContribute: false,
+        },
       ],
     });
-    const living = ask({ actor: actor('family', FAMILY), action: 'memory.read', subject: subject({ policy: p }) });
+    const living = ask({
+      actor: actor('family', FAMILY),
+      action: 'memory.read',
+      subject: subject({ policy: p }),
+    });
     expect(living.reasonCode).toBe('life_state_not_permitted');
 
     const posthumous = ask({
@@ -305,7 +371,11 @@ describe('recipient grants', () => {
   });
 
   it('refuses export to a recipient who was not granted it', () => {
-    const d = ask({ actor: actor('family', FAMILY), action: 'export.create', resource: resource({ type: 'export_job' }) });
+    const d = ask({
+      actor: actor('family', FAMILY),
+      action: 'export.create',
+      resource: resource({ type: 'export_job' }),
+    });
     expect(d.reasonCode).toBe('export_not_permitted');
   });
 
@@ -329,8 +399,21 @@ describe('recipient grants', () => {
   it('prefers a grant addressed to the user over the role default', () => {
     const p = openPolicy({
       recipients: [
-        { role: 'family', maxSensitivity: 'normal', lifeStates: ['living'], mayExport: false, mayContribute: false },
-        { role: 'family', userId: FAMILY, maxSensitivity: 'restricted', lifeStates: ['living'], mayExport: true, mayContribute: false },
+        {
+          role: 'family',
+          maxSensitivity: 'normal',
+          lifeStates: ['living'],
+          mayExport: false,
+          mayContribute: false,
+        },
+        {
+          role: 'family',
+          userId: FAMILY,
+          maxSensitivity: 'restricted',
+          lifeStates: ['living'],
+          mayExport: true,
+          mayContribute: false,
+        },
       ],
     });
     const d = ask({
@@ -376,26 +459,47 @@ describe('archive lifecycle', () => {
 
   it('still permits export and deletion from a frozen archive', () => {
     const s = subject({ archiveStatus: 'frozen' });
-    expect(ask({ action: 'export.create', resource: resource({ type: 'export_job' }), subject: s }).effect).toBe('ALLOW');
-    expect(ask({ action: 'deletion.request', resource: resource({ type: 'deletion_request' }), subject: s }).effect).toBe('ALLOW');
+    expect(
+      ask({ action: 'export.create', resource: resource({ type: 'export_job' }), subject: s })
+        .effect,
+    ).toBe('ALLOW');
+    expect(
+      ask({
+        action: 'deletion.request',
+        resource: resource({ type: 'deletion_request' }),
+        subject: s,
+      }).effect,
+    ).toBe('ALLOW');
   });
 
   it('lets a user watch deletion finish but not read content once deleted', () => {
     const s = subject({ archiveStatus: 'deleted' });
-    expect(ask({ action: 'deletion.read', resource: resource({ type: 'deletion_request' }), subject: s }).effect).toBe('ALLOW');
+    expect(
+      ask({ action: 'deletion.read', resource: resource({ type: 'deletion_request' }), subject: s })
+        .effect,
+    ).toBe('ALLOW');
     expect(ask({ action: 'memory.read', subject: s }).reasonCode).toBe('archive_deleted');
   });
 
   it('pauses sharing during a dispute without touching the storyteller', () => {
     const s = subject({ disputeHoldActive: true });
-    expect(ask({ actor: actor('family', FAMILY), action: 'memory.read', subject: s }).reasonCode).toBe('dispute_hold_active');
+    expect(
+      ask({ actor: actor('family', FAMILY), action: 'memory.read', subject: s }).reasonCode,
+    ).toBe('dispute_hold_active');
     expect(ask({ action: 'memory.read', subject: s }).effect).toBe('ALLOW');
-    expect(ask({ action: 'source.read', resource: resource({ type: 'source_asset' }), subject: s }).effect).toBe('ALLOW');
+    expect(
+      ask({ action: 'source.read', resource: resource({ type: 'source_asset' }), subject: s })
+        .effect,
+    ).toBe('ALLOW');
   });
 });
 
 describe('administrators have no path to memories', () => {
-  const admin = { userId: '88888888-8888-4888-8888-888888888888', isPlatformAdmin: true, membership: null };
+  const admin = {
+    userId: '88888888-8888-4888-8888-888888888888',
+    isPlatformAdmin: true,
+    membership: null,
+  };
 
   it('refuses content reads outright', () => {
     const d = ask({ actor: admin, action: 'memory.read' });
@@ -403,20 +507,38 @@ describe('administrators have no path to memories', () => {
   });
 
   it('refuses archive metadata without a break-glass grant', () => {
-    const d = ask({ actor: admin, action: 'admin.archive.metadata.read', resource: resource({ type: 'archive' }) });
+    const d = ask({
+      actor: admin,
+      action: 'admin.archive.metadata.read',
+      resource: resource({ type: 'archive' }),
+    });
     expect(d.reasonCode).toBe('breakglass_required');
   });
 
   it('allows metadata under a live grant and refuses it once expired', () => {
     const live = ask({
-      actor: { ...admin, breakGlass: { archiveId: ARCHIVE, expiresAt: '2026-06-01T13:00:00.000Z', scope: 'metadata_only' } },
+      actor: {
+        ...admin,
+        breakGlass: {
+          archiveId: ARCHIVE,
+          expiresAt: '2026-06-01T13:00:00.000Z',
+          scope: 'metadata_only',
+        },
+      },
       action: 'admin.archive.metadata.read',
       resource: resource({ type: 'archive' }),
     });
     expect(live.effect).toBe('ALLOW');
 
     const expired = ask({
-      actor: { ...admin, breakGlass: { archiveId: ARCHIVE, expiresAt: '2026-06-01T11:00:00.000Z', scope: 'metadata_only' } },
+      actor: {
+        ...admin,
+        breakGlass: {
+          archiveId: ARCHIVE,
+          expiresAt: '2026-06-01T11:00:00.000Z',
+          scope: 'metadata_only',
+        },
+      },
       action: 'admin.archive.metadata.read',
       resource: resource({ type: 'archive' }),
     });
@@ -425,7 +547,14 @@ describe('administrators have no path to memories', () => {
 
   it('refuses a break-glass grant issued for a different archive', () => {
     const d = ask({
-      actor: { ...admin, breakGlass: { archiveId: SOURCE, expiresAt: '2026-06-01T13:00:00.000Z', scope: 'metadata_only' } },
+      actor: {
+        ...admin,
+        breakGlass: {
+          archiveId: SOURCE,
+          expiresAt: '2026-06-01T13:00:00.000Z',
+          scope: 'metadata_only',
+        },
+      },
       action: 'admin.archive.metadata.read',
       resource: resource({ type: 'archive' }),
     });
@@ -433,7 +562,11 @@ describe('administrators have no path to memories', () => {
   });
 
   it('refuses admin routes to a non-admin', () => {
-    const d = ask({ actor: actor('family', FAMILY), action: 'admin.incident.read', resource: resource({ type: 'incident' }) });
+    const d = ask({
+      actor: actor('family', FAMILY),
+      action: 'admin.incident.read',
+      resource: resource({ type: 'incident' }),
+    });
     expect(d.reasonCode).toBe('role_not_permitted');
   });
 });
@@ -442,22 +575,37 @@ describe('the steward is not the owner', () => {
   const STEWARD = '99999999-9999-4999-8999-999999999999';
 
   it('may read continuity information', () => {
-    expect(ask({ actor: actor('steward', STEWARD), action: 'succession.read', resource: resource({ type: 'succession_directive' }) }).effect).toBe('ALLOW');
+    expect(
+      ask({
+        actor: actor('steward', STEWARD),
+        action: 'succession.read',
+        resource: resource({ type: 'succession_directive' }),
+      }).effect,
+    ).toBe('ALLOW');
   });
 
-  it.each(['memory.read', 'question.ask', 'consent.update', 'export.create', 'archive.delete'] as Action[])(
-    'may not %s',
-    (action) => {
-      const d = ask({ actor: actor('steward', STEWARD), action, resource: resource({ type: 'archive' }) });
-      expect(d.effect).toBe('DENY');
-    },
-  );
+  it.each([
+    'memory.read',
+    'question.ask',
+    'consent.update',
+    'export.create',
+    'archive.delete',
+  ] as Action[])('may not %s', (action) => {
+    const d = ask({
+      actor: actor('steward', STEWARD),
+      action,
+      resource: resource({ type: 'archive' }),
+    });
+    expect(d.effect).toBe('DENY');
+  });
 });
 
 describe('decision shape', () => {
   it('always carries a policy version, allow or deny', () => {
     const allowDecision = ask({});
-    const denyDecision = ask({ actor: { userId: FAMILY, isPlatformAdmin: false, membership: null } });
+    const denyDecision = ask({
+      actor: { userId: FAMILY, isPlatformAdmin: false, membership: null },
+    });
     expect(allowDecision.policyVersion).toMatch(/^policy-1\//);
     expect(denyDecision.policyVersion).toMatch(/^policy-1\//);
   });

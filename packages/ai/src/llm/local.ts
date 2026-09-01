@@ -68,7 +68,12 @@ export class LocalLlmAdapter implements LlmAdapter {
           text: sentence,
           transcriptSegmentId: segment.id,
           locator: {
-            kind: segment.page !== null ? 'page' : segment.startMs !== null ? 'timestamp' : 'transcript_segment',
+            kind:
+              segment.page !== null
+                ? 'page'
+                : segment.startMs !== null
+                  ? 'timestamp'
+                  : 'transcript_segment',
             segmentId: segment.id,
             ...(segment.page !== null ? { page: segment.page } : {}),
             ...(segment.startMs !== null ? { startMs: segment.startMs, endMs: segment.endMs } : {}),
@@ -117,12 +122,44 @@ export class LocalLlmAdapter implements LlmAdapter {
     const tokens = new Set(contentTokens(text));
     const hints: Record<string, string[]> = {
       childhood: ['childhood', 'child', 'young', 'school', 'boy', 'girl', 'born', 'grew'],
-      family: ['mother', 'father', 'mum', 'mom', 'dad', 'parents', 'sister', 'brother', 'family', 'grandmother', 'grandfather'],
+      family: [
+        'mother',
+        'father',
+        'mum',
+        'mom',
+        'dad',
+        'parents',
+        'sister',
+        'brother',
+        'family',
+        'grandmother',
+        'grandfather',
+      ],
       education: ['school', 'college', 'university', 'teacher', 'studied', 'exam', 'class'],
-      career: ['work', 'worked', 'job', 'office', 'factory', 'business', 'company', 'career', 'shop'],
+      career: [
+        'work',
+        'worked',
+        'job',
+        'office',
+        'factory',
+        'business',
+        'company',
+        'career',
+        'shop',
+      ],
       love: ['married', 'marriage', 'wife', 'husband', 'wedding', 'met', 'love'],
       traditions: ['festival', 'diwali', 'christmas', 'eid', 'tradition', 'ritual', 'celebrate'],
-      challenges: ['illness', 'hospital', 'died', 'death', 'lost', 'hard', 'difficult', 'struggle', 'war'],
+      challenges: [
+        'illness',
+        'hospital',
+        'died',
+        'death',
+        'lost',
+        'hard',
+        'difficult',
+        'struggle',
+        'war',
+      ],
       friendships: ['friend', 'friends', 'neighbour', 'neighbor'],
       values: ['believe', 'important', 'taught', 'honest', 'respect', 'values'],
       advice: ['advice', 'should', 'tell', 'learn', 'lesson'],
@@ -134,7 +171,9 @@ export class LocalLlmAdapter implements LlmAdapter {
   }
 
   private placeFor(text: string, properNouns: readonly string[]): string | null {
-    const match = text.match(/\b(?:in|at|from|to|near)\s+([A-Z][\p{L}'-]*(?:\s+[A-Z][\p{L}'-]*)*)/u);
+    const match = text.match(
+      /\b(?:in|at|from|to|near)\s+([A-Z][\p{L}'-]*(?:\s+[A-Z][\p{L}'-]*)*)/u,
+    );
     const candidate = match?.[1];
     return candidate && properNouns.includes(candidate) ? candidate : (candidate ?? null);
   }
@@ -151,7 +190,9 @@ export class LocalLlmAdapter implements LlmAdapter {
       const priorHasName = sentences.slice(0, index).some((s) => extractProperNouns(s).length > 0);
       if (opensWithPronoun && !priorHasName) found.push(opensWithPronoun[0].toLowerCase());
     });
-    for (const kinship of text.matchAll(/\bmy (sister|brother|aunt|uncle|cousin|neighbour|neighbor|friend)\b/gi)) {
+    for (const kinship of text.matchAll(
+      /\bmy (sister|brother|aunt|uncle|cousin|neighbour|neighbor|friend)\b/gi,
+    )) {
       found.push(`my ${kinship[1]!.toLowerCase()}`);
     }
     return [...new Set(found)];
@@ -215,14 +256,28 @@ export class LocalLlmAdapter implements LlmAdapter {
       byTopic.set(topic, [...(byTopic.get(topic) ?? []), memory]);
     }
 
-    const order = ['childhood', 'family', 'education', 'friendships', 'love', 'career', 'traditions', 'challenges', 'values', 'advice', 'general'];
+    const order = [
+      'childhood',
+      'family',
+      'education',
+      'friendships',
+      'love',
+      'career',
+      'traditions',
+      'challenges',
+      'values',
+      'advice',
+      'general',
+    ];
     const sections: BiographySection[] = [];
 
     for (const topic of order) {
       const memories = byTopic.get(topic);
       if (!memories || memories.length === 0) continue;
 
-      const dated = [...memories].sort((a, b) => (a.occurredOn ?? '9999').localeCompare(b.occurredOn ?? '9999'));
+      const dated = [...memories].sort((a, b) =>
+        (a.occurredOn ?? '9999').localeCompare(b.occurredOn ?? '9999'),
+      );
       // Third person throughout, and only sentences the storyteller produced.
       const text = dated
         .map((m) => {
@@ -249,7 +304,9 @@ export class LocalLlmAdapter implements LlmAdapter {
     if (input.lastResponseText) {
       const nouns = extractProperNouns(input.lastResponseText);
       const unasked = nouns.find(
-        (n) => !input.askedQuestions.some((q) => q.includes(n)) && !this.isRestricted(n, input.restrictedTopics),
+        (n) =>
+          !input.askedQuestions.some((q) => q.includes(n)) &&
+          !this.isRestricted(n, input.restrictedTopics),
       );
       if (unasked) {
         return {
@@ -261,7 +318,9 @@ export class LocalLlmAdapter implements LlmAdapter {
     }
 
     const remaining = TOPIC_PLANS.filter(
-      (p) => !input.coveredTopics.includes(p.topic) && !this.isRestricted(p.topic, input.restrictedTopics),
+      (p) =>
+        !input.coveredTopics.includes(p.topic) &&
+        !this.isRestricted(p.topic, input.restrictedTopics),
     );
     const plan = remaining[0] ?? TOPIC_PLANS[0]!;
 
@@ -287,7 +346,10 @@ export class LocalLlmAdapter implements LlmAdapter {
     });
   }
 
-  async summariseSession(input: { responses: readonly string[]; subjectName: string }): Promise<string> {
+  async summariseSession(input: {
+    responses: readonly string[];
+    subjectName: string;
+  }): Promise<string> {
     const points = input.responses
       .flatMap((r) => splitSentences(r).slice(0, 1))
       .filter((s) => contentTokens(s).length >= 3)

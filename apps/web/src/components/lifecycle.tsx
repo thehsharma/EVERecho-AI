@@ -31,8 +31,17 @@ export function ExportButton({ archiveId }: { archiveId: string }) {
 
   return (
     <div className="stack">
-      {error ? <div className="notice notice-danger" role="alert">{error}</div> : null}
-      <button type="button" className="btn btn-primary btn-lg" onClick={() => void requestExport()} disabled={pending}>
+      {error ? (
+        <div className="notice notice-danger" role="alert">
+          {error}
+        </div>
+      ) : null}
+      <button
+        type="button"
+        className="btn btn-primary btn-lg"
+        onClick={() => void requestExport()}
+        disabled={pending}
+      >
         {pending ? <span className="spinner-text">Preparing</span> : 'Prepare an export'}
       </button>
     </div>
@@ -102,7 +111,15 @@ export function DeletionPanel({
           {active.steps.map((step) => (
             <li key={step.key} className="spread">
               <span>{step.label}</span>
-              <Tag kind={step.status === 'done' ? 'approved' : step.status === 'failed' ? 'danger' : 'draft'}>
+              <Tag
+                kind={
+                  step.status === 'done'
+                    ? 'approved'
+                    : step.status === 'failed'
+                      ? 'danger'
+                      : 'draft'
+                }
+              >
                 {step.status}
               </Tag>
             </li>
@@ -118,7 +135,11 @@ export function DeletionPanel({
   return (
     <Card>
       <div className="stack">
-        {error ? <div className="notice notice-danger" role="alert">{error}</div> : null}
+        {error ? (
+          <div className="notice notice-danger" role="alert">
+            {error}
+          </div>
+        ) : null}
         <div>
           <label htmlFor="confirm">
             To confirm, type the archive’s name exactly: <strong>{archiveName}</strong>
@@ -136,7 +157,11 @@ export function DeletionPanel({
           onClick={() => void requestDeletion()}
           disabled={pending || phrase.trim() !== archiveName.trim()}
         >
-          {pending ? <span className="spinner-text">Starting</span> : 'Delete this archive permanently'}
+          {pending ? (
+            <span className="spinner-text">Starting</span>
+          ) : (
+            'Delete this archive permanently'
+          )}
         </button>
       </div>
     </Card>

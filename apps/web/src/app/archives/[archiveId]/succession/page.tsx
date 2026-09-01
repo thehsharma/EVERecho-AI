@@ -19,10 +19,7 @@ export default async function SuccessionPage({
 
   return (
     <div className="stack-lg" style={{ maxWidth: '46rem' }}>
-      <PageHeader
-        title="Continuity"
-        lede="What you would like to happen to this archive later."
-      />
+      <PageHeader title="Continuity" lede="What you would like to happen to this archive later." />
 
       <Notice tone="warn" title="This records your wishes. It does not act on them.">
         <p>
@@ -46,7 +43,9 @@ export default async function SuccessionPage({
               <p>
                 <strong>Named to help:</strong> {directive.stewardEmail ?? 'nobody named'}
               </p>
-              <p style={{ marginBottom: 0 }}>{directive.instructions ?? 'No instructions recorded.'}</p>
+              <p style={{ marginBottom: 0 }}>
+                {directive.instructions ?? 'No instructions recorded.'}
+              </p>
             </>
           ) : (
             <p className="muted" style={{ marginBottom: 0 }}>

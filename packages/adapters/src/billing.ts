@@ -157,5 +157,7 @@ export class StripeBillingAdapter implements BillingAdapter {
 }
 
 export function createBilling(cfg: AppConfig): BillingAdapter {
-  return cfg.env.BILLING_DRIVER === 'stripe' ? new StripeBillingAdapter(cfg) : new LocalBillingAdapter(cfg);
+  return cfg.env.BILLING_DRIVER === 'stripe'
+    ? new StripeBillingAdapter(cfg)
+    : new LocalBillingAdapter(cfg);
 }

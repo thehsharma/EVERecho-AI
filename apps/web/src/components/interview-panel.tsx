@@ -8,7 +8,8 @@ import { uploadFile } from '@/lib/upload';
 import { Card, Notice } from './ui';
 
 type Mode = 'text' | 'audio';
-type Recording = 'idle' | 'requesting' | 'recording' | 'stopped' | 'uploading' | 'denied' | 'unsupported';
+type Recording =
+  'idle' | 'requesting' | 'recording' | 'stopped' | 'uploading' | 'denied' | 'unsupported';
 
 interface SpeechRecognitionLike {
   continuous: boolean;
@@ -16,11 +17,22 @@ interface SpeechRecognitionLike {
   lang: string;
   start(): void;
   stop(): void;
-  onresult: ((event: { resultIndex: number; results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
+  onresult:
+    | ((event: {
+        resultIndex: number;
+        results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }>;
+      }) => void)
+    | null;
   onerror: (() => void) | null;
 }
 
-export function InterviewPanel({ archiveId, subjectName }: { archiveId: string; subjectName: string }) {
+export function InterviewPanel({
+  archiveId,
+  subjectName,
+}: {
+  archiveId: string;
+  subjectName: string;
+}) {
   const [session, setSession] = useState<InterviewSession | null>(null);
   const [mode, setMode] = useState<Mode>('text');
   const [answer, setAnswer] = useState('');
@@ -55,13 +67,18 @@ export function InterviewPanel({ archiveId, subjectName }: { archiveId: string; 
       setMode(chosen);
       setSession(result.session);
     } catch (caught) {
-      setError(caught instanceof ApiRequestError ? caught.message : 'We could not start a session.');
+      setError(
+        caught instanceof ApiRequestError ? caught.message : 'We could not start a session.',
+      );
     } finally {
       setPending(false);
     }
   }
 
-  async function submit(action: 'answer' | 'skip' | 'prefer_not_to_answer' | 'pause', sourceAssetId?: string) {
+  async function submit(
+    action: 'answer' | 'skip' | 'prefer_not_to_answer' | 'pause',
+    sourceAssetId?: string,
+  ) {
     if (!session?.currentPrompt) return;
     setPending(true);
     setError(null);
@@ -80,7 +97,11 @@ export function InterviewPanel({ archiveId, subjectName }: { archiveId: string; 
       setLiveTranscript('');
       setRecording('idle');
     } catch (caught) {
-      setError(caught instanceof ApiRequestError ? caught.message : 'That did not save. Your words are still here — try again.');
+      setError(
+        caught instanceof ApiRequestError
+          ? caught.message
+          : 'That did not save. Your words are still here — try again.',
+      );
     } finally {
       setPending(false);
     }
@@ -96,7 +117,9 @@ export function InterviewPanel({ archiveId, subjectName }: { archiveId: string; 
       setFinished(result.session);
       setSession(null);
     } catch (caught) {
-      setError(caught instanceof ApiRequestError ? caught.message : 'We could not finish the session.');
+      setError(
+        caught instanceof ApiRequestError ? caught.message : 'We could not finish the session.',
+      );
     } finally {
       setPending(false);
     }
@@ -298,7 +321,12 @@ export function InterviewPanel({ archiveId, subjectName }: { archiveId: string; 
               >
                 {pending ? <span className="spinner-text">Saving</span> : 'Save and go on'}
               </button>
-              <button type="button" className="btn" onClick={() => void submit('skip')} disabled={pending}>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => void submit('skip')}
+                disabled={pending}
+              >
                 Skip this one
               </button>
               <button
@@ -349,7 +377,11 @@ export function InterviewPanel({ archiveId, subjectName }: { archiveId: string; 
 
             <div className="row">
               {recording === 'idle' || recording === 'denied' || recording === 'unsupported' ? (
-                <button type="button" className="btn btn-primary btn-lg" onClick={() => void beginRecording()}>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-lg"
+                  onClick={() => void beginRecording()}
+                >
                   Start recording
                 </button>
               ) : null}
@@ -381,7 +413,12 @@ export function InterviewPanel({ archiveId, subjectName }: { archiveId: string; 
                   </button>
                 </>
               ) : null}
-              <button type="button" className="btn" onClick={() => void submit('skip')} disabled={pending}>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => void submit('skip')}
+                disabled={pending}
+              >
                 Skip this one
               </button>
             </div>
@@ -410,7 +447,12 @@ export function InterviewPanel({ archiveId, subjectName }: { archiveId: string; 
       </Card>
 
       <div className="row">
-        <button type="button" className="btn btn-quiet" onClick={() => void submit('pause')} disabled={pending}>
+        <button
+          type="button"
+          className="btn btn-quiet"
+          onClick={() => void submit('pause')}
+          disabled={pending}
+        >
           Pause and come back later
         </button>
         <button type="button" className="btn" onClick={() => void finish()} disabled={pending}>

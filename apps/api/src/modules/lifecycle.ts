@@ -67,7 +67,10 @@ export function registerLifecycleRoutes(app: FastifyInstance, ctx: AppContext): 
             payload: { exportJobId: row.id },
             idempotencyKey: `export:${row.id}`,
           });
-          await ctx.analytics.track('export_requested', { actorId: user.id, archiveId: params.archiveId });
+          await ctx.analytics.track('export_requested', {
+            actorId: user.id,
+            archiveId: params.archiveId,
+          });
           return { export: await toExport(ctx, row) };
         },
       ),
@@ -165,7 +168,11 @@ export function registerLifecycleRoutes(app: FastifyInstance, ctx: AppContext): 
       withArchiveAccess(
         ctx,
         request,
-        { archiveId: params.archiveId, action: 'deletion.read', resource: { type: 'deletion_request' } },
+        {
+          archiveId: params.archiveId,
+          action: 'deletion.read',
+          resource: { type: 'deletion_request' },
+        },
         async ({ tx }) => {
           const rows = await tx.query<DeletionRow>(
             `SELECT * FROM deletion_request WHERE archive_id = $1 ORDER BY created_at DESC LIMIT 20`,

@@ -27,9 +27,11 @@ export default async function MembersPage({
   const [archive, members, invitations] = await Promise.all([
     serverFetch<Archive>(`/v1/archives/${archiveId}`),
     serverFetch<{ members: Membership[] }>(`/v1/archives/${archiveId}/members`),
-    serverFetch<{ invitations: Invitation[] }>(`/v1/archives/${archiveId}/invitations`).catch(() => ({
-      invitations: [] as Invitation[],
-    })),
+    serverFetch<{ invitations: Invitation[] }>(`/v1/archives/${archiveId}/invitations`).catch(
+      () => ({
+        invitations: [] as Invitation[],
+      }),
+    ),
   ]);
 
   const canInvite = archive.viewerCapabilities.includes('invitation.create');
@@ -71,7 +73,11 @@ export default async function MembersPage({
         <h2>Current access</h2>
         <ul className="list-plain">
           {members.members.map((member) => (
-            <li key={member.id} className="spread" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.75rem' }}>
+            <li
+              key={member.id}
+              className="spread"
+              style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.75rem' }}
+            >
               <div>
                 <strong>{member.displayName}</strong>{' '}
                 <Tag>{ROLE_LABEL[member.role] ?? member.role}</Tag>{' '}
@@ -79,7 +85,11 @@ export default async function MembersPage({
                 <div className="small muted">{member.email}</div>
               </div>
               {canRevoke && member.role !== 'storyteller' && member.status === 'active' ? (
-                <MemberActions archiveId={archiveId} membershipId={member.id} name={member.displayName} />
+                <MemberActions
+                  archiveId={archiveId}
+                  membershipId={member.id}
+                  name={member.displayName}
+                />
               ) : null}
             </li>
           ))}

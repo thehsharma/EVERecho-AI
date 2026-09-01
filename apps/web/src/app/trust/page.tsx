@@ -57,8 +57,8 @@ export default async function TrustPage() {
           </li>
         </ul>
         <p style={{ marginBottom: 0 }}>
-          A model’s guess is never shown to a family member, and simulated speech is not a thing this
-          product can produce.
+          A model’s guess is never shown to a family member, and simulated speech is not a thing
+          this product can produce.
         </p>
       </Card>
 

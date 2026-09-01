@@ -23,7 +23,8 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: AppContext): void
     url: '/v1/admin/incidents',
     tag: 'admin',
     summary: 'Safety, security, accuracy, consent and availability incidents',
-    description: 'Incident records carry operational metadata only. None of them contains memory content.',
+    description:
+      'Incident records carry operational metadata only. None of them contains memory content.',
     auth: 'required',
     query: z.object({
       status: z.enum(['open', 'acknowledged', 'resolved', 'all']).default('open'),

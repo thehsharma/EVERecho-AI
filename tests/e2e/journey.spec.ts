@@ -49,13 +49,17 @@ test.describe('a family member gets a cited answer, or an honest refusal', () =>
     const archiveId = await openDemoArchive(page);
 
     await page.goto(`/archives/${archiveId}/ask`);
-    await page.getByLabel('Your question').fill('What did she think about the 1983 cricket world cup?');
+    await page
+      .getByLabel('Your question')
+      .fill('What did she think about the 1983 cricket world cup?');
     await page.getByRole('button', { name: 'Ask', exact: true }).click();
 
     await expect(page.getByText(/don’t have enough evidence/i)).toBeVisible();
   });
 
-  test('refuses to answer as the storyteller, and says what it can do instead', async ({ page }) => {
+  test('refuses to answer as the storyteller, and says what it can do instead', async ({
+    page,
+  }) => {
     const archiveId = await openDemoArchive(page);
 
     await page.goto(`/archives/${archiveId}/ask`);
@@ -133,7 +137,6 @@ test.describe('the storyteller is in control', () => {
 });
 
 test.describe('access boundaries hold in the browser', () => {
-
   test.use({ storageState: 'tests/e2e/.auth/family.json' });
 
   test('an archive you have no relationship with is reported as not found', async ({ page }) => {

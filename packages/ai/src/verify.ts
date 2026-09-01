@@ -1,5 +1,11 @@
 import type { EvidenceClass } from '@everecho/contracts';
-import { coverage, extractProperNouns, sharedTokenCount, splitSentences, tokenOverlap } from './text';
+import {
+  coverage,
+  extractProperNouns,
+  sharedTokenCount,
+  splitSentences,
+  tokenOverlap,
+} from './text';
 
 export interface EvidencePassage {
   id: string;
@@ -75,7 +81,13 @@ export function verifyClaim(
   const corroborated =
     distinctSources.size > 1 &&
     cited.some((a, i) =>
-      cited.slice(i + 1).some((b) => a.sourceId !== b.sourceId && tokenOverlap(a.text, b.text) >= VERIFICATION_THRESHOLDS.corroboration),
+      cited
+        .slice(i + 1)
+        .some(
+          (b) =>
+            a.sourceId !== b.sourceId &&
+            tokenOverlap(a.text, b.text) >= VERIFICATION_THRESHOLDS.corroboration,
+        ),
     );
 
   const evidenceClass: EvidenceClass = corroborated

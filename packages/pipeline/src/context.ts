@@ -2,13 +2,14 @@ import type { AppConfig } from '@everecho/config';
 import type { Database, Transaction } from '@everecho/db';
 import type { EmailAdapter, ScanAdapter, StorageAdapter, CacheAdapter } from '@everecho/adapters';
 import type { EmbeddingAdapter, LlmAdapter, OcrAdapter, SpeechToTextAdapter } from '@everecho/ai';
-import {
-  authorize,
-  type Actor,
-  type ResourceRef,
-} from '@everecho/consent';
+import { authorize, type Actor, type ResourceRef } from '@everecho/consent';
 import type { Action } from '@everecho/contracts';
-import { findArchive, findCurrentPolicy, hasActiveDisputeHold, toConsentPolicy } from '@everecho/db';
+import {
+  findArchive,
+  findCurrentPolicy,
+  hasActiveDisputeHold,
+  toConsentPolicy,
+} from '@everecho/db';
 
 /**
  * What background work needs. Structurally satisfied by the API's AppContext,

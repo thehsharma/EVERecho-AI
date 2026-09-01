@@ -50,10 +50,15 @@ export function registerConsentRoutes(app: FastifyInstance, ctx: AppContext): vo
     response: z.object({
       explanation: z.object({ heading: z.string(), points: z.array(z.string()) }),
       consentCopyVersion: z.string(),
-      questions: z.array(teachBackQuestionSchema.omit({ correctOptionId: true, explanation: true })),
+      questions: z.array(
+        teachBackQuestionSchema.omit({ correctOptionId: true, explanation: true }),
+      ),
     }),
     handler: async () => ({
-      explanation: { heading: CONSENT_EXPLANATION.heading, points: [...CONSENT_EXPLANATION.points] },
+      explanation: {
+        heading: CONSENT_EXPLANATION.heading,
+        points: [...CONSENT_EXPLANATION.points],
+      },
       consentCopyVersion: ctx.branding.consentCopyVersion,
       questions: TEACH_BACK_QUESTIONS.map(({ id, prompt, options }) => ({ id, prompt, options })),
     }),
@@ -152,7 +157,11 @@ export function registerConsentRoutes(app: FastifyInstance, ctx: AppContext): vo
       withArchiveAccess(
         ctx,
         request,
-        { archiveId: params.archiveId, action: 'consent.read', resource: { type: 'consent_policy' } },
+        {
+          archiveId: params.archiveId,
+          action: 'consent.read',
+          resource: { type: 'consent_policy' },
+        },
         async ({ tx, archive }) => {
           const row = await findCurrentPolicy(tx, archive.id);
           const teachBack = await tx.maybeOne<{ passed: boolean }>(

@@ -74,7 +74,18 @@ export class MemoryCacheAdapter implements CacheAdapter {
  */
 export class RedisCacheAdapter implements CacheAdapter {
   readonly name = 'redis';
-  private client: { get: Function; set: Function; del: Function; scan: Function; incr: Function; expire: Function; quit: Function } | undefined;
+  /** Only the commands this adapter uses, typed rather than left as Function. */
+  private client:
+    | {
+        get(key: string): Promise<string | null>;
+        set(key: string, value: string, mode: 'EX', ttl: number): Promise<unknown>;
+        del(...keys: string[]): Promise<number>;
+        scan(cursor: string, ...args: (string | number)[]): Promise<[string, string[]]>;
+        incr(key: string): Promise<number>;
+        expire(key: string, seconds: number): Promise<unknown>;
+        quit(): Promise<unknown>;
+      }
+    | undefined;
 
   constructor(private readonly cfg: AppConfig) {}
 
@@ -87,7 +98,7 @@ export class RedisCacheAdapter implements CacheAdapter {
   }
 
   async get(key: string): Promise<string | null> {
-    return (await (await this.connection()).get(key)) as string | null;
+    return (await this.connection()).get(key);
   }
 
   async set(key: string, value: string, ttlSeconds: number): Promise<void> {
@@ -103,7 +114,7 @@ export class RedisCacheAdapter implements CacheAdapter {
     let cursor = '0';
     let removed = 0;
     do {
-      const [next, keys] = (await client.scan(cursor, 'MATCH', `${prefix}*`, 'COUNT', 200)) as [string, string[]];
+      const [next, keys] = await client.scan(cursor, 'MATCH', `${prefix}*`, 'COUNT', 200);
       cursor = next;
       if (keys.length > 0) {
         await client.del(...keys);
@@ -115,7 +126,7 @@ export class RedisCacheAdapter implements CacheAdapter {
 
   async increment(key: string, ttlSeconds: number): Promise<number> {
     const client = await this.connection();
-    const value = (await client.incr(key)) as number;
+    const value = await client.incr(key);
     if (value === 1) await client.expire(key, ttlSeconds);
     return value;
   }

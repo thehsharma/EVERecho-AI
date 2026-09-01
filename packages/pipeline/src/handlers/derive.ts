@@ -10,7 +10,11 @@ import { assertProcessingAllowed } from '../context';
  * most useful thing the next interview could know.
  */
 export async function buildTimeline({ ctx, tx, archiveId }: JobArgs): Promise<void> {
-  await assertProcessingAllowed(ctx, tx, { archiveId, action: 'timeline.read', resource: { type: 'timeline' } });
+  await assertProcessingAllowed(ctx, tx, {
+    archiveId,
+    action: 'timeline.read',
+    resource: { type: 'timeline' },
+  });
 
   const rows = await tx.query<{
     id: string;
@@ -156,10 +160,7 @@ export async function composeBiography({ ctx, tx, archiveId }: JobArgs): Promise
   );
 }
 
-async function policyVersion(
-  tx: JobArgs['tx'],
-  archiveId: string,
-): Promise<string> {
+async function policyVersion(tx: JobArgs['tx'], archiveId: string): Promise<string> {
   const row = await tx.maybeOne<{ version: number }>(
     `SELECT version FROM consent_policy WHERE archive_id = $1 AND superseded_at IS NULL`,
     [archiveId],

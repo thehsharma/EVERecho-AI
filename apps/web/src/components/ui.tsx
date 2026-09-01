@@ -67,7 +67,11 @@ export function Empty({ title, children }: { title: string; children?: ReactNode
   return (
     <div className="empty">
       <p style={{ margin: 0, fontWeight: 600, color: 'var(--ink)' }}>{title}</p>
-      {children ? <div className="small" style={{ marginTop: '0.5rem' }}>{children}</div> : null}
+      {children ? (
+        <div className="small" style={{ marginTop: '0.5rem' }}>
+          {children}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -85,7 +89,11 @@ export function PageHeader({
     <header className="spread" style={{ marginBottom: '1.5rem' }}>
       <div>
         <h1 style={{ marginBottom: lede ? '0.25rem' : 0 }}>{title}</h1>
-        {lede ? <p className="muted" style={{ marginBottom: 0 }}>{lede}</p> : null}
+        {lede ? (
+          <p className="muted" style={{ marginBottom: 0 }}>
+            {lede}
+          </p>
+        ) : null}
       </div>
       {actions ? <div className="row">{actions}</div> : null}
     </header>
@@ -125,11 +133,7 @@ export function DefinitionRow({ term, children }: { term: string; children: Reac
 }
 
 /** A date a storyteller may only half-remember, rendered at its real precision. */
-export function ApproximateDate({
-  value,
-}: {
-  value: { value: string; precision: string } | null;
-}) {
+export function ApproximateDate({ value }: { value: { value: string; precision: string } | null }) {
   if (!value) return <span className="muted">No date recorded</span>;
   if (value.precision === 'decade') return <span>The {value.value}s</span>;
   if (value.precision === 'year') return <span>{value.value.slice(0, 4)}</span>;

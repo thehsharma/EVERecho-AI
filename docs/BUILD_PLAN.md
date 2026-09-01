@@ -1,6 +1,6 @@
 # EverEcho v0.1 — Build Plan
 
-**Status:** in progress · **Owner:** autonomous build session · **Started:** 2026-08-31
+**Status:** complete · **Owner:** autonomous build session · **Started:** 2026-08-31
 
 Evidence labels used throughout: **VERIFIED** (inspected/executed), **INFERENCE**,
 **ASSUMPTION** (reversible choice), **UNKNOWN** (needs credentials/counsel/research).
@@ -32,15 +32,15 @@ Evidence labels used throughout: **VERIFIED** (inspected/executed), **INFERENCE*
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Audit, traceability, decision log | done |
-| 1 | Monorepo, config, contracts, database, migrations, seed, CI, Docker | in progress |
-| 2 | Identity, archives, invitations, consent engine, `authorize()` | pending |
-| 3 | Capture, uploads, quarantine, job queue, worker, STT/OCR adapters | pending |
-| 4 | Memories, corrections, events, entities, timeline, biography | pending |
-| 5 | Retrieval, grounded Q&A, claim verification, citations, evals | pending |
-| 6 | Sharing, revocation, export, deletion, audit, billing, notifications | pending |
-| 7 | Restricted admin, safety/security incidents, observability | pending |
-| 8 | Web frontend (all required screens), a11y, demo mode | pending |
-| 9 | Hardening, full test run, documentation, handoff | pending |
+| 1 | Monorepo, config, contracts, database, migrations, seed, CI, Docker | done |
+| 2 | Identity, archives, invitations, consent engine, `authorize()` | done |
+| 3 | Capture, uploads, quarantine, job queue, worker, STT/OCR adapters | done |
+| 4 | Memories, corrections, events, entities, timeline, biography | done |
+| 5 | Retrieval, grounded Q&A, claim verification, citations, evals | done |
+| 6 | Sharing, revocation, export, deletion, audit, billing, notifications | done |
+| 7 | Restricted admin, safety/security incidents, observability | done |
+| 8 | Web frontend (all required screens), a11y, demo mode | done |
+| 9 | Hardening, full test run, documentation, handoff | done |
 
 This table is updated as each phase lands; it states current reality, not intent.
 

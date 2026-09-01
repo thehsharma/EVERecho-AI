@@ -48,14 +48,23 @@ export interface AppContext {
   features: ReturnType<typeof features>;
 }
 
-export function createContext(cfg: AppConfig = loadSharedConfig(), database?: Database): AppContext {
+export function createContext(
+  cfg: AppConfig = loadSharedConfig(),
+  database?: Database,
+): AppContext {
   const db = database ?? sharedDb(cfg);
   const analyticsAdapter = createAnalytics(cfg, async (event) => {
     // Analytics rows are archive-agnostic and carry only opaque ids.
     await db.query(
       `INSERT INTO analytics_event (name, opaque_actor_id, opaque_archive_id, props, occurred_at)
        VALUES ($1, $2, $3, $4, $5)`,
-      [event.name, event.opaqueActorId, event.opaqueArchiveId, JSON.stringify(event.props), event.occurredAt],
+      [
+        event.name,
+        event.opaqueActorId,
+        event.opaqueArchiveId,
+        JSON.stringify(event.props),
+        event.occurredAt,
+      ],
     );
   });
 

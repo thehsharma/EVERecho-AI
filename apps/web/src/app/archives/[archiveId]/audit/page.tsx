@@ -75,7 +75,9 @@ export default async function AuditPage({ params }: { params: Promise<{ archiveI
                     <td>
                       {event.outcome === 'deny' ? (
                         <Tag kind="danger">
-                          {event.reasonCode ? (REASON_LABEL[event.reasonCode] ?? 'refused') : 'refused'}
+                          {event.reasonCode
+                            ? (REASON_LABEL[event.reasonCode] ?? 'refused')
+                            : 'refused'}
                         </Tag>
                       ) : (
                         <Tag kind="approved">allowed</Tag>

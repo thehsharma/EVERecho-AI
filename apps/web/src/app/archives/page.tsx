@@ -31,7 +31,11 @@ export default async function ArchivesPage() {
       <PageHeader
         title="Your archives"
         lede="Only archives you have a relationship with appear here."
-        actions={<ButtonLink href="/archives/new" variant="primary">Start an archive</ButtonLink>}
+        actions={
+          <ButtonLink href="/archives/new" variant="primary">
+            Start an archive
+          </ButtonLink>
+        }
       />
 
       {me.archives.length === 0 ? (
@@ -40,7 +44,9 @@ export default async function ArchivesPage() {
             You can start one for someone in your family, or wait for an invitation. Starting an
             archive does not record anything — the person it is about decides that.
           </p>
-          <ButtonLink href="/archives/new" variant="primary">Start an archive</ButtonLink>
+          <ButtonLink href="/archives/new" variant="primary">
+            Start an archive
+          </ButtonLink>
         </Empty>
       ) : (
         <ul className="list-plain">

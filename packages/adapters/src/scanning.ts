@@ -34,7 +34,11 @@ export class LocalScanAdapter implements ScanAdapter {
       return { verdict: 'infected', detail: 'EICAR test signature', scanner: this.name };
     }
     if (!this.allowed.includes(meta.mimeType)) {
-      return { verdict: 'unsupported', detail: `MIME type ${meta.mimeType} is not accepted`, scanner: this.name };
+      return {
+        verdict: 'unsupported',
+        detail: `MIME type ${meta.mimeType} is not accepted`,
+        scanner: this.name,
+      };
     }
     const sniffed = sniffType(body);
     if (sniffed && !typesAgree(sniffed, meta.mimeType)) {
@@ -72,20 +76,31 @@ export function sniffType(body: Buffer): string | null {
   if (startsWith(0x49, 0x49, 0x2a, 0x00) || startsWith(0x4d, 0x4d, 0x00, 0x2a)) return 'image/tiff';
   if (startsWith(0x1a, 0x45, 0xdf, 0xa3)) return 'video/webm';
   if (startsWith(0x4f, 0x67, 0x67, 0x53)) return 'audio/ogg';
-  if (startsWith(0x52, 0x49, 0x46, 0x46) && b.subarray(8, 12).toString('latin1') === 'WAVE') return 'audio/wav';
-  if (startsWith(0x49, 0x44, 0x33) || (b[0] === 0xff && ((b[1] ?? 0) & 0xe0) === 0xe0)) return 'audio/mpeg';
+  if (startsWith(0x52, 0x49, 0x46, 0x46) && b.subarray(8, 12).toString('latin1') === 'WAVE')
+    return 'audio/wav';
+  if (startsWith(0x49, 0x44, 0x33) || (b[0] === 0xff && ((b[1] ?? 0) & 0xe0) === 0xe0))
+    return 'audio/mpeg';
   if (b.subarray(4, 8).toString('latin1') === 'ftyp') {
     const brand = b.subarray(8, 12).toString('latin1');
     return brand.startsWith('M4A') ? 'audio/mp4' : 'video/mp4';
   }
-  if (startsWith(0x52, 0x49, 0x46, 0x46) && b.subarray(8, 12).toString('latin1') === 'WEBP') return 'image/webp';
+  if (startsWith(0x52, 0x49, 0x46, 0x46) && b.subarray(8, 12).toString('latin1') === 'WEBP')
+    return 'image/webp';
   return null;
 }
 
 /** WebM and Ogg carry both audio and video; a container mismatch is not an attack. */
 function typesAgree(sniffed: string, declared: string): boolean {
   if (sniffed === declared) return true;
-  const container = ['video/webm', 'audio/webm', 'audio/ogg', 'video/ogg', 'video/mp4', 'audio/mp4', 'video/quicktime'];
+  const container = [
+    'video/webm',
+    'audio/webm',
+    'audio/ogg',
+    'video/ogg',
+    'video/mp4',
+    'audio/mp4',
+    'video/quicktime',
+  ];
   return container.includes(sniffed) && container.includes(declared);
 }
 

@@ -31,8 +31,12 @@ try {
 
   const signIn = async (email: string) => {
     const client = new TestClient(h.app);
-    const response = await client.post('/v1/auth/sign-in', { email, password: 'demo-passphrase-2026' });
-    if (response.status !== 200) throw new Error(`could not sign in as ${email}: ${response.status}`);
+    const response = await client.post('/v1/auth/sign-in', {
+      email,
+      password: 'demo-passphrase-2026',
+    });
+    if (response.status !== 200)
+      throw new Error(`could not sign in as ${email}: ${response.status}`);
     return client;
   };
 
@@ -56,13 +60,22 @@ try {
         abstained: boolean;
         abstentionReason: string | null;
         answerText: string;
-        claims: { text: string; citations: { quotedText: string; sourceId: string }[]; verified: boolean }[];
+        claims: {
+          text: string;
+          citations: { quotedText: string; sourceId: string }[];
+          verified: boolean;
+        }[];
       };
     }>(`/v1/archives/${archiveId}/questions`, { question: testCase.question });
 
     if (testCase.expect.kind === 'denied') {
       const passed = response.status === 403 && response.reasonCode === testCase.expect.reasonCode;
-      record(testCase.id, testCase.category, passed, passed ? 'refused as expected' : `status ${response.status} reason ${response.reasonCode}`);
+      record(
+        testCase.id,
+        testCase.category,
+        passed,
+        passed ? 'refused as expected' : `status ${response.status} reason ${response.reasonCode}`,
+      );
       continue;
     }
 
@@ -78,20 +91,32 @@ try {
         sensitiveCases += 1;
         if (passed) sensitiveAbstained += 1;
       }
-      record(testCase.id, testCase.category, passed, passed ? 'abstained' : `answered with ${answer.claims.length} claim(s)`);
+      record(
+        testCase.id,
+        testCase.category,
+        passed,
+        passed ? 'abstained' : `answered with ${answer.claims.length} claim(s)`,
+      );
       continue;
     }
 
     if (testCase.expect.kind === 'refused_prohibited') {
       const passed = answer.abstained && answer.abstentionReason === 'prohibited_request';
-      record(testCase.id, testCase.category, passed, passed ? 'refused' : `reason ${answer.abstentionReason}`);
+      record(
+        testCase.id,
+        testCase.category,
+        passed,
+        passed ? 'refused' : `reason ${answer.abstentionReason}`,
+      );
       continue;
     }
 
     // Grounded: check the content, then check every citation really exists.
     const text = answer.answerText.toLowerCase();
     const missing = testCase.expect.mustMention.filter((m) => !text.includes(m.toLowerCase()));
-    const forbidden = (testCase.expect.mustNotMention ?? []).filter((m) => text.includes(m.toLowerCase()));
+    const forbidden = (testCase.expect.mustNotMention ?? []).filter((m) =>
+      text.includes(m.toLowerCase()),
+    );
 
     for (const claim of answer.claims) {
       citedClaims += 1;
@@ -134,20 +159,32 @@ try {
   let permissionLeaks = 0;
   const boundary = async (id: string, passed: boolean, detail: string) => {
     const testCase = BOUNDARY_CASES.find((b) => b.id === id)!;
-    if (!passed && (testCase.category === 'access_boundary' || testCase.category === 'cross_archive_isolation')) {
+    if (
+      !passed &&
+      (testCase.category === 'access_boundary' || testCase.category === 'cross_archive_isolation')
+    ) {
       permissionLeaks += 1;
     }
     record(id, testCase.category, passed, detail);
   };
 
   const outsiderRead = await outsider.get(`/v1/archives/${archiveId}/memories`);
-  await boundary('outsider-cannot-read', outsiderRead.status === 404, `status ${outsiderRead.status}`);
+  await boundary(
+    'outsider-cannot-read',
+    outsiderRead.status === 404,
+    `status ${outsiderRead.status}`,
+  );
 
-  const outsiderAsk = await outsider.post(`/v1/archives/${archiveId}/questions`, { question: 'Where did they live?' });
+  const outsiderAsk = await outsider.post(`/v1/archives/${archiveId}/questions`, {
+    question: 'Where did they live?',
+  });
   await boundary('outsider-cannot-ask', outsiderAsk.status === 404, `status ${outsiderAsk.status}`);
 
   // A second archive, to prove one archive's question cannot reach another's evidence.
-  const otherBuyer = await signUp(h.app, { email: 'other@example.test', displayName: 'Other Buyer' });
+  const otherBuyer = await signUp(h.app, {
+    email: 'other@example.test',
+    displayName: 'Other Buyer',
+  });
   const otherArchive = await otherBuyer.post<{ id: string }>('/v1/archives', {
     name: 'Another family',
     subject: { displayName: 'Someone Else' },
@@ -159,8 +196,11 @@ try {
   );
   await boundary(
     'cross-archive-retrieval',
-    crossAsk.status !== 200 || (crossAsk.body.response.abstained && crossAsk.body.response.claims.length === 0),
-    crossAsk.status === 200 ? `abstained: ${crossAsk.body.response.abstained}` : `status ${crossAsk.status}`,
+    crossAsk.status !== 200 ||
+      (crossAsk.body.response.abstained && crossAsk.body.response.claims.length === 0),
+    crossAsk.status === 200
+      ? `abstained: ${crossAsk.body.response.abstained}`
+      : `status ${crossAsk.status}`,
   );
 
   const unscoped = await h.ctx.db.query(`SELECT count(*)::int AS n FROM memory`);
@@ -184,7 +224,8 @@ try {
     );
     await boundary(
       'candidate-not-answerable',
-      leak.status !== 200 || !leak.body.response.answerText.includes(candidates[0].body.slice(0, 40)),
+      leak.status !== 200 ||
+        !leak.body.response.answerText.includes(candidates[0].body.slice(0, 40)),
       'unapproved content stayed out of the answer',
     );
   } else {
@@ -206,12 +247,20 @@ try {
     `/v1/archives/${archiveId}/members`,
   );
   const familyMembership = members.body.members.find((m) => m.role === 'family')!;
-  await storyteller.patch(`/v1/archives/${archiveId}/members/${familyMembership.id}`, { status: 'revoked' });
+  await storyteller.patch(`/v1/archives/${archiveId}/members/${familyMembership.id}`, {
+    status: 'revoked',
+  });
 
   const afterRevoke = await family.get(`/v1/archives/${archiveId}/memories`);
-  await boundary('revoked-cannot-read', [403, 404].includes(afterRevoke.status), `status ${afterRevoke.status}`);
+  await boundary(
+    'revoked-cannot-read',
+    [403, 404].includes(afterRevoke.status),
+    `status ${afterRevoke.status}`,
+  );
 
-  const sources = await storyteller.get<{ sources: { id: string }[] }>(`/v1/archives/${archiveId}/sources`);
+  const sources = await storyteller.get<{ sources: { id: string }[] }>(
+    `/v1/archives/${archiveId}/sources`,
+  );
   const afterRevokeDownload = await family.get(
     `/v1/archives/${archiveId}/sources/${sources.body.sources[0]!.id}/download`,
   );
@@ -244,7 +293,12 @@ try {
        WHERE NOT EXISTS (SELECT 1 FROM memory m WHERE m.id = e.memory_id)`,
     ),
   );
-  record('deletion-removes-vectors', 'deletion_propagation', orphanVectors.n === 0, `${orphanVectors.n} orphaned vectors`);
+  record(
+    'deletion-removes-vectors',
+    'deletion_propagation',
+    orphanVectors.n === 0,
+    `${orphanVectors.n} orphaned vectors`,
+  );
 
   // ---- Report ---------------------------------------------------------
   const citationCorrectness = citedClaims === 0 ? 1 : claimsWithValidCitation / citedClaims;
@@ -261,10 +315,26 @@ try {
   };
 
   const blocking = [
-    ['claim-to-citation correctness', citationCorrectness >= TARGETS.citationCorrectness, `${(citationCorrectness * 100).toFixed(1)}% (target ≥ ${TARGETS.citationCorrectness * 100}%)`],
-    ['unsupported material claims', unsupportedRate <= TARGETS.unsupportedClaimRate, `${(unsupportedRate * 100).toFixed(2)}% (target ≤ ${TARGETS.unsupportedClaimRate * 100}%)`],
-    ['abstention on no-evidence and sensitive', sensitiveRate >= TARGETS.sensitiveAbstention, `${(sensitiveRate * 100).toFixed(1)}% (target 100%)`],
-    ['permission leaks', permissionLeaks === TARGETS.permissionLeaks, `${permissionLeaks} (target 0)`],
+    [
+      'claim-to-citation correctness',
+      citationCorrectness >= TARGETS.citationCorrectness,
+      `${(citationCorrectness * 100).toFixed(1)}% (target ≥ ${TARGETS.citationCorrectness * 100}%)`,
+    ],
+    [
+      'unsupported material claims',
+      unsupportedRate <= TARGETS.unsupportedClaimRate,
+      `${(unsupportedRate * 100).toFixed(2)}% (target ≤ ${TARGETS.unsupportedClaimRate * 100}%)`,
+    ],
+    [
+      'abstention on no-evidence and sensitive',
+      sensitiveRate >= TARGETS.sensitiveAbstention,
+      `${(sensitiveRate * 100).toFixed(1)}% (target 100%)`,
+    ],
+    [
+      'permission leaks',
+      permissionLeaks === TARGETS.permissionLeaks,
+      `${permissionLeaks} (target 0)`,
+    ],
   ] as const;
 
   const failures = results.filter((r) => !r.passed);

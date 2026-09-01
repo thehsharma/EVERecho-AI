@@ -77,7 +77,10 @@ export function loadConfig(source?: Record<string, string | undefined>): AppConf
   const parsed = envSchema.safeParse(source ?? process.env);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`);
-    throw new ConfigError(`Invalid environment configuration:\n  - ${issues.join('\n  - ')}`, issues);
+    throw new ConfigError(
+      `Invalid environment configuration:\n  - ${issues.join('\n  - ')}`,
+      issues,
+    );
   }
   const env = parsed.data;
   const issues: string[] = [];
@@ -96,10 +99,14 @@ export function loadConfig(source?: Record<string, string | undefined>): AppConf
       );
     }
     if (env.STORAGE_DRIVER === 'local') {
-      issues.push('STORAGE_DRIVER=local is not durable; configure STORAGE_DRIVER=s3 for production');
+      issues.push(
+        'STORAGE_DRIVER=local is not durable; configure STORAGE_DRIVER=s3 for production',
+      );
     }
     if (!env.AI_PROVIDER_NO_TRAINING) {
-      issues.push('AI_PROVIDER_NO_TRAINING must remain true: provider training on memories is prohibited');
+      issues.push(
+        'AI_PROVIDER_NO_TRAINING must remain true: provider training on memories is prohibited',
+      );
     }
   }
 
@@ -133,11 +140,15 @@ export function loadConfig(source?: Record<string, string | undefined>): AppConf
     [env.EMBEDDINGS_DRIVER, 'EMBEDDINGS_API_KEY'],
     [env.STT_DRIVER, 'STT_API_KEY'],
   ] as const) {
-    if (driver !== 'local' && !env[key]) issues.push(`${key} is required when using a hosted provider`);
+    if (driver !== 'local' && !env[key])
+      issues.push(`${key} is required when using a hosted provider`);
   }
 
   if (issues.length > 0) {
-    throw new ConfigError(`Invalid environment configuration:\n  - ${issues.join('\n  - ')}`, issues);
+    throw new ConfigError(
+      `Invalid environment configuration:\n  - ${issues.join('\n  - ')}`,
+      issues,
+    );
   }
 
   return {

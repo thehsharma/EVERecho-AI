@@ -28,11 +28,7 @@ const CONSENT_POINTS = [
   'You can decline this invitation privately. We will not tell the person who invited you why.',
 ];
 
-export default async function InvitationPage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
+export default async function InvitationPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const [meta, me] = await Promise.all([productMeta(), optionalUser()]);
 

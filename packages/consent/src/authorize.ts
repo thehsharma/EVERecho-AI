@@ -1,4 +1,9 @@
-import { PROHIBITED_ACTIONS, type Action, type DenyReason, type Sensitivity } from '@everecho/contracts';
+import {
+  PROHIBITED_ACTIONS,
+  type Action,
+  type DenyReason,
+  type Sensitivity,
+} from '@everecho/contracts';
 import { ACTION_REQUIREMENTS, MODE_RANK, ROLE_ACTIONS, SENSITIVITY_RANK } from './matrix';
 import type { AuthorizeInput, Decision, Obligations } from './types';
 
@@ -54,7 +59,11 @@ function isProhibited(action: Action): boolean {
   return (PROHIBITED_ACTIONS as readonly string[]).includes(action);
 }
 
-function withinWindow(now: Date, from?: string | null, to?: string | null): 'ok' | 'early' | 'late' {
+function withinWindow(
+  now: Date,
+  from?: string | null,
+  to?: string | null,
+): 'ok' | 'early' | 'late' {
   if (from && now.getTime() < Date.parse(from)) return 'early';
   if (to && now.getTime() > Date.parse(to)) return 'late';
   return 'ok';
@@ -92,7 +101,8 @@ export function authorize(input: AuthorizeInput): Decision {
   if (!actor.userId) return deny('not_authenticated', policyVersion);
 
   const requirement = ACTION_REQUIREMENTS[action];
-  const isStoryteller = subject.storytellerUserId !== null && actor.userId === subject.storytellerUserId;
+  const isStoryteller =
+    subject.storytellerUserId !== null && actor.userId === subject.storytellerUserId;
 
   // 2. Platform administration is a separate world from archive membership.
   if (action.startsWith('admin.')) {
@@ -117,7 +127,11 @@ export function authorize(input: AuthorizeInput): Decision {
   if (subject.archiveStatus === 'deleted') {
     if (!READABLE_WHILE_DELETING.includes(action)) return deny('archive_deleted', policyVersion);
   }
-  if (subject.archiveStatus === 'deleting' && requirement.mutates && action !== 'deletion.request') {
+  if (
+    subject.archiveStatus === 'deleting' &&
+    requirement.mutates &&
+    action !== 'deletion.request'
+  ) {
     return deny('archive_deleted', policyVersion);
   }
   if (
@@ -149,7 +163,12 @@ export function authorize(input: AuthorizeInput): Decision {
   // 5. A buyer attempting to consent is refused *before* the generic role
   //    table, because "your role does not permit this" is not the thing they
   //    need to hear. They need to hear that this decision is not theirs to make.
-  if (requirement.storytellerOnly && !isStoryteller && membership.role === 'buyer' && action.startsWith('consent.')) {
+  if (
+    requirement.storytellerOnly &&
+    !isStoryteller &&
+    membership.role === 'buyer' &&
+    action.startsWith('consent.')
+  ) {
     return deny('buyer_cannot_consent_for_storyteller', policyVersion);
   }
 

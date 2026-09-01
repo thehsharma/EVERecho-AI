@@ -26,8 +26,7 @@ import type { Transaction } from '@everecho/db';
 
 const archiveParams = z.object({ archiveId: z.uuid() });
 
-const ABSTENTION_TEXT =
-  'I don’t have enough evidence in this archive to answer that reliably.';
+const ABSTENTION_TEXT = 'I don’t have enough evidence in this archive to answer that reliably.';
 
 /** Retrieval weights: lexical matching is the more trustworthy signal here. */
 const LEXICAL_WEIGHT = 0.6;
@@ -170,8 +169,11 @@ export function registerQaRoutes(app: FastifyInstance, ctx: AppContext): void {
           auditOnAllow: true,
           auditMetadata: { questionLength: body.question.length },
         },
-        async ({ tx, decision, subject, archive, user }) => {
-          await ctx.analytics.track('question_asked', { actorId: user.id, archiveId: params.archiveId });
+        async ({ tx, decision, archive, user }) => {
+          await ctx.analytics.track('question_asked', {
+            actorId: user.id,
+            archiveId: params.archiveId,
+          });
 
           // Refused before anything is retrieved: a request to impersonate the
           // storyteller must not cause their memories to be loaded at all.
@@ -198,7 +200,12 @@ export function registerQaRoutes(app: FastifyInstance, ctx: AppContext): void {
             await tx.query(
               `INSERT INTO security_event (archive_id, user_id, kind, severity, request_id, metadata)
                VALUES ($1, $2, 'injection_attempt_in_question', 'low', $3, $4)`,
-              [params.archiveId, user.id, request.id, JSON.stringify({ labels: injection.map((f) => f.label) })],
+              [
+                params.archiveId,
+                user.id,
+                request.id,
+                JSON.stringify({ labels: injection.map((f) => f.label) }),
+              ],
             );
             return {
               response: await storeResponse(ctx, tx, {
@@ -311,7 +318,9 @@ export function registerQaRoutes(app: FastifyInstance, ctx: AppContext): void {
               citations,
               confidence: claim.confidence,
               contradictionIds: [
-                ...new Set(claim.evidenceIds.flatMap((id) => byId.get(id)?.contradiction_ids ?? [])),
+                ...new Set(
+                  claim.evidenceIds.flatMap((id) => byId.get(id)?.contradiction_ids ?? []),
+                ),
               ],
               verified: true,
             };
@@ -398,7 +407,11 @@ export function registerQaRoutes(app: FastifyInstance, ctx: AppContext): void {
       withArchiveAccess(
         ctx,
         request,
-        { archiveId: params.archiveId, action: 'search.query', resource: { type: 'search', topics: contentTokens(query.query).slice(0, 12) } },
+        {
+          archiveId: params.archiveId,
+          action: 'search.query',
+          resource: { type: 'search', topics: contentTokens(query.query).slice(0, 12) },
+        },
         async ({ tx, decision }) => {
           const retrieved = await retrieveAuthorisedEvidence(ctx, tx, {
             archiveId: params.archiveId,

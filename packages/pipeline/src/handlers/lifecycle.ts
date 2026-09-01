@@ -18,7 +18,11 @@ export async function runExport({ ctx, tx, payload }: JobArgs): Promise<void> {
   const job = await tx.maybeOne<{
     id: string;
     archive_id: string;
-    options: { includeOriginals?: boolean; includeTranscripts?: boolean; includeProvenance?: boolean };
+    options: {
+      includeOriginals?: boolean;
+      includeTranscripts?: boolean;
+      includeProvenance?: boolean;
+    };
     status: string;
   }>(`SELECT id, archive_id, options, status FROM export_job WHERE id = $1`, [exportId]);
   if (!job || job.status === 'ready') return;
@@ -103,7 +107,10 @@ export async function runExport({ ctx, tx, payload }: JobArgs): Promise<void> {
   addJson('metadata/claims-and-evidence.json', claims);
   addJson('metadata/permissions.json', members);
   addJson('metadata/consent-history.json', policies);
-  addJson('metadata/sources.json', sources.map(({ storage_key: _ignored, ...rest }) => rest));
+  addJson(
+    'metadata/sources.json',
+    sources.map(({ storage_key: _ignored, ...rest }) => rest),
+  );
   if (job.options.includeTranscripts !== false) addJson('metadata/transcripts.json', transcripts);
 
   if (job.options.includeOriginals !== false) {
@@ -210,7 +217,11 @@ function plan(scope: 'archive' | 'source' | 'memory'): DeletionStep[] {
     step('cache', 'Clearing caches'),
   ];
   return scope === 'archive'
-    ? [...common, step('jobs', 'Cancelling queued work'), step('tombstone', 'Recording that the deletion happened')]
+    ? [
+        ...common,
+        step('jobs', 'Cancelling queued work'),
+        step('tombstone', 'Recording that the deletion happened'),
+      ]
     : common;
 }
 
@@ -284,9 +295,10 @@ async function resolveScope(
   request: { archive_id: string; scope: string; target_id: string | null },
 ): Promise<{ memoryIds: string[]; sourceIds: string[] }> {
   if (request.scope === 'archive') {
-    const sources = await tx.query<{ id: string }>(`SELECT id FROM source_asset WHERE archive_id = $1`, [
-      request.archive_id,
-    ]);
+    const sources = await tx.query<{ id: string }>(
+      `SELECT id FROM source_asset WHERE archive_id = $1`,
+      [request.archive_id],
+    );
     const memories = await tx.query<{ id: string }>(`SELECT id FROM memory WHERE archive_id = $1`, [
       request.archive_id,
     ]);
@@ -426,7 +438,11 @@ async function runStep(
         `INSERT INTO audit_event (archive_id, actor_user_id, actor_display, action, resource_type,
                                   resource_id, outcome, metadata)
          VALUES ($1, $2, 'system', 'archive.deleted', 'archive', $1, 'success', $3)`,
-        [archiveId, request.requested_by_user_id, JSON.stringify({ completedAt: new Date().toISOString() })],
+        [
+          archiveId,
+          request.requested_by_user_id,
+          JSON.stringify({ completedAt: new Date().toISOString() }),
+        ],
       );
       return 1;
     default:
@@ -444,7 +460,10 @@ export async function sendNotification({ ctx, tx, payload }: JobArgs): Promise<v
     template_version: string;
     variables: Record<string, string>;
     status: string;
-  }>(`SELECT id, email, template, template_version, variables, status FROM notification WHERE id = $1`, [id]);
+  }>(
+    `SELECT id, email, template, template_version, variables, status FROM notification WHERE id = $1`,
+    [id],
+  );
   if (!row || row.status !== 'queued') return;
 
   try {
@@ -454,7 +473,9 @@ export async function sendNotification({ ctx, tx, payload }: JobArgs): Promise<v
       templateVersion: row.template_version,
       variables: row.variables,
     });
-    await tx.query(`UPDATE notification SET status = 'sent', sent_at = now() WHERE id = $1`, [row.id]);
+    await tx.query(`UPDATE notification SET status = 'sent', sent_at = now() WHERE id = $1`, [
+      row.id,
+    ]);
   } catch (error) {
     await tx.query(`UPDATE notification SET status = 'failed', error = $2 WHERE id = $1`, [
       row.id,

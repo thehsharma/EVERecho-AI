@@ -18,7 +18,17 @@ declare module 'fastify' {
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-const CLIENT_ERROR_CODES: Record<number, 'validation_failed' | 'unauthenticated' | 'forbidden' | 'not_found' | 'conflict' | 'payload_too_large' | 'unsupported_media_type' | 'rate_limited'> = {
+const CLIENT_ERROR_CODES: Record<
+  number,
+  | 'validation_failed'
+  | 'unauthenticated'
+  | 'forbidden'
+  | 'not_found'
+  | 'conflict'
+  | 'payload_too_large'
+  | 'unsupported_media_type'
+  | 'rate_limited'
+> = {
   400: 'validation_failed',
   401: 'unauthenticated',
   403: 'forbidden',
@@ -137,7 +147,8 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
     // Liveness and readiness probes must not consume anyone's budget, and the
     // branding endpoint is fetched on every page render with nothing private
     // in it.
-    allowList: (request) => ['/healthz', '/readyz', '/v1/meta'].includes(request.url.split('?')[0] ?? ''),
+    allowList: (request) =>
+      ['/healthz', '/readyz', '/v1/meta'].includes(request.url.split('?')[0] ?? ''),
   });
 
   app.addHook('onRequest', async (request) => {
@@ -146,8 +157,17 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
     const token = request.cookies[ctx.cfg.env.SESSION_COOKIE_NAME];
     if (!SAFE_METHODS.has(request.method) && token && !request.url.startsWith('/v1/webhooks/')) {
       const presented = request.headers['x-csrf-token'];
-      if (!csrfTokenValid(token, typeof presented === 'string' ? presented : undefined, ctx.cfg.env.SESSION_SECRET)) {
-        throw new ApiError('forbidden', 'This request could not be verified. Please reload and try again.');
+      if (
+        !csrfTokenValid(
+          token,
+          typeof presented === 'string' ? presented : undefined,
+          ctx.cfg.env.SESSION_SECRET,
+        )
+      ) {
+        throw new ApiError(
+          'forbidden',
+          'This request could not be verified. Please reload and try again.',
+        );
       }
     }
   });
@@ -161,7 +181,8 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
 
   app.setErrorHandler(async (error, request, reply) => {
     if (error instanceof ApiError) {
-      if (error.status >= 500) request.log.error({ err: error, requestId: request.id }, 'api error');
+      if (error.status >= 500)
+        request.log.error({ err: error, requestId: request.id }, 'api error');
       reply.status(error.status);
       return {
         error: {

@@ -65,7 +65,9 @@ export const workerStatusSchema = z.object({
   failedLastHour: z.number().int(),
   deadLettered: z.number().int(),
   oldestQueuedAgeSeconds: z.number().int().nullable(),
-  byType: z.array(z.object({ type: z.string(), queued: z.number().int(), failed: z.number().int() })),
+  byType: z.array(
+    z.object({ type: z.string(), queued: z.number().int(), failed: z.number().int() }),
+  ),
 });
 
 export const healthResponseSchema = z.object({

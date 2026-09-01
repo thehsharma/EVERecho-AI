@@ -47,7 +47,11 @@ export function MemoryEditor({ archiveId, memory }: { archiveId: string; memory:
 
   return (
     <div className="stack">
-      {error ? <div className="notice notice-danger" role="alert">{error}</div> : null}
+      {error ? (
+        <div className="notice notice-danger" role="alert">
+          {error}
+        </div>
+      ) : null}
       <p className="hint">
         Your correction is kept alongside what was there before — nothing is quietly overwritten,
         and the original recording is never changed.
@@ -79,11 +83,20 @@ export function MemoryEditor({ archiveId, memory }: { archiveId: string; memory:
       </div>
       <div>
         <label htmlFor="memory-reason">Why the change? (optional)</label>
-        <input id="memory-reason" value={reason} onChange={(event) => setReason(event.target.value)} />
+        <input
+          id="memory-reason"
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+        />
       </div>
 
       <div className="row">
-        <button type="button" className="btn btn-primary" onClick={() => void save()} disabled={pending}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => void save()}
+          disabled={pending}
+        >
           {pending ? <span className="spinner-text">Saving</span> : 'Save the correction'}
         </button>
         <button type="button" className="btn btn-quiet" onClick={() => setEditing(false)}>

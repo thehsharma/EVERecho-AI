@@ -30,7 +30,9 @@ export default async function ExportPage({ params }: { params: Promise<{ archive
           <li>A checksum for every file, so you can prove nothing has been altered.</li>
           <li>A plain-language README explaining the layout.</li>
         </ul>
-        {canExport ? <ExportButton archiveId={archiveId} /> : (
+        {canExport ? (
+          <ExportButton archiveId={archiveId} />
+        ) : (
           <p className="muted" style={{ marginBottom: 0 }}>
             The storyteller has not given you permission to export from this archive.
           </p>
@@ -42,7 +44,11 @@ export default async function ExportPage({ params }: { params: Promise<{ archive
           <h2>Your exports</h2>
           <ul className="list-plain">
             {exports.map((job) => (
-              <li key={job.id} className="spread" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.75rem' }}>
+              <li
+                key={job.id}
+                className="spread"
+                style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.75rem' }}
+              >
                 <div>
                   <Tag kind={job.status === 'ready' ? 'approved' : 'draft'}>{job.status}</Tag>{' '}
                   <span className="small muted">

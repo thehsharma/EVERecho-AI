@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "migrate": "tsx src/cli/migrate.ts",
     "reset": "tsx src/cli/reset.ts",
@@ -15,5 +17,7 @@
     "@everecho/contracts": "workspace:*",
     "pg": "8.23.0"
   },
-  "devDependencies": { "@types/pg": "8.15.6" }
+  "devDependencies": {
+    "@types/pg": "8.15.6"
+  }
 }

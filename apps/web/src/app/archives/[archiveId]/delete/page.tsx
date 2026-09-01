@@ -9,7 +9,9 @@ export default async function DeletePage({ params }: { params: Promise<{ archive
   const { archiveId } = await params;
   const [archive, { deletionRequests }] = await Promise.all([
     serverFetch<Archive>(`/v1/archives/${archiveId}`),
-    serverFetch<{ deletionRequests: DeletionRequest[] }>(`/v1/archives/${archiveId}/deletion-requests`),
+    serverFetch<{ deletionRequests: DeletionRequest[] }>(
+      `/v1/archives/${archiveId}/deletion-requests`,
+    ),
   ]);
   const canDelete = archive.viewerCapabilities.includes('archive.delete');
 
@@ -37,7 +39,11 @@ export default async function DeletePage({ params }: { params: Promise<{ archive
       </Card>
 
       {canDelete ? (
-        <DeletionPanel archiveId={archiveId} archiveName={archive.name} requests={deletionRequests} />
+        <DeletionPanel
+          archiveId={archiveId}
+          archiveName={archive.name}
+          requests={deletionRequests}
+        />
       ) : (
         <Notice tone="info">
           <p style={{ marginBottom: 0 }}>

@@ -54,7 +54,11 @@ export const ACTION_REQUIREMENTS: Record<Action, ActionRequirement> = {
   'processing.transcribe': req({ minMode: 'organise', activity: 'transcription', mutates: true }),
   'processing.ocr': req({ minMode: 'organise', activity: 'ocr', mutates: true }),
   'processing.embed': req({ minMode: 'explore', activity: 'embedding', mutates: true }),
-  'processing.extract_candidates': req({ minMode: 'organise', activity: 'transcription', mutates: true }),
+  'processing.extract_candidates': req({
+    minMode: 'organise',
+    activity: 'transcription',
+    mutates: true,
+  }),
 
   'memory.read': req({ minMode: 'organise', readsContent: true }),
   'memory.create': req({ minMode: 'organise', storytellerOnly: true, mutates: true }),
@@ -177,11 +181,7 @@ export const ROLE_ACTIONS: Record<Role, readonly Action[]> = {
 
   family: READER_ACTIONS,
 
-  contributor: [
-    ...READER_ACTIONS,
-    'source.upload',
-    'correction.propose',
-  ],
+  contributor: [...READER_ACTIONS, 'source.upload', 'correction.propose'],
 
   /** Narrowly delegated continuity tasks. Not the executor. Not the owner. */
   steward: [

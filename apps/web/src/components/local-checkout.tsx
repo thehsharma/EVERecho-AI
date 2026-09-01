@@ -43,15 +43,29 @@ export function LocalCheckout() {
 
   return (
     <div className="stack">
-      {error ? <div className="notice notice-danger" role="alert">{error}</div> : null}
+      {error ? (
+        <div className="notice notice-danger" role="alert">
+          {error}
+        </div>
+      ) : null}
       <p>
         Reservation <code>{providerRef}</code> for {Number(amount) / 100} {currency}.
       </p>
       <div className="row">
-        <button type="button" className="btn btn-primary" onClick={() => void complete('paid')} disabled={pending}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => void complete('paid')}
+          disabled={pending}
+        >
           Simulate a successful payment
         </button>
-        <button type="button" className="btn" onClick={() => void complete('failed')} disabled={pending}>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => void complete('failed')}
+          disabled={pending}
+        >
           Simulate a failure
         </button>
       </div>

@@ -1,15 +1,18 @@
 import Link from 'next/link';
-import { ApproximateDate, Card, Empty, EvidenceClassTag, Notice, PageHeader } from '@/components/ui';
+import {
+  ApproximateDate,
+  Card,
+  Empty,
+  EvidenceClassTag,
+  Notice,
+  PageHeader,
+} from '@/components/ui';
 import { serverFetch } from '@/lib/server';
 import type { Timeline } from '@everecho/contracts';
 
 export const metadata = { title: 'Timeline' };
 
-export default async function TimelinePage({
-  params,
-}: {
-  params: Promise<{ archiveId: string }>;
-}) {
+export default async function TimelinePage({ params }: { params: Promise<{ archiveId: string }> }) {
   const { archiveId } = await params;
   const { timeline } = await serverFetch<{ timeline: Timeline | null }>(
     `/v1/archives/${archiveId}/timeline`,

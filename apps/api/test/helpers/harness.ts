@@ -115,7 +115,12 @@ export class TestClient {
       body = response.body;
     }
     const error = (body as { error?: { code?: string; reasonCode?: string } })?.error;
-    return { status: response.statusCode, body: body as T, errorCode: error?.code, reasonCode: error?.reasonCode };
+    return {
+      status: response.statusCode,
+      body: body as T,
+      errorCode: error?.code,
+      reasonCode: error?.reasonCode,
+    };
   }
 
   get<T = unknown>(url: string) {
@@ -174,9 +179,23 @@ export function consentDocument(overrides: Record<string, unknown> = {}) {
   return {
     mode: 'compose',
     dataCategories: ['audio', 'photo', 'document', 'text'],
-    activities: ['storage', 'export', 'transcription', 'ocr', 'embedding', 'generation', 'provider_processing'],
+    activities: [
+      'storage',
+      'export',
+      'transcription',
+      'ocr',
+      'embedding',
+      'generation',
+      'provider_processing',
+    ],
     recipients: [
-      { role: 'family', maxSensitivity: 'normal', lifeStates: ['living'], mayExport: false, mayContribute: false },
+      {
+        role: 'family',
+        maxSensitivity: 'normal',
+        lifeStates: ['living'],
+        mayExport: false,
+        mayContribute: false,
+      },
     ],
     restrictedTopics: [],
     excludedSourceIds: [],
@@ -223,7 +242,9 @@ export async function uploadSource(
         allowGeneration: true,
         allowExport: true,
         sensitivity: 'normal',
-        dataCategories: [input.kind === 'document' ? 'document' : input.kind === 'photo' ? 'photo' : 'audio'],
+        dataCategories: [
+          input.kind === 'document' ? 'document' : input.kind === 'photo' ? 'photo' : 'audio',
+        ],
         ...input.privacy,
       },
     },

@@ -56,8 +56,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div className="container stack">
               <p style={{ marginBottom: 0 }}>
                 {meta.productName} v0.1 — a working name pending trademark clearance. Data region:{' '}
-                {meta.dataRegion}. Legal copy version: {meta.legalCopyVersion} (draft, pending review
-                by qualified counsel).
+                {meta.dataRegion}. Legal copy version: {meta.legalCopyVersion} (draft, pending
+                review by qualified counsel).
               </p>
               <p className="small" style={{ marginBottom: 0 }}>
                 {meta.productName} preserves what a living person actually said. It does not

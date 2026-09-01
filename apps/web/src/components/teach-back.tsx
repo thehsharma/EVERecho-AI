@@ -35,7 +35,10 @@ export function TeachBack({ archiveId, questions }: { archiveId: string; questio
         result: { passed: boolean; attempt: number };
         teaching: { questionId: string; explanation: string }[];
       }>(`/v1/archives/${archiveId}/consent/teach-back`, {
-        answers: Object.entries(answers).map(([questionId, optionId]) => ({ questionId, optionId })),
+        answers: Object.entries(answers).map(([questionId, optionId]) => ({
+          questionId,
+          optionId,
+        })),
       });
 
       if (result.result.passed) {
@@ -69,12 +72,7 @@ export function TeachBack({ archiveId, questions }: { archiveId: string; questio
       ) : null}
 
       {teaching.length > 0 ? (
-        <div
-          className="notice notice-warn"
-          id="teach-back-feedback"
-          tabIndex={-1}
-          role="status"
-        >
+        <div className="notice notice-warn" id="teach-back-feedback" tabIndex={-1} role="status">
           <strong>Not quite — here is how it actually works</strong>
           <ul className="stack" style={{ margin: '0.5rem 0 0', paddingLeft: '1.2rem' }}>
             {teaching.map((item) => (
@@ -88,7 +86,10 @@ export function TeachBack({ archiveId, questions }: { archiveId: string; questio
       ) : null}
 
       {questions.map((question, index) => (
-        <fieldset key={question.id} style={wrong.has(question.id) ? { borderColor: 'var(--warn)' } : undefined}>
+        <fieldset
+          key={question.id}
+          style={wrong.has(question.id) ? { borderColor: 'var(--warn)' } : undefined}
+        >
           <legend>
             {index + 1}. {question.prompt}
           </legend>

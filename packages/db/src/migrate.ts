@@ -40,9 +40,11 @@ export async function migrate(
 
   const files = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith('.sql')).sort();
   const applied = new Map(
-    (await db.query<{ name: string; checksum: string }>('SELECT name, checksum FROM schema_migration')).map(
-      (r) => [r.name, r.checksum],
-    ),
+    (
+      await db.query<{ name: string; checksum: string }>(
+        'SELECT name, checksum FROM schema_migration',
+      )
+    ).map((r) => [r.name, r.checksum]),
   );
 
   const results: MigrationResult[] = [];

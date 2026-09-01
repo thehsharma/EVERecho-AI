@@ -40,7 +40,9 @@ export function registerArchiveRoutes(app: FastifyInstance, ctx: AppContext): vo
     status: 201,
     handler: async ({ body, user, request }) => {
       if (body.subject.birthYear && new Date().getFullYear() - body.subject.birthYear < 18) {
-        throw validationFailed('EverEcho does not create archives for people under 18 in this version.');
+        throw validationFailed(
+          'EverEcho does not create archives for people under 18 in this version.',
+        );
       }
 
       return ctx.db.transaction(async (tx) => {
@@ -188,7 +190,11 @@ export function registerArchiveRoutes(app: FastifyInstance, ctx: AppContext): vo
       withArchiveAccess(
         ctx,
         request,
-        { archiveId: params.archiveId, action: 'membership.read', resource: { type: 'membership' } },
+        {
+          archiveId: params.archiveId,
+          action: 'membership.read',
+          resource: { type: 'membership' },
+        },
         async ({ tx }) => {
           const rows = await listMemberships(tx, params.archiveId);
           return {

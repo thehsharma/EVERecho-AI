@@ -92,7 +92,11 @@ export function AskPanel({ archiveId, subjectName }: { archiveId: string; subjec
             />
           </div>
           <div className="row">
-            <button type="submit" className="btn btn-primary" disabled={pending || !question.trim()}>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={pending || !question.trim()}
+            >
               {pending ? <span className="spinner-text">Looking</span> : 'Ask'}
             </button>
             {turns.length === 0
@@ -166,11 +170,18 @@ export function AskPanel({ archiveId, subjectName }: { archiveId: string; subjec
                         </p>
 
                         {openCitation === key ? (
-                          <div id={`citation-${key}`} className="stack" style={{ marginTop: '0.75rem' }}>
+                          <div
+                            id={`citation-${key}`}
+                            className="stack"
+                            style={{ marginTop: '0.75rem' }}
+                          >
                             {claim.citations.map((citation, citationIndex) => (
                               <div key={`${citation.sourceId}-${citationIndex}`}>
                                 <blockquote className="quote">“{citation.quotedText}”</blockquote>
-                                <p className="small muted" style={{ marginTop: '0.35rem', marginBottom: 0 }}>
+                                <p
+                                  className="small muted"
+                                  style={{ marginTop: '0.35rem', marginBottom: 0 }}
+                                >
                                   From {citation.sourceFilename} ({citation.sourceKind})
                                   {citation.locator.startMs !== undefined
                                     ? ` at ${formatTimestamp(citation.locator.startMs)}`

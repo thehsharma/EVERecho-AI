@@ -17,10 +17,7 @@ export interface Queryable {
     params?: QueryParams,
   ): Promise<T[]>;
   /** Exactly one row, or a thrown error naming what was expected. */
-  one<T extends object = Record<string, unknown>>(
-    sql: string,
-    params?: QueryParams,
-  ): Promise<T>;
+  one<T extends object = Record<string, unknown>>(sql: string, params?: QueryParams): Promise<T>;
   maybeOne<T extends object = Record<string, unknown>>(
     sql: string,
     params?: QueryParams,

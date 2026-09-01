@@ -106,7 +106,10 @@ export class LocalOcrAdapter implements OcrAdapter {
     if (input.mimeType === 'text/plain') {
       const text = input.bytes.toString('utf8');
       // One page per blank-line-separated block keeps locators meaningful.
-      const blocks = text.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+      const blocks = text
+        .split(/\n{2,}/)
+        .map((b) => b.trim())
+        .filter(Boolean);
       return {
         status: 'ready',
         provider: this.name,

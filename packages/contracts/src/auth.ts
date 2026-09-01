@@ -23,7 +23,10 @@ export type SignUpRequest = z.infer<typeof signUpRequestSchema>;
 export const signInRequestSchema = z.object({
   email: emailSchema,
   password: z.string().min(1).max(256),
-  totpCode: z.string().regex(/^\d{6}$/).optional(),
+  totpCode: z
+    .string()
+    .regex(/^\d{6}$/)
+    .optional(),
 });
 export type SignInRequest = z.infer<typeof signInRequestSchema>;
 

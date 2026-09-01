@@ -27,28 +27,27 @@ export async function uploadFile(
   const report = options.onProgress ?? (() => {});
   report({ stage: 'preparing', percent: 5 });
 
-  const ticket = await api.post<{ ticket: { sourceId: string; uploadUrl: string; method: string } }>(
-    `/v1/archives/${archiveId}/sources`,
-    {
-      filename: options.filename,
-      mimeType: options.mimeType,
-      byteSize: file.size,
-      kind: options.kind,
-      idempotencyKey: `${options.filename}-${file.size}-${Date.now()}`,
-      caption: options.caption,
-      privacy: {
-        allowTranscription: true,
-        allowOcr: true,
-        allowEmbedding: true,
-        allowGeneration: true,
-        allowExport: true,
-        sensitivity: options.sensitivity ?? 'normal',
-        dataCategories: [
-          options.kind === 'photo' ? 'photo' : options.kind === 'document' ? 'document' : 'audio',
-        ],
-      },
+  const ticket = await api.post<{
+    ticket: { sourceId: string; uploadUrl: string; method: string };
+  }>(`/v1/archives/${archiveId}/sources`, {
+    filename: options.filename,
+    mimeType: options.mimeType,
+    byteSize: file.size,
+    kind: options.kind,
+    idempotencyKey: `${options.filename}-${file.size}-${Date.now()}`,
+    caption: options.caption,
+    privacy: {
+      allowTranscription: true,
+      allowOcr: true,
+      allowEmbedding: true,
+      allowGeneration: true,
+      allowExport: true,
+      sensitivity: options.sensitivity ?? 'normal',
+      dataCategories: [
+        options.kind === 'photo' ? 'photo' : options.kind === 'document' ? 'document' : 'audio',
+      ],
     },
-  );
+  });
 
   report({ stage: 'uploading', percent: 20 });
 

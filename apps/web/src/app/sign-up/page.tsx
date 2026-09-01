@@ -16,7 +16,11 @@ export default async function SignUpPage() {
       </p>
       <Card>
         <Suspense fallback={<p className="spinner-text">Loading</p>}>
-          <AuthForm mode="sign-up" legalCopyVersion={meta.legalCopyVersion} productName={meta.productName} />
+          <AuthForm
+            mode="sign-up"
+            legalCopyVersion={meta.legalCopyVersion}
+            productName={meta.productName}
+          />
         </Suspense>
       </Card>
     </div>

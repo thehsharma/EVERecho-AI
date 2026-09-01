@@ -115,7 +115,10 @@ export async function scanSource({ ctx, tx, payload }: JobArgs): Promise<void> {
 }
 
 /** Text the browser captured while the storyteller was speaking. */
-async function sidecarTextFor(tx: Transaction, sourceId: string): Promise<{ text: string; durationMs: number | null } | null> {
+async function sidecarTextFor(
+  tx: Transaction,
+  sourceId: string,
+): Promise<{ text: string; durationMs: number | null } | null> {
   const row = await tx.maybeOne<{ record: { text?: string; durationMs?: number | null } }>(
     `SELECT record FROM provenance_record
      WHERE subject_type = 'sidecar_text' AND subject_id = $1 ORDER BY created_at DESC LIMIT 1`,
@@ -150,7 +153,13 @@ export async function transcribeSource({ ctx, tx, payload }: JobArgs): Promise<v
     resource: { sourceId: source.id },
   });
   if (!source.privacy.allowTranscription) {
-    await markStage(tx, source.id, 'skipped', 'You chose not to have this recording transcribed.', 'processed');
+    await markStage(
+      tx,
+      source.id,
+      'skipped',
+      'You chose not to have this recording transcribed.',
+      'processed',
+    );
     return;
   }
 
@@ -176,13 +185,28 @@ export async function transcribeSource({ ctx, tx, payload }: JobArgs): Promise<v
     `INSERT INTO transcript (archive_id, source_asset_id, provider, model_version, language,
                              status, method, policy_version, completed_at)
      VALUES ($1,$2,$3,$4,$5,'ready','speech_to_text',$6, now()) RETURNING id`,
-    [source.archive_id, source.id, result.provider, result.modelVersion, result.language, policyVersion],
+    [
+      source.archive_id,
+      source.id,
+      result.provider,
+      result.modelVersion,
+      result.language,
+      policyVersion,
+    ],
   );
   for (const segment of result.segments) {
     await tx.query(
       `INSERT INTO transcript_segment (archive_id, transcript_id, idx, start_ms, end_ms, text, confidence)
        VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [source.archive_id, transcript.id, segment.idx, segment.startMs, segment.endMs, segment.text, segment.confidence],
+      [
+        source.archive_id,
+        transcript.id,
+        segment.idx,
+        segment.startMs,
+        segment.endMs,
+        segment.text,
+        segment.confidence,
+      ],
     );
   }
 
@@ -204,7 +228,13 @@ export async function ocrSource({ ctx, tx, payload }: JobArgs): Promise<void> {
     resource: { sourceId: source.id },
   });
   if (!source.privacy.allowOcr) {
-    await markStage(tx, source.id, 'skipped', 'You chose not to have this document read.', 'processed');
+    await markStage(
+      tx,
+      source.id,
+      'skipped',
+      'You chose not to have this document read.',
+      'processed',
+    );
     return;
   }
 
@@ -281,7 +311,13 @@ export async function extractCandidates({ ctx, tx, payload }: JobArgs): Promise<
     [transcriptId],
   );
   if (segments.length === 0) {
-    await markStage(tx, source.id, 'ready', 'Nothing readable was found in this file.', 'processed');
+    await markStage(
+      tx,
+      source.id,
+      'ready',
+      'Nothing readable was found in this file.',
+      'processed',
+    );
     return;
   }
 
@@ -294,7 +330,13 @@ export async function extractCandidates({ ctx, tx, payload }: JobArgs): Promise<
     await tx.query(
       `INSERT INTO security_event (archive_id, kind, severity, metadata)
        VALUES ($1, 'injection_pattern_in_source', 'low', $2)`,
-      [source.archive_id, JSON.stringify({ labels: [...new Set(injectionFindings.map((f) => f.label))], sourceId: source.id })],
+      [
+        source.archive_id,
+        JSON.stringify({
+          labels: [...new Set(injectionFindings.map((f) => f.label))],
+          sourceId: source.id,
+        }),
+      ],
     );
   }
 
@@ -354,7 +396,13 @@ export async function extractCandidates({ ctx, tx, payload }: JobArgs): Promise<
       await tx.query(
         `INSERT INTO life_event (archive_id, memory_id, title, start_date, start_precision, status)
          VALUES ($1,$2,$3,$4,$5,'candidate')`,
-        [source.archive_id, memory.id, candidate.title, candidate.occurredOn.value, candidate.occurredOn.precision],
+        [
+          source.archive_id,
+          memory.id,
+          candidate.title,
+          candidate.occurredOn.value,
+          candidate.occurredOn.precision,
+        ],
       );
     }
 
@@ -394,7 +442,11 @@ export async function extractCandidates({ ctx, tx, payload }: JobArgs): Promise<
     await tx.query(
       `INSERT INTO provenance_record (archive_id, subject_type, subject_id, record)
        VALUES ($1, 'unresolved_references', $2, $3)`,
-      [source.archive_id, source.id, JSON.stringify({ references: extraction.unresolvedReferences })],
+      [
+        source.archive_id,
+        source.id,
+        JSON.stringify({ references: extraction.unresolvedReferences }),
+      ],
     );
   }
 
@@ -442,7 +494,13 @@ async function detectContradictions(
 /** Embeds an approved memory so it can be retrieved. Approval comes first. */
 export async function embedMemory({ ctx, tx, payload }: JobArgs): Promise<void> {
   const memoryId = String(payload.memoryId);
-  const memory = await tx.maybeOne<{ id: string; archive_id: string; title: string; body: string; status: string }>(
+  const memory = await tx.maybeOne<{
+    id: string;
+    archive_id: string;
+    title: string;
+    body: string;
+    status: string;
+  }>(
     `SELECT id, archive_id, title, body, status FROM memory WHERE id = $1 AND deleted_at IS NULL`,
     [memoryId],
   );

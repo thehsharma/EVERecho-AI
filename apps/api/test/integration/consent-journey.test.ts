@@ -26,11 +26,14 @@ afterAll(async () => {
 
 describe('a buyer starts an archive but does not own it', () => {
   it('creates an archive shell that grants nobody anything', async () => {
-    const response = await buyer.post<{ id: string; status: string; viewerRole: string }>('/v1/archives', {
-      name: 'Kamala’s stories',
-      subject: { displayName: 'Kamala Sharma', birthYear: 1948 },
-      subjectIsAdult: true,
-    });
+    const response = await buyer.post<{ id: string; status: string; viewerRole: string }>(
+      '/v1/archives',
+      {
+        name: 'Kamala’s stories',
+        subject: { displayName: 'Kamala Sharma', birthYear: 1948 },
+        subjectIsAdult: true,
+      },
+    );
     expect(response.status).toBe(201);
     expect(response.body.status).toBe('draft');
     expect(response.body.viewerRole).toBe('buyer');
@@ -47,7 +50,9 @@ describe('a buyer starts an archive but does not own it', () => {
   });
 
   it('will not let the buyer consent on the storyteller’s behalf', async () => {
-    const response = await buyer.put(`/v1/archives/${archiveId}/consent`, { document: consentDocument() });
+    const response = await buyer.put(`/v1/archives/${archiveId}/consent`, {
+      document: consentDocument(),
+    });
     expect(response.status).toBe(403);
     expect(response.reasonCode).toBe('buyer_cannot_consent_for_storyteller');
   });
@@ -73,7 +78,9 @@ describe('the storyteller decides for themselves', () => {
     expect(response.status).toBe(201);
     token = invitationTokenFrom(h.ctx);
 
-    const preview = await new TestClient(h.app).get<Record<string, unknown>>(`/v1/invitations/${token}`);
+    const preview = await new TestClient(h.app).get<Record<string, unknown>>(
+      `/v1/invitations/${token}`,
+    );
     expect(preview.status).toBe(200);
     expect(preview.body.requiresTeachBack).toBe(true);
     expect(preview.body.invitedByDisplayName).toBe('Anil Sharma');
@@ -82,25 +89,37 @@ describe('the storyteller decides for themselves', () => {
   });
 
   it('refuses an invitation opened by someone it was not addressed to', async () => {
-    const stranger = await signUp(h.app, { email: 'stranger@example.test', displayName: 'Stranger' });
-    const response = await stranger.post(`/v1/invitations/${token}/respond`, { decision: 'accept' });
+    const stranger = await signUp(h.app, {
+      email: 'stranger@example.test',
+      displayName: 'Stranger',
+    });
+    const response = await stranger.post(`/v1/invitations/${token}/respond`, {
+      decision: 'accept',
+    });
     expect(response.status).toBe(400);
   });
 
   it('lets the storyteller accept, without that being consent', async () => {
-    const response = await storyteller.post<{ nextStep: string }>(`/v1/invitations/${token}/respond`, {
-      decision: 'accept',
-    });
+    const response = await storyteller.post<{ nextStep: string }>(
+      `/v1/invitations/${token}/respond`,
+      {
+        decision: 'accept',
+      },
+    );
     expect(response.status).toBe(200);
     expect(response.body.nextStep).toBe('teach_back');
 
-    const archive = await storyteller.get<{ status: string; viewerRole: string }>(`/v1/archives/${archiveId}`);
+    const archive = await storyteller.get<{ status: string; viewerRole: string }>(
+      `/v1/archives/${archiveId}`,
+    );
     expect(archive.body.status).toBe('awaiting_storyteller');
     expect(archive.body.viewerRole).toBe('storyteller');
   });
 
   it('will not set permissions until teach-back is passed', async () => {
-    const response = await storyteller.put(`/v1/archives/${archiveId}/consent`, { document: consentDocument() });
+    const response = await storyteller.put(`/v1/archives/${archiveId}/consent`, {
+      document: consentDocument(),
+    });
     expect(response.status).toBe(409);
   });
 
@@ -135,7 +154,9 @@ describe('the storyteller decides for themselves', () => {
     expect(response.status).toBe(200);
     expect(response.body.policy.version).toBe(1);
 
-    const archive = await storyteller.get<{ status: string; consentMode: string }>(`/v1/archives/${archiveId}`);
+    const archive = await storyteller.get<{ status: string; consentMode: string }>(
+      `/v1/archives/${archiveId}`,
+    );
     expect(archive.body.status).toBe('active');
     expect(archive.body.consentMode).toBe('compose');
   });
@@ -143,7 +164,11 @@ describe('the storyteller decides for themselves', () => {
   it('refuses a consent document that grants a synthetic voice', async () => {
     const response = await storyteller.put(`/v1/archives/${archiveId}/consent`, {
       document: consentDocument({
-        voiceAndLikeness: { syntheticVoice: true, syntheticLikeness: false, personaSimulation: false },
+        voiceAndLikeness: {
+          syntheticVoice: true,
+          syntheticLikeness: false,
+          personaSimulation: false,
+        },
       }),
     });
     expect(response.status).toBe(400);
@@ -168,7 +193,9 @@ describe('the storyteller decides for themselves', () => {
 
 describe('what the buyer can see afterwards', () => {
   it('sees the membership list but no content', async () => {
-    const members = await buyer.get<{ members: { role: string }[] }>(`/v1/archives/${archiveId}/members`);
+    const members = await buyer.get<{ members: { role: string }[] }>(
+      `/v1/archives/${archiveId}/members`,
+    );
     expect(members.body.members.map((m) => m.role).sort()).toEqual(['buyer', 'storyteller']);
   });
 
@@ -198,14 +225,20 @@ describe('what the buyer can see afterwards', () => {
 
 describe('archives are invisible to everyone else', () => {
   it('reports someone else’s archive as not found, not as forbidden', async () => {
-    const outsider = await signUp(h.app, { email: 'outsider@example.test', displayName: 'Outsider' });
+    const outsider = await signUp(h.app, {
+      email: 'outsider@example.test',
+      displayName: 'Outsider',
+    });
     const response = await outsider.get(`/v1/archives/${archiveId}`);
     expect(response.status).toBe(404);
     expect(JSON.stringify(response.body)).not.toMatch(/Kamala/);
   });
 
   it('does not list archives the caller has no relationship with', async () => {
-    const outsider = await signUp(h.app, { email: 'outsider2@example.test', displayName: 'Outsider Two' });
+    const outsider = await signUp(h.app, {
+      email: 'outsider2@example.test',
+      displayName: 'Outsider Two',
+    });
     const response = await outsider.get<{ archives: unknown[] }>('/v1/archives');
     expect(response.body.archives).toHaveLength(0);
   });
@@ -237,7 +270,9 @@ describe('session and CSRF handling', () => {
 
 describe('operational endpoints leak nothing', () => {
   it('reports readiness without versions, hostnames or connection strings', async () => {
-    const response = await new TestClient(h.app).get<{ status: string; checks: unknown[] }>('/readyz');
+    const response = await new TestClient(h.app).get<{ status: string; checks: unknown[] }>(
+      '/readyz',
+    );
     expect(response.status).toBe(200);
     expect(JSON.stringify(response.body)).not.toMatch(/postgres:\/\/|password|127\.0\.0\.1/);
   });

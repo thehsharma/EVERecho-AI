@@ -9,15 +9,17 @@ const bool = z
   .union([z.boolean(), z.enum(['true', 'false', '1', '0', 'yes', 'no', 'on', 'off'])])
   .transform((v) => (typeof v === 'boolean' ? v : ['true', '1', 'yes', 'on'].includes(v)));
 
-const int = (min: number, max: number) =>
-  z.coerce.number().int().min(min).max(max);
+const int = (min: number, max: number) => z.coerce.number().int().min(min).max(max);
 
 /** A secret must be long enough to be worth calling a secret. */
 const secret = (min = 32) =>
   z
     .string()
     .min(min, `must be at least ${min} characters`)
-    .refine((v) => !/^(changeme|password|secret|test)$/i.test(v), 'must not be a placeholder value');
+    .refine(
+      (v) => !/^(changeme|password|secret|test)$/i.test(v),
+      'must not be a placeholder value',
+    );
 
 export const NODE_ENVS = ['development', 'test', 'production'] as const;
 

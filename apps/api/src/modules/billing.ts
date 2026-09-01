@@ -47,7 +47,7 @@ export function registerBillingRoutes(app: FastifyInstance, ctx: AppContext): vo
     body: createReservationRequestSchema,
     response: z.object({ reservation: z.unknown() }),
     status: 201,
-    handler: async ({ body, user, request }) => {
+    handler: async ({ body, user }) => {
       if (!ctx.features.billing) throw new ApiError('not_found', 'That was not found.');
 
       return ctx.db.transaction(async (tx) => {
@@ -84,7 +84,10 @@ export function registerBillingRoutes(app: FastifyInstance, ctx: AppContext): vo
         await ctx.analytics.track('reservation_started', { actorId: user!.id });
 
         return {
-          reservation: toReservation({ ...row, provider_ref: checkout.providerRef }, checkout.checkoutUrl),
+          reservation: toReservation(
+            { ...row, provider_ref: checkout.providerRef },
+            checkout.checkoutUrl,
+          ),
         };
       });
     },
@@ -128,7 +131,8 @@ export function registerBillingRoutes(app: FastifyInstance, ctx: AppContext): vo
         [params.reservationId, user!.id],
       );
       if (!row) throw notFound('That reservation was not found.');
-      if (row.status !== 'paid') throw new ApiError('conflict', 'That reservation has not been paid.');
+      if (row.status !== 'paid')
+        throw new ApiError('conflict', 'That reservation has not been paid.');
 
       if (row.provider_ref) await ctx.billing.refundReservation(row.provider_ref);
       await ctx.db.query(
@@ -159,9 +163,13 @@ export function registerBillingRoutes(app: FastifyInstance, ctx: AppContext): vo
     url: '/v1/webhooks/billing',
     config: { rawBody: true },
     handler: async (request, reply) => {
-      const raw = typeof request.body === 'string' ? request.body : JSON.stringify(request.body ?? {});
+      const raw =
+        typeof request.body === 'string' ? request.body : JSON.stringify(request.body ?? {});
       const signature = request.headers['x-signature'];
-      const event = ctx.billing.verifyWebhook(raw, typeof signature === 'string' ? signature : undefined);
+      const event = ctx.billing.verifyWebhook(
+        raw,
+        typeof signature === 'string' ? signature : undefined,
+      );
 
       if (!event) {
         await ctx.db.query(
@@ -170,7 +178,13 @@ export function registerBillingRoutes(app: FastifyInstance, ctx: AppContext): vo
           [request.id, JSON.stringify({ provider: ctx.billing.name })],
         );
         reply.status(400);
-        return { error: { code: 'validation_failed', message: 'Signature could not be verified.', requestId: request.id } };
+        return {
+          error: {
+            code: 'validation_failed',
+            message: 'Signature could not be verified.',
+            requestId: request.id,
+          },
+        };
       }
 
       const inserted = await ctx.db.query<{ id: string }>(

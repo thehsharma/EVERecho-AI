@@ -42,7 +42,8 @@ interface SourceRow {
   uploaded_by_user_id: string | null;
   created_at: Date;
   processed_at: Date | null;
-  processing_stage: 'queued' | 'scanning' | 'transcribing' | 'extracting' | 'ready' | 'failed' | 'skipped';
+  processing_stage:
+    'queued' | 'scanning' | 'transcribing' | 'extracting' | 'ready' | 'failed' | 'skipped';
   processing_detail: string | null;
   processing_attempts: number;
   sensitivity: 'normal' | 'sensitive' | 'restricted' | 'embargoed';
@@ -153,7 +154,10 @@ export function registerSourceRoutes(app: FastifyInstance, ctx: AppContext): voi
             sourceId: row.id,
             kind: 'quarantine',
           });
-          await tx.query(`UPDATE source_asset SET quarantine_key = $2 WHERE id = $1`, [row.id, quarantineKey]);
+          await tx.query(`UPDATE source_asset SET quarantine_key = $2 WHERE id = $1`, [
+            row.id,
+            quarantineKey,
+          ]);
 
           const signed = await ctx.storage.signUpload(
             quarantineKey,
@@ -238,7 +242,11 @@ export function registerSourceRoutes(app: FastifyInstance, ctx: AppContext): voi
               [
                 params.archiveId,
                 row.id,
-                JSON.stringify({ text: body.sidecarText, durationMs: body.durationMs ?? null, capturedBy: 'browser' }),
+                JSON.stringify({
+                  text: body.sidecarText,
+                  durationMs: body.durationMs ?? null,
+                  capturedBy: 'browser',
+                }),
               ],
             );
           }
@@ -337,7 +345,9 @@ export function registerSourceRoutes(app: FastifyInstance, ctx: AppContext): voi
           // decision was made before we knew which source was being asked for.
           const isStoryteller = archive.storyteller_user_id === user.id;
           if (!isStoryteller) {
-            if (!allowedSensitivities(decision.obligations.maxSensitivity).includes(row.sensitivity)) {
+            if (
+              !allowedSensitivities(decision.obligations.maxSensitivity).includes(row.sensitivity)
+            ) {
               throw new ApiError(
                 'forbidden',
                 'This material is more private than what you have been given access to.',
@@ -345,17 +355,27 @@ export function registerSourceRoutes(app: FastifyInstance, ctx: AppContext): voi
               );
             }
             if (row.embargo_until && row.embargo_until.getTime() > Date.now()) {
-              throw new ApiError('forbidden', 'The storyteller has held this material back until a later date.', {
-                reasonCode: 'source_embargoed',
-              });
+              throw new ApiError(
+                'forbidden',
+                'The storyteller has held this material back until a later date.',
+                {
+                  reasonCode: 'source_embargoed',
+                },
+              );
             }
           }
           if (row.status === 'quarantined' || row.status === 'scanning') {
-            throw new ApiError('processing_failed', 'This file is still being checked. Try again shortly.');
+            throw new ApiError(
+              'processing_failed',
+              'This file is still being checked. Try again shortly.',
+            );
           }
 
           const key = row.storage_key || row.quarantine_key || '';
-          const signed = await ctx.storage.signDownload(key, ctx.cfg.env.STORAGE_SIGNED_URL_TTL_SECONDS);
+          const signed = await ctx.storage.signDownload(
+            key,
+            ctx.cfg.env.STORAGE_SIGNED_URL_TTL_SECONDS,
+          );
           return { url: signed.url, expiresAt: signed.expiresAt };
         },
       ),
@@ -572,7 +592,9 @@ export function registerSourceRoutes(app: FastifyInstance, ctx: AppContext): voi
 }
 
 /** Sensitivity levels at or below a grant's ceiling. */
-export function allowedSensitivities(max: 'normal' | 'sensitive' | 'restricted' | 'embargoed'): string[] {
+export function allowedSensitivities(
+  max: 'normal' | 'sensitive' | 'restricted' | 'embargoed',
+): string[] {
   const order = ['normal', 'sensitive', 'restricted', 'embargoed'];
   return order.slice(0, order.indexOf(max) + 1);
 }

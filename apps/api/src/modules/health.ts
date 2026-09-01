@@ -22,7 +22,11 @@ export function registerHealthRoutes(app: FastifyInstance, ctx: AppContext): voi
       const database = await ctx.db.healthy();
       const pgvector = await ctx.db.capability('pgvector').catch(() => false);
       const checks = [
-        { name: 'database', status: database.ok ? ('ok' as const) : ('down' as const), detail: null },
+        {
+          name: 'database',
+          status: database.ok ? ('ok' as const) : ('down' as const),
+          detail: null,
+        },
         {
           name: 'vector_index',
           status: pgvector ? ('ok' as const) : ('degraded' as const),

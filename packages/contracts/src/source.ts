@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { dataCategorySchema, sensitivitySchema, sourceKindSchema, sourceStatusSchema } from './enums';
+import {
+  dataCategorySchema,
+  sensitivitySchema,
+  sourceKindSchema,
+  sourceStatusSchema,
+} from './enums';
 import { checksumSchema, idSchema, timestampSchema } from './primitives';
 
 /** Per-source choices. These override archive-wide consent downward, never upward. */
@@ -56,7 +61,15 @@ export const sourceAssetSchema = z.object({
   processedAt: timestampSchema.nullable(),
   /** Progress the customer can actually read, not a spinner. */
   processing: z.object({
-    stage: z.enum(['queued', 'scanning', 'transcribing', 'extracting', 'ready', 'failed', 'skipped']),
+    stage: z.enum([
+      'queued',
+      'scanning',
+      'transcribing',
+      'extracting',
+      'ready',
+      'failed',
+      'skipped',
+    ]),
     detail: z.string().nullable(),
     attempts: z.number().int(),
   }),

@@ -11,7 +11,7 @@ import {
   detectsDistress,
   emergencyResourcesFor,
 } from '@everecho/ai';
-import { enqueueJob, findCurrentPolicy } from '@everecho/db';
+import { findCurrentPolicy } from '@everecho/db';
 import { defineRoute } from '../http/route';
 import { withArchiveAccess } from '../lib/access';
 import { notFound } from '../errors';
@@ -163,7 +163,13 @@ export function registerInterviewRoutes(app: FastifyInstance, ctx: AppContext): 
             await tx.query(
               `INSERT INTO safety_event (archive_id, kind, severity, context)
                VALUES ($1, 'distress_language', 'high', $2)`,
-              [params.archiveId, JSON.stringify({ stage: 'interview', region: ctx.cfg.env.SAFETY_EMERGENCY_INFO_REGION })],
+              [
+                params.archiveId,
+                JSON.stringify({
+                  stage: 'interview',
+                  region: ctx.cfg.env.SAFETY_EMERGENCY_INFO_REGION,
+                }),
+              ],
             );
             await ctx.analytics.track('safety_incident', { archiveId: params.archiveId });
             const paused = await tx.one<SessionRow>(
@@ -181,7 +187,13 @@ export function registerInterviewRoutes(app: FastifyInstance, ctx: AppContext): 
             return { session: await toSession(tx, paused, null) };
           }
 
-          const prompt = await nextPrompt(ctx, tx, params.archiveId, session.id, body.responseText ?? null);
+          const prompt = await nextPrompt(
+            ctx,
+            tx,
+            params.archiveId,
+            session.id,
+            body.responseText ?? null,
+          );
           return { session: await toSession(tx, session, prompt) };
         },
       ),
@@ -262,7 +274,11 @@ export function registerInterviewRoutes(app: FastifyInstance, ctx: AppContext): 
 
           // Typed answers become candidate story cards with the answer itself
           // as the evidence: the storyteller wrote it, so it is a direct statement.
-          const answers = await tx.query<{ id: string; response_text: string; question_text: string }>(
+          const answers = await tx.query<{
+            id: string;
+            response_text: string;
+            question_text: string;
+          }>(
             `SELECT r.id, r.response_text, p.question_text
              FROM interview_response r JOIN interview_prompt p ON p.id = r.interview_prompt_id
              WHERE r.interview_session_id = $1 AND r.action = 'answer'

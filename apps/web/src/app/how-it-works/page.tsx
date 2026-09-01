@@ -31,7 +31,9 @@ export default async function HowItWorksPage() {
       <Card>
         <h2>What happens to a recording</h2>
         <ol className="stack">
-          <li>It is stored privately and left exactly as it arrived. The original is never edited.</li>
+          <li>
+            It is stored privately and left exactly as it arrived. The original is never edited.
+          </li>
           <li>It is checked for anything harmful before anything else reads it.</li>
           <li>
             If the storyteller permitted it, the words are transcribed and the transcript can be

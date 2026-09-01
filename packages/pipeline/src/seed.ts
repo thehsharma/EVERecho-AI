@@ -109,7 +109,8 @@ export async function seedDemoArchive(ctx: PipelineContext): Promise<SeedResult>
   const storyteller = await upsertUser(ctx, 'kamala@everecho.example', 'Kamala Deshpande');
   const familyMember = await upsertUser(ctx, 'anjali@everecho.example', 'Anjali Deshpande');
   const contributor = await upsertUser(ctx, 'ravi@everecho.example', 'Ravi Deshpande');
-  const admin = await upsertUser(ctx, 'support@everecho.example', 'Support', { admin: true });
+  // Created so the restricted admin surface has an account to demonstrate.
+  await upsertUser(ctx, 'support@everecho.example', 'Support', { admin: true });
 
   const archiveId = await ctx.db.transaction(async (tx) => {
     const person = await tx.one<{ id: string }>(
@@ -185,7 +186,10 @@ export async function seedDemoArchive(ctx: PipelineContext): Promise<SeedResult>
   for (const recording of RECORDINGS) {
     const bytes =
       recording.kind === 'audio'
-        ? Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.from(recording.text, 'utf8')])
+        ? Buffer.concat([
+            Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
+            Buffer.from(recording.text, 'utf8'),
+          ])
         : Buffer.from(recording.text, 'utf8');
 
     await ctx.db.withArchiveScope(archiveId, async (tx) => {
@@ -222,7 +226,11 @@ export async function seedDemoArchive(ctx: PipelineContext): Promise<SeedResult>
         await tx.query(
           `INSERT INTO provenance_record (archive_id, subject_type, subject_id, record)
            VALUES ($1, 'sidecar_text', $2, $3)`,
-          [archiveId, source.id, JSON.stringify({ text: recording.text, durationMs: 60_000, capturedBy: 'browser' })],
+          [
+            archiveId,
+            source.id,
+            JSON.stringify({ text: recording.text, durationMs: 60_000, capturedBy: 'browser' }),
+          ],
         );
       }
       await enqueueJob(tx, {

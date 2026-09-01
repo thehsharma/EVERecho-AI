@@ -44,19 +44,33 @@ export default async function AdminPage() {
         <h2>Background processing</h2>
         <div className="grid">
           <div>
-            <p className="muted small" style={{ marginBottom: 0 }}>Queued</p>
-            <p style={{ fontSize: '1.75rem', margin: 0, fontFamily: 'var(--font)' }}>{worker.queueDepth}</p>
+            <p className="muted small" style={{ marginBottom: 0 }}>
+              Queued
+            </p>
+            <p style={{ fontSize: '1.75rem', margin: 0, fontFamily: 'var(--font)' }}>
+              {worker.queueDepth}
+            </p>
           </div>
           <div>
-            <p className="muted small" style={{ marginBottom: 0 }}>Running</p>
-            <p style={{ fontSize: '1.75rem', margin: 0, fontFamily: 'var(--font)' }}>{worker.running}</p>
+            <p className="muted small" style={{ marginBottom: 0 }}>
+              Running
+            </p>
+            <p style={{ fontSize: '1.75rem', margin: 0, fontFamily: 'var(--font)' }}>
+              {worker.running}
+            </p>
           </div>
           <div>
-            <p className="muted small" style={{ marginBottom: 0 }}>Gave up</p>
-            <p style={{ fontSize: '1.75rem', margin: 0, fontFamily: 'var(--font)' }}>{worker.deadLettered}</p>
+            <p className="muted small" style={{ marginBottom: 0 }}>
+              Gave up
+            </p>
+            <p style={{ fontSize: '1.75rem', margin: 0, fontFamily: 'var(--font)' }}>
+              {worker.deadLettered}
+            </p>
           </div>
           <div>
-            <p className="muted small" style={{ marginBottom: 0 }}>Oldest waiting</p>
+            <p className="muted small" style={{ marginBottom: 0 }}>
+              Oldest waiting
+            </p>
             <p style={{ fontSize: '1.75rem', margin: 0, fontFamily: 'var(--font)' }}>
               {worker.oldestQueuedAgeSeconds === null ? '—' : `${worker.oldestQueuedAgeSeconds}s`}
             </p>
@@ -93,7 +107,11 @@ export default async function AdminPage() {
         ) : (
           <ul className="list-plain">
             {incidents.incidents.map((incident) => (
-              <li key={incident.id} className="spread" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.6rem' }}>
+              <li
+                key={incident.id}
+                className="spread"
+                style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.6rem' }}
+              >
                 <div>
                   <strong>{incident.summary}</strong>
                   <div className="small muted">
@@ -103,7 +121,13 @@ export default async function AdminPage() {
                 </div>
                 <span className="row">
                   <Tag>{incident.kind}</Tag>
-                  <Tag kind={incident.severity === 'critical' || incident.severity === 'high' ? 'danger' : 'draft'}>
+                  <Tag
+                    kind={
+                      incident.severity === 'critical' || incident.severity === 'high'
+                        ? 'danger'
+                        : 'draft'
+                    }
+                  >
                     {incident.severity}
                   </Tag>
                 </span>

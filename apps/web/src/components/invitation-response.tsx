@@ -96,7 +96,11 @@ export function InvitationResponse({
               onClick={() => void respond('decline')}
               disabled={pending !== null}
             >
-              {pending === 'decline' ? <span className="spinner-text">Sending</span> : 'Decline the invitation'}
+              {pending === 'decline' ? (
+                <span className="spinner-text">Sending</span>
+              ) : (
+                'Decline the invitation'
+              )}
             </button>
             <button type="button" className="btn btn-quiet" onClick={() => setDeclining(false)}>
               Go back

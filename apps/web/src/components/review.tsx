@@ -36,7 +36,11 @@ export function ReviewButtons({ archiveId, memoryId }: { archiveId: string; memo
           onClick={() => void review('approve')}
           disabled={pending !== null}
         >
-          {pending === 'approve' ? <span className="spinner-text">Approving</span> : 'This is right'}
+          {pending === 'approve' ? (
+            <span className="spinner-text">Approving</span>
+          ) : (
+            'This is right'
+          )}
         </button>
         <button
           type="button"

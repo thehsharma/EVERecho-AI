@@ -43,7 +43,11 @@ export function SuccessionForm({
   return (
     <Card>
       <form onSubmit={onSubmit} className="stack" noValidate>
-        {error ? <div className="notice notice-danger" role="alert">{error}</div> : null}
+        {error ? (
+          <div className="notice notice-danger" role="alert">
+            {error}
+          </div>
+        ) : null}
         {saved ? (
           <div className="notice notice-ok" role="status">
             Recorded. Nothing will act on it — it is a note of your wishes.

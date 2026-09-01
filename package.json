@@ -39,6 +39,7 @@
     "prettier": "3.9.6",
     "tsx": "4.23.13",
     "vitest": "4.1.11",
-    "@axe-core/playwright": "4.13.0"
+    "@axe-core/playwright": "4.13.0",
+    "@eslint/js": "9.39.5"
   }
 }

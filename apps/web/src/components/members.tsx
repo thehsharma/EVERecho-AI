@@ -39,14 +39,20 @@ export function InviteForm({
       setPending(false);
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof ApiRequestError ? caught.message : 'We could not send that invitation.');
+      setError(
+        caught instanceof ApiRequestError ? caught.message : 'We could not send that invitation.',
+      );
       setPending(false);
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="stack" noValidate>
-      {error ? <div className="notice notice-danger" role="alert">{error}</div> : null}
+      {error ? (
+        <div className="notice notice-danger" role="alert">
+          {error}
+        </div>
+      ) : null}
       {sent ? (
         <div className="notice notice-ok" role="status">
           An invitation has been sent to {sent}. It is their decision, and they can decline
@@ -65,7 +71,9 @@ export function InviteForm({
       <div>
         <label htmlFor="role">What can they do?</label>
         <select id="role" name="role" defaultValue={defaultRole}>
-          {allowStoryteller ? <option value="storyteller">This archive is about them</option> : null}
+          {allowStoryteller ? (
+            <option value="storyteller">This archive is about them</option>
+          ) : null}
           <option value="family">Read what I share with them</option>
           <option value="contributor">Suggest photographs and corrections</option>
           <option value="steward">Help look after this practically</option>
@@ -123,13 +131,22 @@ export function MemberActions({
 
   return (
     <div className="stack" style={{ maxWidth: '22rem' }}>
-      {error ? <div className="notice notice-danger" role="alert">{error}</div> : null}
+      {error ? (
+        <div className="notice notice-danger" role="alert">
+          {error}
+        </div>
+      ) : null}
       <p className="small" style={{ marginBottom: 0 }}>
         Withdraw {name}’s access? They will stop being able to read anything immediately, and any
         links they hold will stop working.
       </p>
       <div className="row">
-        <button type="button" className="btn btn-danger" onClick={() => void revoke()} disabled={pending}>
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={() => void revoke()}
+          disabled={pending}
+        >
           {pending ? <span className="spinner-text">Withdrawing</span> : 'Yes, withdraw it'}
         </button>
         <button type="button" className="btn btn-quiet" onClick={() => setConfirming(false)}>

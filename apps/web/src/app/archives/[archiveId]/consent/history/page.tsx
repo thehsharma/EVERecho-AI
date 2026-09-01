@@ -37,7 +37,10 @@ export default async function ConsentHistoryPage({
         <Card>
           <ol className="list-plain" style={{ gap: '1rem' }}>
             {history.records.map((record) => (
-              <li key={record.id} style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.75rem' }}>
+              <li
+                key={record.id}
+                style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.75rem' }}
+              >
                 <div className="spread">
                   <strong>{ACTION_LABEL[record.action] ?? record.action}</strong>
                   <span className="muted small">
@@ -46,7 +49,11 @@ export default async function ConsentHistoryPage({
                     </time>
                   </span>
                 </div>
-                {record.summary ? <p className="small" style={{ marginBottom: 0 }}>{record.summary}</p> : null}
+                {record.summary ? (
+                  <p className="small" style={{ marginBottom: 0 }}>
+                    {record.summary}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ol>

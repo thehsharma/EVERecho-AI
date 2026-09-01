@@ -5,11 +5,31 @@ import { productMeta } from '@/lib/server';
 export const metadata = { title: 'Demonstration archive' };
 
 const ACCOUNTS = [
-  { role: 'The storyteller', email: 'kamala@everecho.example', sees: 'Everything, including drafts waiting for review' },
-  { role: 'Who set it up', email: 'anil@everecho.example', sees: 'Membership and billing — no memories, unless named as a recipient' },
-  { role: 'A family member', email: 'anjali@everecho.example', sees: 'Approved stories, the timeline, and cited answers' },
-  { role: 'A contributor', email: 'ravi@everecho.example', sees: 'The same, plus the ability to suggest corrections' },
-  { role: 'Support', email: 'support@everecho.example', sees: 'Operational metadata only, never content' },
+  {
+    role: 'The storyteller',
+    email: 'kamala@everecho.example',
+    sees: 'Everything, including drafts waiting for review',
+  },
+  {
+    role: 'Who set it up',
+    email: 'anil@everecho.example',
+    sees: 'Membership and billing — no memories, unless named as a recipient',
+  },
+  {
+    role: 'A family member',
+    email: 'anjali@everecho.example',
+    sees: 'Approved stories, the timeline, and cited answers',
+  },
+  {
+    role: 'A contributor',
+    email: 'ravi@everecho.example',
+    sees: 'The same, plus the ability to suggest corrections',
+  },
+  {
+    role: 'Support',
+    email: 'support@everecho.example',
+    sees: 'Operational metadata only, never content',
+  },
 ];
 
 export default async function DemoPage() {
@@ -48,7 +68,9 @@ export default async function DemoPage() {
               {ACCOUNTS.map((account) => (
                 <tr key={account.email}>
                   <th scope="row">{account.role}</th>
-                  <td><code className="small">{account.email}</code></td>
+                  <td>
+                    <code className="small">{account.email}</code>
+                  </td>
                   <td className="small">{account.sees}</td>
                 </tr>
               ))}
@@ -75,11 +97,10 @@ export default async function DemoPage() {
             Ask it to <em>“answer as my mother would”</em> and see what it says instead.
           </li>
           <li>
-            As Kamala, look at the review queue and at the two recordings that disagree about a year.
+            As Kamala, look at the review queue and at the two recordings that disagree about a
+            year.
           </li>
-          <li>
-            As Kamala, withdraw the family member’s access, then reload their page.
-          </li>
+          <li>As Kamala, withdraw the family member’s access, then reload their page.</li>
         </ul>
         <p style={{ marginBottom: 0 }}>
           <Link href="/sign-in">Sign in to begin</Link>

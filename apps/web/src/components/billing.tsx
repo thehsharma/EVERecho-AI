@@ -4,7 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiRequestError } from '@/lib/api';
 
-export function BillingPanel({ currency, refundId }: { currency: 'INR' | 'USD'; refundId?: string }) {
+export function BillingPanel({
+  currency,
+  refundId,
+}: {
+  currency: 'INR' | 'USD';
+  refundId?: string;
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +57,17 @@ export function BillingPanel({ currency, refundId }: { currency: 'INR' | 'USD'; 
 
   return (
     <div className="stack">
-      {error ? <div className="notice notice-danger" role="alert">{error}</div> : null}
-      <button type="button" className="btn btn-primary" onClick={() => void reserve()} disabled={pending}>
+      {error ? (
+        <div className="notice notice-danger" role="alert">
+          {error}
+        </div>
+      ) : null}
+      <button
+        type="button"
+        className="btn btn-primary"
+        onClick={() => void reserve()}
+        disabled={pending}
+      >
         {pending ? <span className="spinner-text">Starting</span> : 'Reserve a place'}
       </button>
     </div>

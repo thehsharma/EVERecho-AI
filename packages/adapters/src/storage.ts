@@ -30,7 +30,12 @@ export interface StorageAdapter {
   signDownload(key: string, ttlSeconds: number): Promise<SignedUrl>;
   signUpload(key: string, contentType: string, ttlSeconds: number): Promise<SignedUrl>;
   /** Verifies a signature produced by signDownload/signUpload. */
-  verifySignature(params: { key: string; expires: number; op: 'get' | 'put'; signature: string }): boolean;
+  verifySignature(params: {
+    key: string;
+    expires: number;
+    op: 'get' | 'put';
+    signature: string;
+  }): boolean;
 }
 
 export function sha256(buffer: Buffer): string {
@@ -167,7 +172,12 @@ export class S3StorageAdapter implements StorageAdapter {
   async put(key: string, body: Buffer, contentType: string): Promise<StoredObject> {
     const { mod, client } = await this.sdk();
     await client.send(
-      new mod.PutObjectCommand({ Bucket: this.bucket, Key: key, Body: body, ContentType: contentType }),
+      new mod.PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+      }),
     );
     return { key, byteSize: body.byteLength, checksumSha256: sha256(body) };
   }
@@ -183,7 +193,9 @@ export class S3StorageAdapter implements StorageAdapter {
   async head(key: string): Promise<{ byteSize: number } | null> {
     const { mod, client } = await this.sdk();
     try {
-      const result = await client.send(new mod.HeadObjectCommand({ Bucket: this.bucket, Key: key }));
+      const result = await client.send(
+        new mod.HeadObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
       return { byteSize: result.ContentLength ?? 0 };
     } catch {
       return null;

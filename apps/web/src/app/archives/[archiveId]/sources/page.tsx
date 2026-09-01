@@ -15,11 +15,7 @@ const STAGE_LABEL: Record<string, string> = {
   skipped: 'Left as it is',
 };
 
-export default async function SourcesPage({
-  params,
-}: {
-  params: Promise<{ archiveId: string }>;
-}) {
+export default async function SourcesPage({ params }: { params: Promise<{ archiveId: string }> }) {
   const { archiveId } = await params;
   const [archive, { sources }] = await Promise.all([
     serverFetch<Archive>(`/v1/archives/${archiveId}`),

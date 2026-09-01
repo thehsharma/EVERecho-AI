@@ -113,7 +113,9 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext): void 
         password_hash: string | null;
         status: string;
         display_name: string;
-      }>(`SELECT id, password_hash, status, display_name FROM app_user WHERE email = $1`, [body.email]);
+      }>(`SELECT id, password_hash, status, display_name FROM app_user WHERE email = $1`, [
+        body.email,
+      ]);
 
       // The password is verified even when no account matched, so the response
       // time does not reveal which addresses are registered.
@@ -256,7 +258,8 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext): void 
     url: '/v1/me/password',
     tag: 'auth',
     summary: 'Change password',
-    description: 'Every other session is revoked, because a password change is often a response to a compromise.',
+    description:
+      'Every other session is revoked, because a password change is often a response to a compromise.',
     auth: 'required',
     rateLimit: AUTH_RATE_LIMIT,
     body: changePasswordRequestSchema,
@@ -270,10 +273,10 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext): void 
         throw new ApiError('unauthenticated', 'That password did not match.');
       }
       const revoked = await revokeAllSessions(ctx.db, user!.id);
-      await ctx.db.query(`UPDATE app_user SET password_hash = $2, updated_at = now() WHERE id = $1`, [
-        user!.id,
-        await hashPassword(body.newPassword),
-      ]);
+      await ctx.db.query(
+        `UPDATE app_user SET password_hash = $2, updated_at = now() WHERE id = $1`,
+        [user!.id, await hashPassword(body.newPassword)],
+      );
 
       const session = await createSession(ctx.db, ctx.cfg, {
         userId: user!.id,
@@ -286,7 +289,10 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext): void 
         to: row.email,
         template: 'password_changed',
         templateVersion: 'email-2026-01',
-        variables: { productName: ctx.branding.productName, supportEmail: ctx.branding.supportEmail },
+        variables: {
+          productName: ctx.branding.productName,
+          supportEmail: ctx.branding.supportEmail,
+        },
       });
       return { changed: true as const, otherSessionsRevoked: Math.max(0, revoked - 1) };
     },

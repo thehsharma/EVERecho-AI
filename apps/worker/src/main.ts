@@ -31,7 +31,12 @@ log.info(
   {
     workerId,
     concurrency: cfg.env.WORKER_CONCURRENCY,
-    providers: { llm: ctx.llm.name, stt: ctx.stt.name, ocr: ctx.ocr.name, storage: ctx.storage.name },
+    providers: {
+      llm: ctx.llm.name,
+      stt: ctx.stt.name,
+      ocr: ctx.ocr.name,
+      storage: ctx.storage.name,
+    },
   },
   'worker started',
 );

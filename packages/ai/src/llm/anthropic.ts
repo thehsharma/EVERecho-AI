@@ -166,7 +166,8 @@ export class AnthropicLlmAdapter implements LlmAdapter {
       system: ANSWER_SYSTEM_PROMPT,
       userContent: `Subject: ${input.subjectName}\n\nQuestion: ${input.question}\n\nEvidence:\n${evidence}`,
       toolName: 'record_answer',
-      description: 'Record atomic third-person claims, each citing the evidence ids that support it.',
+      description:
+        'Record atomic third-person claims, each citing the evidence ids that support it.',
       schema: {
         type: 'object',
         additionalProperties: false,
@@ -234,7 +235,9 @@ export class AnthropicLlmAdapter implements LlmAdapter {
         `Topics already covered: ${input.coveredTopics.join(', ') || 'none'}`,
         `Topics the storyteller has restricted (never ask about these): ${input.restrictedTopics.join(', ') || 'none'}`,
         `Questions already asked: ${input.askedQuestions.join(' | ') || 'none'}`,
-        input.lastResponseText ? `Their last answer:\n${input.lastResponseText}` : 'This is the first question.',
+        input.lastResponseText
+          ? `Their last answer:\n${input.lastResponseText}`
+          : 'This is the first question.',
       ].join('\n\n'),
       toolName: 'record_question',
       description: 'Record the single next question to ask.',
@@ -251,7 +254,10 @@ export class AnthropicLlmAdapter implements LlmAdapter {
     });
   }
 
-  async summariseSession(input: { responses: readonly string[]; subjectName: string }): Promise<string> {
+  async summariseSession(input: {
+    responses: readonly string[];
+    subjectName: string;
+  }): Promise<string> {
     const result = await this.structured<{ summary: string }>({
       system: `${INTERVIEW_SYSTEM_PROMPT}\n\nSummarise in the third person. Use only what was said. This is a draft for the storyteller to correct.`,
       userContent: isolateEvidence(input.responses.map((text, i) => ({ id: `r${i}`, text }))),

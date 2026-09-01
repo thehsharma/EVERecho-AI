@@ -80,7 +80,11 @@ export function defineRoute<
   app.route({
     method: route.method,
     url: route.url,
-    config: { rateLimit: route.rateLimit ? { max: route.rateLimit.max, timeWindow: route.rateLimit.windowMs } : undefined },
+    config: {
+      rateLimit: route.rateLimit
+        ? { max: route.rateLimit.max, timeWindow: route.rateLimit.windowMs }
+        : undefined,
+    },
     handler: async (request, reply) => {
       const user = request.user ?? null;
       if (route.auth === 'required' && !user) {
@@ -154,7 +158,14 @@ export function buildOpenApiDocument(info: { title: string; version: string; ser
       description: route.description,
       security: route.auth === 'none' ? [] : [{ sessionCookie: [] }],
       parameters,
-      ...(route.body ? { requestBody: { required: true, content: { 'application/json': { schema: jsonSchema(route.body) } } } } : {}),
+      ...(route.body
+        ? {
+            requestBody: {
+              required: true,
+              content: { 'application/json': { schema: jsonSchema(route.body) } },
+            },
+          }
+        : {}),
       responses: {
         [String(route.status ?? 200)]: {
           description: 'Success',

@@ -34,7 +34,8 @@ export default async function ArchiveOverviewPage({
   ]);
 
   const processing = sources.sources.filter(
-    (s) => s.processing.stage !== 'ready' && s.processing.stage !== 'skipped' && s.status !== 'rejected',
+    (s) =>
+      s.processing.stage !== 'ready' && s.processing.stage !== 'skipped' && s.status !== 'rejected',
   );
   const needsConsent = isStoryteller && !consent.policy;
 
@@ -128,8 +129,8 @@ export default async function ArchiveOverviewPage({
                 <Tag kind="approved">Version {consent.policy.version}</Tag>
               </p>
               <p className="muted small">
-                Mode: {consent.policy.document.mode} ·{' '}
-                {consent.policy.document.recipients.length} recipient grant(s)
+                Mode: {consent.policy.document.mode} · {consent.policy.document.recipients.length}{' '}
+                recipient grant(s)
               </p>
               {consent.policy.document.restrictedTopics.length > 0 ? (
                 <p className="small" style={{ marginBottom: 0 }}>
@@ -152,7 +153,9 @@ export default async function ArchiveOverviewPage({
             <ButtonLink href={`/archives/${archiveId}/interview`} variant="primary">
               Record a story
             </ButtonLink>
-            <ButtonLink href={`/archives/${archiveId}/sources`}>Add a photograph or letter</ButtonLink>
+            <ButtonLink href={`/archives/${archiveId}/sources`}>
+              Add a photograph or letter
+            </ButtonLink>
             {memories.candidateCount > 0 ? (
               <ButtonLink href={`/archives/${archiveId}/memories`}>
                 Review {memories.candidateCount} draft(s)

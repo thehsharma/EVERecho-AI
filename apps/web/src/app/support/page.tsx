@@ -41,7 +41,10 @@ export default async function SupportPage() {
         <p style={{ marginBottom: 0 }}>
           {meta.productName} is not a crisis service and cannot help in an emergency. If you or
           someone else is at risk right now, contact your local emergency services. In{' '}
-          {meta.jurisdiction === 'IN' ? 'India, Tele-MANAS is 14416 and emergency services are 112' : 'your region, contact your local emergency number'}.
+          {meta.jurisdiction === 'IN'
+            ? 'India, Tele-MANAS is 14416 and emergency services are 112'
+            : 'your region, contact your local emergency number'}
+          .
         </p>
       </Card>
     </div>

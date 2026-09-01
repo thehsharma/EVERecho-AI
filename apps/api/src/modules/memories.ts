@@ -233,7 +233,11 @@ export function registerMemoryRoutes(app: FastifyInstance, ctx: AppContext): voi
       withArchiveAccess(
         ctx,
         request,
-        { archiveId: params.archiveId, action: 'memory.read', resource: { type: 'memory', id: params.memoryId } },
+        {
+          archiveId: params.archiveId,
+          action: 'memory.read',
+          resource: { type: 'memory', id: params.memoryId },
+        },
         async ({ tx, decision, user, archive }) => {
           const row = await tx.maybeOne<MemoryRow>(
             `${MEMORY_SELECT} WHERE m.id = $1 AND m.archive_id = $2 AND m.deleted_at IS NULL
@@ -245,15 +249,23 @@ export function registerMemoryRoutes(app: FastifyInstance, ctx: AppContext): voi
           const isStoryteller = archive.storyteller_user_id === user.id;
           if (!isStoryteller) {
             if (row.status !== 'approved') throw notFound('That story was not found.');
-            if (!allowedSensitivities(decision.obligations.maxSensitivity).includes(row.sensitivity)) {
+            if (
+              !allowedSensitivities(decision.obligations.maxSensitivity).includes(row.sensitivity)
+            ) {
               throw notFound('That story was not found.');
             }
           }
 
-          const claims = await tx.query<ClaimRow>(`${CLAIM_SELECT} WHERE c.memory_id = $1 GROUP BY c.id`, [
-            row.id,
-          ]);
-          return { memory: toMemory(row, claims.map((c) => toClaim(c, params.archiveId))) };
+          const claims = await tx.query<ClaimRow>(
+            `${CLAIM_SELECT} WHERE c.memory_id = $1 GROUP BY c.id`,
+            [row.id],
+          );
+          return {
+            memory: toMemory(
+              row,
+              claims.map((c) => toClaim(c, params.archiveId)),
+            ),
+          };
         },
       ),
   });
@@ -263,7 +275,8 @@ export function registerMemoryRoutes(app: FastifyInstance, ctx: AppContext): voi
     url: '/v1/archives/:archiveId/memories/:memoryId',
     tag: 'memories',
     summary: 'Correct a story card',
-    description: 'The previous version is kept as a correction record; nothing is overwritten silently.',
+    description:
+      'The previous version is kept as a correction record; nothing is overwritten silently.',
     auth: 'required',
     params: memoryParams,
     body: updateMemoryRequestSchema,
@@ -315,8 +328,16 @@ export function registerMemoryRoutes(app: FastifyInstance, ctx: AppContext): voi
             [
               params.archiveId,
               params.memoryId,
-              JSON.stringify({ title: previous.title, body: previous.body, occurredOn: previous.occurred_on }),
-              JSON.stringify({ title: updated.title, body: updated.body, occurredOn: updated.occurred_on }),
+              JSON.stringify({
+                title: previous.title,
+                body: previous.body,
+                occurredOn: previous.occurred_on,
+              }),
+              JSON.stringify({
+                title: updated.title,
+                body: updated.body,
+                occurredOn: updated.occurred_on,
+              }),
               user.id,
               body.reason ?? null,
             ],
@@ -373,10 +394,11 @@ export function registerMemoryRoutes(app: FastifyInstance, ctx: AppContext): voi
           );
           if (!row) throw notFound('That story was not found.');
 
-          await tx.query(
-            `UPDATE claim SET status = $3 WHERE memory_id = $1 AND archive_id = $2`,
-            [params.memoryId, params.archiveId, status],
-          );
+          await tx.query(`UPDATE claim SET status = $3 WHERE memory_id = $1 AND archive_id = $2`, [
+            params.memoryId,
+            params.archiveId,
+            status,
+          ]);
 
           if (status === 'approved') {
             await enqueueJob(tx, {
@@ -493,7 +515,11 @@ export function registerMemoryRoutes(app: FastifyInstance, ctx: AppContext): voi
       withArchiveAccess(
         ctx,
         request,
-        { archiveId: params.archiveId, action: 'contradiction.read', resource: { type: 'contradiction' } },
+        {
+          archiveId: params.archiveId,
+          action: 'contradiction.read',
+          resource: { type: 'contradiction' },
+        },
         async ({ tx }) => {
           const rows = await tx.query<{
             id: string;
@@ -585,7 +611,11 @@ export function registerMemoryRoutes(app: FastifyInstance, ctx: AppContext): voi
       withArchiveAccess(
         ctx,
         request,
-        { archiveId: params.archiveId, action: 'correction.read', resource: { type: 'correction' } },
+        {
+          archiveId: params.archiveId,
+          action: 'correction.read',
+          resource: { type: 'correction' },
+        },
         async ({ tx }) => {
           const rows = await tx.query<{
             id: string;
@@ -704,11 +734,16 @@ export function registerMemoryRoutes(app: FastifyInstance, ctx: AppContext): voi
           const isStoryteller = archive.storyteller_user_id === user.id;
           if (!isStoryteller) {
             if (row.status !== 'approved') throw notFound('That citation was not found.');
-            if (!allowedSensitivities(decision.obligations.maxSensitivity).includes(row.sensitivity)) {
+            if (
+              !allowedSensitivities(decision.obligations.maxSensitivity).includes(row.sensitivity)
+            ) {
               throw notFound('That citation was not found.');
             }
           }
-          await ctx.analytics.track('citation_opened', { actorId: user.id, archiveId: params.archiveId });
+          await ctx.analytics.track('citation_opened', {
+            actorId: user.id,
+            archiveId: params.archiveId,
+          });
           return { claim: toClaim(row, params.archiveId) };
         },
       ),

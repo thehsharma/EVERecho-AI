@@ -47,8 +47,12 @@ beforeAll(async () => {
     role: 'storyteller',
     expiresInDays: 14,
   });
-  await storyteller.post(`/v1/invitations/${invitationTokenFrom(h.ctx)}/respond`, { decision: 'accept' });
-  await storyteller.post(`/v1/archives/${archiveId}/consent/teach-back`, { answers: CORRECT_TEACH_BACK });
+  await storyteller.post(`/v1/invitations/${invitationTokenFrom(h.ctx)}/respond`, {
+    decision: 'accept',
+  });
+  await storyteller.post(`/v1/archives/${archiveId}/consent/teach-back`, {
+    answers: CORRECT_TEACH_BACK,
+  });
   await storyteller.put(`/v1/archives/${archiveId}/consent`, { document: consentDocument() });
 }, 120_000);
 
@@ -76,7 +80,13 @@ describe('ingestion', () => {
     await runWorker();
 
     const after = await storyteller.get<{
-      sources: { id: string; status: string; scanResult: string; checksum: { value: string } | null; processing: { stage: string } }[];
+      sources: {
+        id: string;
+        status: string;
+        scanResult: string;
+        checksum: { value: string } | null;
+        processing: { stage: string };
+      }[];
     }>(`/v1/archives/${archiveId}/sources`);
     const source = after.body.sources.find((s) => s.id === audioSourceId)!;
     expect(source.scanResult).toBe('clean');
@@ -94,9 +104,9 @@ describe('ingestion', () => {
     });
     await runWorker();
 
-    const sources = await storyteller.get<{ sources: { id: string; status: string; scanResult: string }[] }>(
-      `/v1/archives/${archiveId}/sources`,
-    );
+    const sources = await storyteller.get<{
+      sources: { id: string; status: string; scanResult: string }[];
+    }>(`/v1/archives/${archiveId}/sources`);
     const rejected = sources.body.sources.find((s) => s.id === result.sourceId)!;
     expect(rejected.status).toBe('rejected');
     expect(rejected.scanResult).toBe('infected');
@@ -142,7 +152,10 @@ describe('ingestion', () => {
 
   it('quotes the source exactly in every claim it extracted', async () => {
     const candidates = await storyteller.get<{
-      memories: { id: string; claims: { text: string; evidence: { quotedText: string; locator: unknown }[] }[] }[];
+      memories: {
+        id: string;
+        claims: { text: string; evidence: { quotedText: string; locator: unknown }[] }[];
+      }[];
     }>(`/v1/archives/${archiveId}/memories?status=candidate`);
 
     const claims = candidates.body.memories.flatMap((m) => m.claims);
@@ -180,7 +193,11 @@ describe('approval is what makes a memory answerable', () => {
   it('builds a timeline that states its gaps rather than guessing', async () => {
     await runWorker();
     const response = await storyteller.get<{
-      timeline: { entries: unknown[]; undatedEntries: unknown[]; coverage: { earliestYear: number | null } } | null;
+      timeline: {
+        entries: unknown[];
+        undatedEntries: unknown[];
+        coverage: { earliestYear: number | null };
+      } | null;
     }>(`/v1/archives/${archiveId}/timeline`);
 
     expect(response.body.timeline).not.toBeNull();
@@ -227,7 +244,11 @@ describe('a family member gets only what they were given', () => {
         answerText: string;
         perspective: string;
         aiAssisted: boolean;
-        claims: { text: string; evidenceClass: string; citations: { quotedText: string; locator: unknown }[] }[];
+        claims: {
+          text: string;
+          evidenceClass: string;
+          citations: { quotedText: string; locator: unknown }[];
+        }[];
       };
     }>(`/v1/archives/${archiveId}/questions`, { question: 'Where did the family move to?' });
 
@@ -250,7 +271,12 @@ describe('a family member gets only what they were given', () => {
 
   it('abstains rather than inventing an answer it has no evidence for', async () => {
     const response = await family.post<{
-      response: { abstained: boolean; abstentionReason: string; answerText: string; claims: unknown[] };
+      response: {
+        abstained: boolean;
+        abstentionReason: string;
+        answerText: string;
+        claims: unknown[];
+      };
     }>(`/v1/archives/${archiveId}/questions`, {
       question: 'What did she think about the 1983 cricket world cup?',
     });
@@ -339,17 +365,23 @@ describe('the storyteller stays in control', () => {
       const response = await family.get(url);
       expect([403, 404], `${url} -> ${response.status}`).toContain(response.status);
     }
-    const question = await family.post(`/v1/archives/${archiveId}/questions`, { question: 'Where did they live?' });
+    const question = await family.post(`/v1/archives/${archiveId}/questions`, {
+      question: 'Where did they live?',
+    });
     expect([403, 404]).toContain(question.status);
   });
 
   it('records the refusals in the audit trail, not only the successes', async () => {
-    const response = await storyteller.get<{ events: { outcome: string; reasonCode: string | null }[] }>(
-      `/v1/archives/${archiveId}/audit?limit=200`,
-    );
+    const response = await storyteller.get<{
+      events: { outcome: string; reasonCode: string | null }[];
+    }>(`/v1/archives/${archiveId}/audit?limit=200`);
     const denials = response.body.events.filter((e) => e.outcome === 'deny');
     expect(denials.length).toBeGreaterThan(0);
-    expect(denials.some((d) => d.reasonCode === 'restricted_topic' || d.reasonCode === 'membership_revoked')).toBe(true);
+    expect(
+      denials.some(
+        (d) => d.reasonCode === 'restricted_topic' || d.reasonCode === 'membership_revoked',
+      ),
+    ).toBe(true);
   });
 });
 
@@ -418,7 +450,9 @@ describe('export and deletion', () => {
     const progress = await storyteller.get<{
       deletionRequests: { id: string; status: string; steps: { key: string; status: string }[] }[];
     }>(`/v1/archives/${archiveId}/deletion-requests`);
-    const request = progress.body.deletionRequests.find((d) => d.id === created.body.deletionRequest.id)!;
+    const request = progress.body.deletionRequests.find(
+      (d) => d.id === created.body.deletionRequest.id,
+    )!;
     expect(request.status).toBe('completed');
     expect(request.steps.every((s) => s.status === 'done')).toBe(true);
 
@@ -450,7 +484,9 @@ describe('export and deletion', () => {
 
   it('refuses to rewrite the audit trail', async () => {
     await expect(
-      h.ctx.db.query(`UPDATE audit_event SET action = 'tampered' WHERE archive_id = $1`, [archiveId]),
+      h.ctx.db.query(`UPDATE audit_event SET action = 'tampered' WHERE archive_id = $1`, [
+        archiveId,
+      ]),
     ).rejects.toThrow(/append-only/);
   });
 });

@@ -6,7 +6,13 @@ import Link from 'next/link';
 import { api, ApiRequestError } from '@/lib/api';
 import { Tag } from './ui';
 
-export function BiographyActions({ archiveId, hasDraft }: { archiveId: string; hasDraft: boolean }) {
+export function BiographyActions({
+  archiveId,
+  hasDraft,
+}: {
+  archiveId: string;
+  hasDraft: boolean;
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [queued, setQueued] = useState(false);
@@ -26,7 +32,13 @@ export function BiographyActions({ archiveId, hasDraft }: { archiveId: string; h
   return (
     <div className="row">
       <button type="button" className="btn" onClick={() => void generate()} disabled={pending}>
-        {pending ? <span className="spinner-text">Starting</span> : hasDraft ? 'Draft it again' : 'Draft a biography'}
+        {pending ? (
+          <span className="spinner-text">Starting</span>
+        ) : hasDraft ? (
+          'Draft it again'
+        ) : (
+          'Draft a biography'
+        )}
       </button>
       {queued ? (
         <span className="small muted" role="status">
@@ -57,7 +69,10 @@ export function BiographySection({
     setPending(true);
     setError(null);
     try {
-      await api.patch(`/v1/archives/${archiveId}/biography/sections/${section.id}`, { heading, text });
+      await api.patch(`/v1/archives/${archiveId}/biography/sections/${section.id}`, {
+        heading,
+        text,
+      });
       setEditing(false);
       router.refresh();
     } catch (caught) {
@@ -70,7 +85,11 @@ export function BiographySection({
   if (editing) {
     return (
       <div className="stack">
-        {error ? <div className="notice notice-danger" role="alert">{error}</div> : null}
+        {error ? (
+          <div className="notice notice-danger" role="alert">
+            {error}
+          </div>
+        ) : null}
         <div>
           <label htmlFor={`heading-${section.id}`}>Heading</label>
           <input
@@ -92,7 +111,12 @@ export function BiographySection({
           />
         </div>
         <div className="row">
-          <button type="button" className="btn btn-primary" onClick={() => void save()} disabled={pending}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => void save()}
+            disabled={pending}
+          >
             {pending ? <span className="spinner-text">Saving</span> : 'Save'}
           </button>
           <button
@@ -116,7 +140,11 @@ export function BiographySection({
       <div className="spread">
         <h2 style={{ marginBottom: '0.5rem' }}>{section.heading}</h2>
         <span className="row" style={{ gap: '0.35rem' }}>
-          {section.edited ? <Tag kind="corrected">In the storyteller’s words</Tag> : <Tag kind="ai">AI-assisted draft</Tag>}
+          {section.edited ? (
+            <Tag kind="corrected">In the storyteller’s words</Tag>
+          ) : (
+            <Tag kind="ai">AI-assisted draft</Tag>
+          )}
           {canEdit ? (
             <button type="button" className="btn btn-quiet" onClick={() => setEditing(true)}>
               Edit

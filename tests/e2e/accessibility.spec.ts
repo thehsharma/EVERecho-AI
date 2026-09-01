@@ -14,14 +14,25 @@ async function scan(page: Page, url: string) {
   return new AxeBuilder({ page }).withTags(STANDARD).analyze();
 }
 
-function describeViolations(violations: { id: string; impact?: string | null; nodes: unknown[] }[]) {
+function describeViolations(
+  violations: { id: string; impact?: string | null; nodes: unknown[] }[],
+) {
   return violations
     .map((v) => `${v.impact ?? 'unknown'}: ${v.id} (${v.nodes.length} element(s))`)
     .join('\n');
 }
 
 test.describe('public pages meet WCAG 2.2 AA', () => {
-  for (const path of ['/', '/how-it-works', '/trust', '/pricing', '/support', '/sign-in', '/sign-up', '/demo']) {
+  for (const path of [
+    '/',
+    '/how-it-works',
+    '/trust',
+    '/pricing',
+    '/support',
+    '/sign-in',
+    '/sign-up',
+    '/demo',
+  ]) {
     test(`no violations on ${path}`, async ({ page }) => {
       const results = await scan(page, path);
       expect(describeViolations(results.violations)).toBe('');
@@ -72,7 +83,10 @@ test.describe('a family member’s screens meet WCAG 2.2 AA', () => {
     await page.goto(`/archives/${archiveId}/ask`);
     await page.getByLabel('Your question').fill('Where did the family move to?');
     await page.getByRole('button', { name: 'Ask', exact: true }).click();
-    await page.getByRole('button', { name: /source/ }).first().click();
+    await page
+      .getByRole('button', { name: /source/ })
+      .first()
+      .click();
 
     const results = await new AxeBuilder({ page }).withTags(STANDARD).analyze();
     expect(describeViolations(results.violations)).toBe('');

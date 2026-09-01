@@ -24,7 +24,11 @@ export default async function BiographyPage({
       <PageHeader
         title="Biography"
         lede={`A short life of ${archive.subjectDisplayName}, drafted from approved stories.`}
-        actions={canGenerate ? <BiographyActions archiveId={archiveId} hasDraft={Boolean(biography)} /> : undefined}
+        actions={
+          canGenerate ? (
+            <BiographyActions archiveId={archiveId} hasDraft={Boolean(biography)} />
+          ) : undefined
+        }
       />
 
       <Notice tone="info" title="This is AI-assisted, and it is a draft">
@@ -57,11 +61,7 @@ export default async function BiographyPage({
 
           {biography.sections.map((section) => (
             <Card key={section.id}>
-              <BiographySection
-                archiveId={archiveId}
-                section={section}
-                canEdit={canEdit}
-              />
+              <BiographySection archiveId={archiveId} section={section} canEdit={canEdit} />
             </Card>
           ))}
         </>

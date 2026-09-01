@@ -34,7 +34,11 @@ export default defineConfig({
       // A tablet viewport on Chromium: this product is used on tablets, and
       // WebKit is not available in this environment.
       name: 'tablet',
-      use: { ...devices['Desktop Chrome'], viewport: { width: 810, height: 1080 }, isMobile: false },
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 810, height: 1080 },
+        isMobile: false,
+      },
       dependencies: ['setup'],
     },
   ],

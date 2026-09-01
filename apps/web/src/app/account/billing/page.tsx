@@ -54,7 +54,11 @@ export default async function BillingPage() {
           <h2>Your reservations</h2>
           <ul className="list-plain">
             {billing.reservations.map((reservation) => (
-              <li key={reservation.id} className="spread" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.6rem' }}>
+              <li
+                key={reservation.id}
+                className="spread"
+                style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.6rem' }}
+              >
                 <span>
                   {money(reservation.amountMinor, reservation.currency)}{' '}
                   <span className="small muted">

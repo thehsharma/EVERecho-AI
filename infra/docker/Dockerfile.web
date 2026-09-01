@@ -1,0 +1,25 @@
+FROM node:22-bookworm-slim AS base
+ENV PNPM_HOME=/pnpm
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+WORKDIR /app
+
+FROM base AS build
+# Baked into the client bundle at build time, so it must be a URL the browser
+# can reach — not an internal service name.
+ARG NEXT_PUBLIC_API_URL=http://localhost:4000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps ./apps
+COPY packages ./packages
+COPY tsconfig.base.json tsconfig.json ./
+RUN pnpm install --frozen-lockfile --ignore-scripts
+RUN pnpm --filter @everecho/web build
+
+FROM base AS runtime
+ENV NODE_ENV=production
+COPY --from=build /app ./
+RUN useradd --system --create-home --uid 10001 everecho && chown -R everecho:everecho /app/apps/web/.next
+USER everecho
+EXPOSE 3000
+CMD ["pnpm", "--filter", "@everecho/web", "start"]

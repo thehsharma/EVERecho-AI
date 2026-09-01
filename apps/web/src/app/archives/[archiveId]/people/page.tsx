@@ -20,15 +20,17 @@ export default async function PeoplePage({ params }: { params: Promise<{ archive
 
       {entities.length === 0 ? (
         <Empty title="No names picked up yet">
-          <p style={{ marginBottom: 0 }}>
-            These appear as stories are recorded and approved.
-          </p>
+          <p style={{ marginBottom: 0 }}>These appear as stories are recorded and approved.</p>
         </Empty>
       ) : (
         <Card>
           <ul className="list-plain">
             {entities.map((entity) => (
-              <li key={entity.id} className="spread" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.6rem' }}>
+              <li
+                key={entity.id}
+                className="spread"
+                style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.6rem' }}
+              >
                 <div>
                   <strong>{entity.name}</strong>{' '}
                   {entity.status === 'candidate' ? <Tag kind="draft">Not yet confirmed</Tag> : null}

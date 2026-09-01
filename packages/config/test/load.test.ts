@@ -21,7 +21,9 @@ describe('loadConfig', () => {
   });
 
   it('refuses to execute succession transitions', () => {
-    expect(() => loadConfig({ ...base, FEATURE_SUCCESSION_EXECUTION: 'true' })).toThrow(ConfigError);
+    expect(() => loadConfig({ ...base, FEATURE_SUCCESSION_EXECUTION: 'true' })).toThrow(
+      ConfigError,
+    );
   });
 
   it('rejects development defaults in production', () => {

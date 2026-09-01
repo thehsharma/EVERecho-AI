@@ -8,5 +8,7 @@ export { LocalLlmAdapter } from './local';
 export { AnthropicLlmAdapter } from './anthropic';
 
 export function createLlm(cfg: AppConfig): LlmAdapter {
-  return cfg.env.LLM_DRIVER === 'anthropic' ? new AnthropicLlmAdapter(cfg) : new LocalLlmAdapter(cfg);
+  return cfg.env.LLM_DRIVER === 'anthropic'
+    ? new AnthropicLlmAdapter(cfg)
+    : new LocalLlmAdapter(cfg);
 }

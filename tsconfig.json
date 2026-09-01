@@ -1,21 +1,13 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "lib": [
-      "ES2023",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "allowJs": true,
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./apps/web/src/*"
-      ]
+      "@/*": ["./apps/web/src/*"]
     }
   },
   "include": [
@@ -31,11 +23,5 @@
     "apps/web/src/**/*.tsx",
     "tests/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    "**/node_modules",
-    "**/dist",
-    "**/.next",
-    "coverage"
-  ]
+  "exclude": ["node_modules", "**/node_modules", "**/dist", "**/.next", "coverage"]
 }

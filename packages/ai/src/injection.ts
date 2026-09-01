@@ -8,17 +8,36 @@
  */
 
 const INJECTION_PATTERNS: readonly { pattern: RegExp; label: string }[] = [
-  { pattern: /ignore (?:all |any )?(?:the )?(?:previous|prior|above|earlier) (?:instructions?|prompts?|rules?)/i, label: 'override_instructions' },
-  { pattern: /disregard (?:all |the )?(?:previous|prior|above|earlier|your) (?:instructions?|rules?|system)/i, label: 'override_instructions' },
+  {
+    pattern:
+      /ignore (?:all |any )?(?:the )?(?:previous|prior|above|earlier) (?:instructions?|prompts?|rules?)/i,
+    label: 'override_instructions',
+  },
+  {
+    pattern:
+      /disregard (?:all |the )?(?:previous|prior|above|earlier|your) (?:instructions?|rules?|system)/i,
+    label: 'override_instructions',
+  },
   { pattern: /you are (?:now|actually) (?:a|an|the)\b/i, label: 'role_reassignment' },
   { pattern: /\bsystem prompt\b/i, label: 'system_prompt_probe' },
-  { pattern: /(?:reveal|print|repeat|show) (?:your|the) (?:system )?(?:prompt|instructions?|rules?)/i, label: 'system_prompt_probe' },
+  {
+    pattern:
+      /(?:reveal|print|repeat|show) (?:your|the) (?:system )?(?:prompt|instructions?|rules?)/i,
+    label: 'system_prompt_probe',
+  },
   { pattern: /\bpretend (?:to be|you are)\b/i, label: 'persona_request' },
-  { pattern: /\b(?:speak|answer|respond|reply|talk) as (?:if you (?:are|were) )?(?:me|him|her|them|dad|mum|mom|grandma|grandpa)\b/i, label: 'persona_request' },
+  {
+    pattern:
+      /\b(?:speak|answer|respond|reply|talk) as (?:if you (?:are|were) )?(?:me|him|her|them|dad|mum|mom|grandma|grandpa)\b/i,
+    label: 'persona_request',
+  },
   { pattern: /\bin (?:my|his|her|their) (?:own )?voice\b/i, label: 'persona_request' },
   { pattern: /\bfirst person\b/i, label: 'persona_request' },
   { pattern: /\bwithout (?:citations?|sources?|evidence)\b/i, label: 'evidence_bypass' },
-  { pattern: /\b(?:make (?:it |something )?up|guess|invent|imagine what)\b/i, label: 'fabrication_request' },
+  {
+    pattern: /\b(?:make (?:it |something )?up|guess|invent|imagine what)\b/i,
+    label: 'fabrication_request',
+  },
   { pattern: /\bdeveloper mode\b|\bjailbreak\b|\bDAN\b/i, label: 'jailbreak' },
   { pattern: /<\/?(?:system|assistant|user|instructions?)>/i, label: 'delimiter_injection' },
 ];
@@ -44,9 +63,7 @@ export function detectInjection(text: string): InjectionFinding[] {
  * instructions: delimiters that appear in the content are neutralised, and each
  * passage is labelled with the id the model must cite.
  */
-export function isolateEvidence(
-  passages: readonly { id: string; text: string }[],
-): string {
+export function isolateEvidence(passages: readonly { id: string; text: string }[]): string {
   return passages
     .map(({ id, text }) => {
       const neutralised = text

@@ -17,15 +17,18 @@ export default async function ConsentPage({
 
   const [archive, consent] = await Promise.all([
     serverFetch<Archive>(`/v1/archives/${archiveId}`),
-    serverFetch<{ policy: ConsentPolicy | null; defaultDocument: unknown; teachBackPassed: boolean }>(
-      `/v1/archives/${archiveId}/consent`,
-    ),
+    serverFetch<{
+      policy: ConsentPolicy | null;
+      defaultDocument: unknown;
+      teachBackPassed: boolean;
+    }>(`/v1/archives/${archiveId}/consent`),
   ]);
   const canEdit = archive.viewerCapabilities.includes('consent.update');
 
   let sources: SourceAsset[] = [];
   try {
-    sources = (await serverFetch<{ sources: SourceAsset[] }>(`/v1/archives/${archiveId}/sources`)).sources;
+    sources = (await serverFetch<{ sources: SourceAsset[] }>(`/v1/archives/${archiveId}/sources`))
+      .sources;
   } catch {
     sources = [];
   }
@@ -69,12 +72,22 @@ export default async function ConsentPage({
       ) : consent.policy ? (
         <Card>
           <dl style={{ margin: 0 }}>
-            <div className="spread" style={{ borderBottom: '1px solid var(--line)', padding: '0.6rem 0' }}>
-              <dt className="muted" style={{ margin: 0 }}>What is allowed</dt>
+            <div
+              className="spread"
+              style={{ borderBottom: '1px solid var(--line)', padding: '0.6rem 0' }}
+            >
+              <dt className="muted" style={{ margin: 0 }}>
+                What is allowed
+              </dt>
               <dd style={{ margin: 0, fontWeight: 500 }}>{consent.policy.document.mode}</dd>
             </div>
-            <div className="spread" style={{ borderBottom: '1px solid var(--line)', padding: '0.6rem 0' }}>
-              <dt className="muted" style={{ margin: 0 }}>Off-limits topics</dt>
+            <div
+              className="spread"
+              style={{ borderBottom: '1px solid var(--line)', padding: '0.6rem 0' }}
+            >
+              <dt className="muted" style={{ margin: 0 }}>
+                Off-limits topics
+              </dt>
               <dd style={{ margin: 0, fontWeight: 500 }}>
                 {consent.policy.document.restrictedTopics.length > 0
                   ? consent.policy.document.restrictedTopics.join(', ')
@@ -82,7 +95,9 @@ export default async function ConsentPage({
               </dd>
             </div>
             <div className="spread" style={{ padding: '0.6rem 0' }}>
-              <dt className="muted" style={{ margin: 0 }}>Synthetic voice or likeness</dt>
+              <dt className="muted" style={{ margin: 0 }}>
+                Synthetic voice or likeness
+              </dt>
               <dd style={{ margin: 0, fontWeight: 500 }}>Never — prohibited by the product</dd>
             </div>
           </dl>

@@ -45,7 +45,10 @@ export async function findCurrentPolicy(
   );
 }
 
-export async function listPolicyVersions(q: Queryable, archiveId: string): Promise<ConsentPolicyRow[]> {
+export async function listPolicyVersions(
+  q: Queryable,
+  archiveId: string,
+): Promise<ConsentPolicyRow[]> {
   return q.query<ConsentPolicyRow>(
     `SELECT * FROM consent_policy WHERE archive_id = $1 ORDER BY version DESC`,
     [archiveId],
@@ -92,10 +95,10 @@ export async function insertPolicyVersion(
       input.createdByUserId,
     ],
   );
-  await q.query(`UPDATE archive SET current_consent_policy_id = $2, updated_at = now() WHERE id = $1`, [
-    input.archiveId,
-    row.id,
-  ]);
+  await q.query(
+    `UPDATE archive SET current_consent_policy_id = $2, updated_at = now() WHERE id = $1`,
+    [input.archiveId, row.id],
+  );
   return row;
 }
 
@@ -106,12 +109,7 @@ export async function recordConsentAct(
     consentPolicyId: string | null;
     actorUserId: string | null;
     action:
-      | 'granted'
-      | 'updated'
-      | 'revoked'
-      | 'declined'
-      | 'teachback_passed'
-      | 'teachback_failed';
+      'granted' | 'updated' | 'revoked' | 'declined' | 'teachback_passed' | 'teachback_failed';
     summary?: string | null;
     ipHash?: string | null;
     userAgentFamily?: string | null;

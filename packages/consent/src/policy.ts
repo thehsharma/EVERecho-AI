@@ -128,7 +128,9 @@ export function compileConsentPolicy(input: unknown): {
     ...doc,
     activities: [...activities].sort(),
     dataCategories: [...new Set(doc.dataCategories)].sort(),
-    restrictedTopics: [...new Set(doc.restrictedTopics.map((t) => t.trim()).filter(Boolean))].sort(),
+    restrictedTopics: [
+      ...new Set(doc.restrictedTopics.map((t) => t.trim()).filter(Boolean)),
+    ].sort(),
     excludedSourceIds: [...new Set(doc.excludedSourceIds)].sort(),
     recipients: [...doc.recipients].sort((a, b) =>
       `${a.role}:${a.userId ?? ''}` < `${b.role}:${b.userId ?? ''}` ? -1 : 1,
@@ -199,7 +201,8 @@ export function diffPolicies(
 ): string[] {
   if (!previous) return [`Consent set up with mode "${next.mode}".`];
   const changes: string[] = [];
-  if (previous.mode !== next.mode) changes.push(`Mode changed from "${previous.mode}" to "${next.mode}".`);
+  if (previous.mode !== next.mode)
+    changes.push(`Mode changed from "${previous.mode}" to "${next.mode}".`);
 
   const added = next.activities.filter((a) => !previous.activities.includes(a));
   const removed = previous.activities.filter((a) => !next.activities.includes(a));

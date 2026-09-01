@@ -80,22 +80,38 @@ export const TOPIC_PLANS: readonly TopicPlan[] = [
   {
     topic: 'friendships',
     opening: 'Who was your closest friend growing up?',
-    followUps: ['How did the two of you meet?', 'What did you get up to together?', 'Are you still in touch?'],
+    followUps: [
+      'How did the two of you meet?',
+      'What did you get up to together?',
+      'Are you still in touch?',
+    ],
   },
   {
     topic: 'education',
     opening: 'What do you remember about school — a teacher, a subject, a walk there?',
-    followUps: ['Was there a teacher who mattered?', 'What were you good at?', 'What did you dread?'],
+    followUps: [
+      'Was there a teacher who mattered?',
+      'What were you good at?',
+      'What did you dread?',
+    ],
   },
   {
     topic: 'love',
     opening: 'How did you meet your partner?',
-    followUps: ['What was your first impression?', 'What did you do together early on?', 'What has kept it going?'],
+    followUps: [
+      'What was your first impression?',
+      'What did you do together early on?',
+      'What has kept it going?',
+    ],
   },
   {
     topic: 'career',
     opening: 'What was the first work you were paid for?',
-    followUps: ['What did a normal day look like?', 'Who did you work alongside?', 'What did you learn there?'],
+    followUps: [
+      'What did a normal day look like?',
+      'Who did you work alongside?',
+      'What did you learn there?',
+    ],
   },
   {
     topic: 'challenges',

@@ -20,7 +20,8 @@ export async function serverFetch<T>(path: string): Promise<T> {
   const text = await response.text();
   const body = text ? (JSON.parse(text) as Record<string, unknown>) : {};
   if (!response.ok) {
-    const error = (body as { error?: { code?: string; message?: string; reasonCode?: string } }).error;
+    const error = (body as { error?: { code?: string; message?: string; reasonCode?: string } })
+      .error;
     throw new ApiRequestError(
       response.status,
       error?.code ?? 'internal_error',
@@ -61,7 +62,12 @@ export interface ProductMeta {
   trademarkStatus: string;
   features: { performMode: false; successionExecution: false; demoMode: boolean; billing: boolean };
   limits: { uploadMaxBytes: number; allowedMimeTypes: string[] };
-  providers: { composition: string; transcription: string; ocr: string; compositionIsExtractive: boolean };
+  providers: {
+    composition: string;
+    transcription: string;
+    ocr: string;
+    compositionIsExtractive: boolean;
+  };
 }
 
 export async function productMeta(): Promise<ProductMeta> {

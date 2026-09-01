@@ -16,8 +16,11 @@ export function registerObjectRoutes(app: FastifyInstance, ctx: AppContext): voi
 
   // Fastify matches content types by exact string or RegExp; "image/*" is
   // neither, and silently matches nothing.
-  const asBuffer = (_request: unknown, body: Buffer, done: (err: Error | null, body?: Buffer) => void) =>
-    done(null, body);
+  const asBuffer = (
+    _request: unknown,
+    body: Buffer,
+    done: (err: Error | null, body?: Buffer) => void,
+  ) => done(null, body);
   app.addContentTypeParser(/^(audio|video|image)\//, { parseAs: 'buffer' }, asBuffer);
   app.addContentTypeParser(
     ['application/octet-stream', 'application/pdf', 'text/plain'],
@@ -48,7 +51,11 @@ export function registerObjectRoutes(app: FastifyInstance, ctx: AppContext): voi
       if (!Buffer.isBuffer(body) || body.byteLength === 0) {
         throw new ApiError('validation_failed', 'No file content was received.');
       }
-      const stored = await local.put(query.key, body, request.headers['content-type'] ?? 'application/octet-stream');
+      const stored = await local.put(
+        query.key,
+        body,
+        request.headers['content-type'] ?? 'application/octet-stream',
+      );
       reply.status(200);
       return { stored: true, byteSize: stored.byteSize, checksum: stored.checksumSha256 };
     },

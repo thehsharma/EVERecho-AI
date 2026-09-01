@@ -25,9 +25,9 @@ export default async function MemoriesPage({
       `/v1/archives/${archiveId}/memories?status=${view}`,
     ),
     canReview
-      ? serverFetch<{ contradictions: Contradiction[] }>(`/v1/archives/${archiveId}/contradictions`).catch(
-          () => ({ contradictions: [] as Contradiction[] }),
-        )
+      ? serverFetch<{ contradictions: Contradiction[] }>(
+          `/v1/archives/${archiveId}/contradictions`,
+        ).catch(() => ({ contradictions: [] as Contradiction[] }))
       : Promise.resolve({ contradictions: [] as Contradiction[] }),
   ]);
 
@@ -98,7 +98,9 @@ export default async function MemoriesPage({
               <Card>
                 <div className="spread">
                   <h2 style={{ fontSize: '1.0625rem', marginBottom: '0.25rem' }}>
-                    <Link href={`/archives/${archiveId}/memories/${memory.id}`}>{memory.title}</Link>
+                    <Link href={`/archives/${archiveId}/memories/${memory.id}`}>
+                      {memory.title}
+                    </Link>
                   </h2>
                   <span className="muted small">
                     <ApproximateDate value={memory.occurredAt} />

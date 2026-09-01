@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ApproximateDate, Card, EvidenceClassTag, PageHeader, ProvenanceTag } from '@/components/ui';
+import {
+  ApproximateDate,
+  Card,
+  EvidenceClassTag,
+  PageHeader,
+  ProvenanceTag,
+} from '@/components/ui';
 import { MemoryEditor } from '@/components/memory-editor';
 import { ReviewButtons } from '@/components/review';
 import { ApiRequestError } from '@/lib/api';
@@ -19,8 +25,9 @@ export default async function MemoryPage({
   const archive = await serverFetch<Archive>(`/v1/archives/${archiveId}`);
   let memory: Memory;
   try {
-    memory = (await serverFetch<{ memory: Memory }>(`/v1/archives/${archiveId}/memories/${memoryId}`))
-      .memory;
+    memory = (
+      await serverFetch<{ memory: Memory }>(`/v1/archives/${archiveId}/memories/${memoryId}`)
+    ).memory;
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) notFound();
     throw error;
@@ -72,7 +79,10 @@ export default async function MemoryPage({
         </p>
         <ul className="list-plain">
           {memory.claims.map((claim) => (
-            <li key={claim.id} style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.75rem' }}>
+            <li
+              key={claim.id}
+              style={{ borderBottom: '1px solid var(--line)', paddingBottom: '0.75rem' }}
+            >
               <p style={{ marginBottom: '0.35rem' }}>{claim.text}</p>
               <p className="row small" style={{ gap: '0.35rem' }}>
                 <EvidenceClassTag evidenceClass={claim.evidenceClass} />

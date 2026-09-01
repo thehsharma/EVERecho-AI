@@ -21,7 +21,9 @@ try {
   for (const user of result.users) {
     console.log(`  ${user.role.padEnd(14)} ${user.email.padEnd(32)} ${user.password}`);
   }
-  console.log('\nEvery person and story in this archive is invented. No real personal data is included.');
+  console.log(
+    '\nEvery person and story in this archive is invented. No real personal data is included.',
+  );
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;
