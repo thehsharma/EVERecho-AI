@@ -1,5 +1,10 @@
 import { randomUUID, scryptSync, randomBytes } from 'node:crypto';
-import { compileConsentPolicy, defaultConsentDocument } from '@everecho/consent';
+import {
+  compileConsentPolicy,
+  compileLearningPolicy,
+  defaultConsentDocument,
+  defaultLearningDocument,
+} from '@everecho/consent';
 import type { ConsentPolicyDocument } from '@everecho/contracts';
 import { enqueueJob } from '@everecho/db';
 import { drainQueue } from './runner';
@@ -178,6 +183,27 @@ export async function seedDemoArchive(ctx: PipelineContext): Promise<SeedResult>
       `INSERT INTO consent_record (archive_id, consent_policy_id, actor_user_id, action, summary)
        VALUES ($1, $2, $3, 'granted', 'Demonstration archive seeded with full consent.')`,
       [archiveId, policy.id, storyteller],
+    );
+
+    // A learning policy, so the demonstration archive can hold a conversation
+    // immediately. Everything stays local and everything waits for review —
+    // the defaults, plus a transcript that is kept so a demonstration can be
+    // looked at afterwards.
+    const learning = compileLearningPolicy({
+      ...defaultLearningDocument(),
+      transcriptRetention: 'until_deleted',
+    });
+    await tx.query(
+      `INSERT INTO learning_policy (archive_id, version, document, policy_hash,
+                                    policy_engine_version, created_by_user_id)
+       VALUES ($1, 1, $2, $3, $4, $5)`,
+      [
+        archiveId,
+        JSON.stringify(learning.document),
+        learning.policyHash,
+        ctx.branding.policyEngineVersion,
+        storyteller,
+      ],
     );
   });
 

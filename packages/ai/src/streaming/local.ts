@@ -469,6 +469,24 @@ function tone(input: {
   return out;
 }
 
+/**
+ * How much of a question a passage must actually answer.
+ *
+ * A single shared word is not an answer. Asked "what did she think about the
+ * moon landing", a passage saying "I have thought about him often since"
+ * shares one stem out of three — it is supported, cited and correctly
+ * attributed, and it is not an answer to the question. Returning it is worse
+ * than abstaining, because the citation makes it look reliable.
+ *
+ * Verification cannot catch this: the sentence is perfectly supported by the
+ * evidence it cites. What is missing is relevance, not support.
+ *
+ * Half the question's content words is the bar, and it is measured rather than
+ * guessed: genuine answers in the demonstration archive score 0.5, and that
+ * near-miss scores 0.33.
+ */
+const MIN_QUESTION_COVERAGE = 0.5;
+
 function rankPassages(
   question: string,
   passages: readonly EvidencePassage[],
@@ -479,7 +497,7 @@ function rankPassages(
       // How much of the question the passage covers, not the reverse: a long
       // passage should not be penalised for containing more than was asked.
       .map((passage) => ({ passage, score: coverage(question, passage.text) }))
-      .filter((entry) => entry.score > 0)
+      .filter((entry) => entry.score >= MIN_QUESTION_COVERAGE)
       // Deterministic tie-break: two passages with the same score must not
       // produce different answers on different runs.
       .sort((a, b) => b.score - a.score || a.passage.id.localeCompare(b.passage.id))

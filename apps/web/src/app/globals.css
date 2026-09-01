@@ -561,12 +561,299 @@ blockquote.quote {
   }
 }
 
+
+/* ---------------------------------------------------------------------------
+ * Live conversation
+ *
+ * The three things that must never be ambiguous: what this is, whether it is
+ * listening, and how to stop. Everything here serves one of those.
+ * ------------------------------------------------------------------------- */
+
+.live-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-family: var(--font-ui);
+  margin-bottom: 1rem;
+}
+
+.live-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--line-strong);
+  flex: none;
+}
+/* State is never conveyed by colour alone: the label beside it always says
+   the same thing in words. */
+.live-dot-listening {
+  background: var(--ok);
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+.live-dot-speaking {
+  background: var(--accent);
+  animation: live-pulse 1.1s ease-in-out infinite;
+}
+.live-dot-thinking {
+  background: var(--warn);
+}
+.live-dot-paused,
+.live-dot-ended {
+  background: var(--line-strong);
+}
+.live-dot-failed {
+  background: var(--danger);
+}
+
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* A calm audio visualiser. Deliberately abstract: nothing in this product
+   should ever show a face, or anything that could be mistaken for one. */
+.live-visualiser {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.35rem;
+  height: 3.5rem;
+  margin: 0.5rem 0 1rem;
+}
+.live-visualiser span {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--line-strong);
+  transition: height 160ms ease;
+}
+.live-visualiser.is-listening span {
+  background: var(--ok);
+  animation: live-bar 1s ease-in-out infinite;
+}
+.live-visualiser.is-speaking span {
+  background: var(--accent);
+  animation: live-bar 0.75s ease-in-out infinite;
+}
+.live-visualiser span:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.live-visualiser span:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.live-visualiser span:nth-child(4) {
+  animation-delay: 0.3s;
+}
+.live-visualiser span:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+@keyframes live-bar {
+  0%,
+  100% {
+    height: 0.4rem;
+  }
+  50% {
+    height: 2.6rem;
+  }
+}
+
+.live-controls {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.live-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .live-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.turn-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  max-height: 26rem;
+  overflow-y: auto;
+}
+
+.turn {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.turn:last-child {
+  border-bottom: 0;
+}
+
+.turn-speaker {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.turn-assistant {
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  border-bottom: 0;
+  margin-bottom: 0.5rem;
+}
+
+.clause {
+  margin: 0 0 0.5rem;
+}
+
+/* Citations sit beside the clause they support, so a reader sees the source
+   as the sentence arrives rather than as a footnote afterwards. */
+.citation-chip {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  margin-left: 0.35rem;
+  cursor: pointer;
+  color: var(--ink);
+}
+.citation-chip:hover {
+  border-color: var(--accent);
+}
+
+.caption-partial {
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  border-left: 3px solid var(--ok);
+  padding-left: 0.75rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.caption-cursor {
+  display: inline-block;
+  width: 0.5rem;
+  height: 1.05em;
+  background: var(--ink-faint);
+  margin-left: 0.15rem;
+  vertical-align: text-bottom;
+  animation: live-pulse 1s steps(2) infinite;
+}
+
+.citation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+}
+.citation-list li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.drawer {
+  position: fixed;
+  inset: auto 0 0 0;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: var(--paper);
+  border-top: 2px solid var(--accent);
+  padding: 1rem;
+  z-index: 40;
+  box-shadow: 0 -8px 30px rgb(27 26 24 / 12%);
+}
+
+.choice {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.5rem 0;
+  cursor: pointer;
+}
+.choice input {
+  margin-top: 0.25rem;
+  flex: none;
+  /* A large target: some of the people using this have unsteady hands. */
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.indent {
+  padding-left: 1.75rem;
+  border-left: 2px solid var(--line);
+  margin-left: 0.3rem;
+}
+
+.preference-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.preference-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.preference-list li:last-child {
+  border-bottom: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* The visualiser is decoration. Frozen rather than merely fast, so it does
+     not become a flicker for someone who asked for less motion. */
+  .live-visualiser span,
+  .live-visualiser.is-listening span,
+  .live-visualiser.is-speaking span {
+    animation: none !important;
+    height: 1.2rem;
+  }
+  .live-dot {
+    animation: none !important;
+  }
+  .caption-cursor {
+    animation: none !important;
   }
 }
 

@@ -115,6 +115,9 @@ export const realtimeClaimSchema = z.object({
   contradictionIds: z.array(idSchema),
 });
 
+export type RealtimeCitation = z.infer<typeof realtimeCitationSchema>;
+export type RealtimeClaim = z.infer<typeof realtimeClaimSchema>;
+
 export const realtimeTurnSchema = z.object({
   id: idSchema,
   sessionId: idSchema,

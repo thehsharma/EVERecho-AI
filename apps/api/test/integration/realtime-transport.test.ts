@@ -1,3 +1,5 @@
+import { createHash, randomBytes } from 'node:crypto';
+import { connect as connectTcp } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
 import type { ServerEvent } from '@everecho/contracts';
@@ -97,6 +99,123 @@ function connect(input: { path: string; cookie?: string; origin?: string }): Pro
       if (!settled) reject(new Error('socket did not settle'));
     }, 8000);
   });
+}
+
+/**
+ * Opens a socket by hand and sends the first frame in the very same write as
+ * the upgrade request.
+ *
+ * This is the one case a `ws` client cannot construct: bytes written after the
+ * request headers arrive in the server's upgrade `head`, so the frame is
+ * delivered to the socket before the route handler has finished its first
+ * `await`. A real browser reaches the same place by a slower route — it sends
+ * `session.hello` the instant it sees the 101, while the server is still
+ * reading the database — and a handler that attaches its listener after those
+ * reads never hears the frame at all. The client then waits forever for a
+ * state that was silently dropped.
+ */
+function connectAndSpeakImmediately(input: {
+  path: string;
+  cookie: string;
+  origin: string;
+  frame: unknown;
+  waitMs?: number;
+}): Promise<{ status: number; events: ServerEvent[] }> {
+  return new Promise((resolve, reject) => {
+    const address = h.app.server.address();
+    const port = typeof address === 'object' && address ? address.port : 0;
+    const key = randomBytes(16).toString('base64');
+    const socket = connectTcp({ host: '127.0.0.1', port });
+    const events: ServerEvent[] = [];
+    let buffer: Buffer = Buffer.alloc(0);
+    let status = 0;
+    let upgraded = false;
+
+    socket.on('error', reject);
+
+    socket.on('connect', () => {
+      const request =
+        `GET ${input.path} HTTP/1.1\r\n` +
+        `Host: 127.0.0.1:${port}\r\n` +
+        'Upgrade: websocket\r\n' +
+        'Connection: Upgrade\r\n' +
+        `Sec-WebSocket-Key: ${key}\r\n` +
+        'Sec-WebSocket-Version: 13\r\n' +
+        `Origin: ${input.origin}\r\n` +
+        `Cookie: ${input.cookie}\r\n` +
+        '\r\n';
+      // One write: the frame rides in behind the headers.
+      socket.write(Buffer.concat([Buffer.from(request, 'ascii'), maskedTextFrame(input.frame)]));
+    });
+
+    socket.on('data', (chunk) => {
+      buffer = Buffer.concat([buffer, chunk]);
+      if (!upgraded) {
+        const end = buffer.indexOf('\r\n\r\n');
+        if (end === -1) return;
+        const head = buffer.subarray(0, end).toString('ascii');
+        status = Number(/^HTTP\/1\.1 (\d+)/.exec(head)?.[1] ?? 0);
+        const accept = createHash('sha1')
+          .update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`)
+          .digest('base64');
+        if (status === 101 && !head.includes(accept)) {
+          reject(new Error('the server accepted the upgrade with the wrong key'));
+          return;
+        }
+        upgraded = true;
+        buffer = buffer.subarray(end + 4);
+      }
+      buffer = drainServerFrames(buffer, events);
+    });
+
+    setTimeout(() => {
+      socket.destroy();
+      resolve({ status, events });
+    }, input.waitMs ?? 1500);
+  });
+}
+
+/** A client-to-server text frame: masked, as the protocol requires. */
+function maskedTextFrame(value: unknown): Buffer {
+  const payload = Buffer.from(JSON.stringify(value), 'utf8');
+  const mask = randomBytes(4);
+  const header =
+    payload.length < 126
+      ? Buffer.from([0x81, 0x80 | payload.length])
+      : Buffer.concat([Buffer.from([0x81, 0xfe]), lengthOf(payload.length)]);
+  const masked = Buffer.from(payload);
+  for (let i = 0; i < masked.length; i += 1)
+    masked[i] = (masked[i] as number) ^ (mask[i % 4] as number);
+  return Buffer.concat([header, mask, masked]);
+}
+
+function lengthOf(value: number): Buffer {
+  const out = Buffer.alloc(2);
+  out.writeUInt16BE(value);
+  return out;
+}
+
+/** Reads whole server frames out of the buffer, leaving any partial one behind. */
+function drainServerFrames(buffer: Buffer, into: ServerEvent[]): Buffer {
+  let rest = buffer;
+  for (;;) {
+    if (rest.length < 2) return rest;
+    const short = (rest[1] as number) & 0x7f;
+    const offset = short < 126 ? 2 : short === 126 ? 4 : 10;
+    if (rest.length < offset) return rest;
+    const length =
+      short < 126 ? short : short === 126 ? rest.readUInt16BE(2) : Number(rest.readBigUInt64BE(2));
+    if (rest.length < offset + length) return rest;
+    const payload = rest.subarray(offset, offset + length);
+    if (((rest[0] as number) & 0x0f) === 0x1) {
+      try {
+        into.push(JSON.parse(payload.toString('utf8')) as ServerEvent);
+      } catch {
+        // A frame we cannot parse is itself a failure the assertions will see.
+      }
+    }
+    rest = rest.subarray(offset + length);
+  }
 }
 
 async function waitFor(
@@ -415,5 +534,56 @@ describe('reconnection', () => {
     });
     const error = result.events.find((e) => e.type === 'error') as { code: string } | undefined;
     expect(error?.code).toBe('reconnect_token_invalid');
+  });
+});
+
+describe('frames that arrive before admission finishes', () => {
+  it('answers a hello that arrived while the server was still admitting it', async () => {
+    // The bug this pins: the handshake completes before the route handler
+    // runs, so a browser can — and regularly does — send `session.hello`
+    // while admission is still reading consent from the database. A listener
+    // attached after those reads never receives it, and the person sits at
+    // "getting ready" over a socket that is open and perfectly healthy.
+    const sessionId = await newSession();
+    const result = await connectAndSpeakImmediately({
+      path: `/v1/archives/${archiveId}/realtime-sessions/${sessionId}/socket`,
+      cookie: sessionCookie,
+      origin,
+      frame: { type: 'session.hello', clientEventId: 'early-1', protocolVersion: 1 },
+    });
+
+    expect(result.status).toBe(101);
+    const state = result.events.find((e) => e.type === 'session.state') as
+      { state: string } | undefined;
+    expect(state?.state).toBe('READY');
+  });
+
+  it('handles a burst in the order it was sent', async () => {
+    // Pausing is refused from CREATED and allowed from READY, so a pause that
+    // overtakes the hello it was sent after is refused rather than obeyed.
+    // Every frame touches the database, which is exactly what makes it
+    // possible for a later one to finish first unless they are queued.
+    const sessionId = await newSession();
+    const opened = await connect({
+      path: `/v1/archives/${archiveId}/realtime-sessions/${sessionId}/socket`,
+      cookie: sessionCookie,
+      origin,
+    });
+    opened.send({ type: 'session.hello', clientEventId: 'burst-1', protocolVersion: 1 });
+    opened.send({ type: 'session.pause', clientEventId: 'burst-2' });
+
+    const paused = await waitFor(
+      opened.events,
+      (e) => e.type === 'session.state' && e.state === 'PAUSED',
+    );
+    expect(paused).toBeDefined();
+
+    const states = opened.events
+      .filter((e) => e.type === 'session.state')
+      .map((e) => (e as { state: string }).state);
+    expect(states.indexOf('READY')).toBeGreaterThanOrEqual(0);
+    expect(states.indexOf('READY')).toBeLessThan(states.indexOf('PAUSED'));
+    expect(opened.events.filter((e) => e.type === 'warning')).toHaveLength(0);
+    opened.socket.close();
   });
 });

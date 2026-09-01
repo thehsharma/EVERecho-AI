@@ -38,9 +38,23 @@ const MAX_CONCURRENT_SESSIONS_PER_USER = 3;
 /** A session with no traffic for this long is abandoned and closed. */
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 
+/**
+ * Frames held while a connection is still being admitted.
+ *
+ * A legitimate client sends exactly one — `session.hello` — and audio frames
+ * are 320 ms apart, so sixteen is several seconds of speech and far more than
+ * admission can take. Bounded because an unadmitted socket must not be able to
+ * make the server hold anything on its behalf.
+ */
+const MAX_PENDING_FRAMES = 16;
+
 interface LiveConnection {
   driver: SessionDriver;
-  socket: { send(data: string): void; close(code?: number, reason?: string): void };
+  socket: {
+    send(data: string): void;
+    close(code?: number, reason?: string): void;
+    readonly readyState?: number;
+  };
   userId: string;
   sessionId: string;
   archiveId: string;
@@ -95,9 +109,66 @@ export async function registerRealtimeSocket(app: FastifyInstance, ctx: AppConte
       };
 
       const fail = (code: number, reason: string) => {
+        // Logged, because an operator needs to see refused connections: a rise
+        // in origin or admission failures is how a misconfigured deployment or
+        // an attempt to reach somebody else's conversation becomes visible.
+        // The reason code only — never the session's content.
+        request.log.warn({ code, reason, sessionId: request.params.sessionId }, 'socket refused');
         send({ type: 'error', seq: 0, code: reason, message: reason, fatal: true });
         socket.close(code, reason);
       };
+
+      /**
+       * Frames are taken off the socket before anything else is decided.
+       *
+       * The handshake is already finished by the time this handler runs: the
+       * browser has seen the 101, fired `open`, and may already have sent
+       * `session.hello` while admission is still reading the database. `ws`
+       * emits those frames whether or not anything is listening, and an
+       * unheard hello is simply lost — the client then waits for a state it
+       * will never be sent, showing "getting ready" over a socket that is
+       * perfectly healthy. So the listener goes on first and the frames wait
+       * for a driver to give them to.
+       */
+      const pending: string[] = [];
+      let deliver: ((text: string) => Promise<void>) | null = null;
+      let flooded = false;
+      let socketClosed = false;
+
+      /**
+       * One frame at a time, in the order they arrived.
+       *
+       * Handling a frame touches the database, so giving each one its own
+       * floating promise would let a later frame overtake an earlier one — an
+       * interruption landing before the audio it was meant to interrupt, or a
+       * commit before the speech it commits. The conversation is a sequence;
+       * so is this.
+       */
+      let chain: Promise<void> = Promise.resolve();
+
+      const accept = (text: string) => {
+        if (deliver) {
+          const handler = deliver;
+          chain = chain.then(() => handler(text)).catch(() => undefined);
+          return;
+        }
+        if (pending.length >= MAX_PENDING_FRAMES) {
+          flooded = true;
+          return;
+        }
+        pending.push(text);
+      };
+
+      socket.on('message', (raw: Buffer | string) => {
+        accept(typeof raw === 'string' ? raw : raw.toString('utf8'));
+      });
+
+      // Noted synchronously: a socket that closes during admission must not be
+      // registered afterwards, because the close event that would remove it
+      // has already been and gone.
+      socket.on('close', () => {
+        socketClosed = true;
+      });
 
       // Origin checking, before anything else.
       //
@@ -160,6 +231,15 @@ export async function registerRealtimeSocket(app: FastifyInstance, ctx: AppConte
         }
       }
 
+      // Sockets that have already closed are not live conversations. Pruned
+      // before counting, because a browser that navigates away leaves an entry
+      // behind for a moment, and counting those would refuse somebody a
+      // conversation they are entitled to.
+      for (const [key, existing] of connections) {
+        const readyState = (existing.socket as { readyState?: number }).readyState;
+        if (readyState === 2 || readyState === 3) connections.delete(key);
+      }
+
       const openForUser = [...connections.values()].filter((c) => c.userId === user.id).length;
       if (openForUser >= MAX_CONCURRENT_SESSIONS_PER_USER) {
         fail(4429, 'too_many_sessions');
@@ -182,6 +262,12 @@ export async function registerRealtimeSocket(app: FastifyInstance, ctx: AppConte
         archiveId,
         lastActivity: Date.now(),
       };
+
+      // A socket that closed while admission was still running never became a
+      // conversation. Registering it now would leave an entry that nothing
+      // removes, because the close event that would have removed it has
+      // already been and gone.
+      if (socketClosed) return;
       connections.set(sessionId, connection);
 
       const idle = setInterval(() => {
@@ -189,76 +275,95 @@ export async function registerRealtimeSocket(app: FastifyInstance, ctx: AppConte
         void driver.end('idle_timeout').finally(() => socket.close(4408, 'idle_timeout'));
       }, 30_000);
 
-      socket.on('message', (raw: Buffer | string) => {
-        connection.lastActivity = Date.now();
-        void (async () => {
-          const text = typeof raw === 'string' ? raw : raw.toString('utf8');
-          if (text.length > MAX_MESSAGE_BYTES) {
-            send({
-              type: 'warning',
-              seq: 0,
-              code: 'payload_too_large',
-              message: 'Frame too large.',
-            });
-            return;
-          }
-
-          let parsed: unknown;
-          try {
-            parsed = JSON.parse(text);
-          } catch {
-            send({ type: 'warning', seq: 0, code: 'malformed', message: 'Could not read that.' });
-            return;
-          }
-
-          const result = clientEventSchema.safeParse(parsed);
-          if (!result.success) {
-            send({
-              type: 'warning',
-              seq: 0,
-              code: 'invalid_event',
-              // The validation message, never the payload: a rejected frame may
-              // contain speech, and an error path is not a place for it.
-              message: result.error.issues[0]?.message ?? 'Unrecognised event.',
-            });
-            return;
-          }
-
-          if (
-            result.data.type === 'session.hello' &&
-            result.data.protocolVersion !== REALTIME_PROTOCOL_VERSION
-          ) {
-            fail(4400, 'protocol_version_mismatch');
-            return;
-          }
-
-          try {
-            await driver.handle(result.data);
-          } catch (error) {
-            send({
-              type: 'error',
-              seq: 0,
-              code: 'internal_error',
-              message: 'Something went wrong in this conversation.',
-              fatal: false,
-            });
-            request.log.error({ err: error, sessionId }, 'realtime event failed');
-          }
-        })();
-      });
+      /**
+       * Removes this connection, and only this one.
+       *
+       * A second connection to the same session replaces the first in the
+       * registry. Deleting by session id alone would then let the *closing*
+       * socket evict the *live* one, and revocation would no longer reach the
+       * conversation it needs to end.
+       */
+      const forget = () => {
+        clearInterval(idle);
+        if (connections.get(sessionId) === connection) connections.delete(sessionId);
+      };
 
       socket.on('close', () => {
-        clearInterval(idle);
-        connections.delete(sessionId);
+        forget();
         // Deliberately not ended here: a dropped socket is a reconnection
         // opportunity, not a decision to end the conversation. The idle
         // timeout closes it if nobody comes back.
       });
 
-      socket.on('error', () => {
-        clearInterval(idle);
-        connections.delete(sessionId);
-      });
+      socket.on('error', forget);
+
+      const handleFrame = async (text: string): Promise<void> => {
+        connection.lastActivity = Date.now();
+
+        if (text.length > MAX_MESSAGE_BYTES) {
+          send({
+            type: 'warning',
+            seq: 0,
+            code: 'payload_too_large',
+            message: 'Frame too large.',
+          });
+          return;
+        }
+
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          send({ type: 'warning', seq: 0, code: 'malformed', message: 'Could not read that.' });
+          return;
+        }
+
+        const result = clientEventSchema.safeParse(parsed);
+        if (!result.success) {
+          send({
+            type: 'warning',
+            seq: 0,
+            code: 'invalid_event',
+            // The validation message, never the payload: a rejected frame may
+            // contain speech, and an error path is not a place for it.
+            message: result.error.issues[0]?.message ?? 'Unrecognised event.',
+          });
+          return;
+        }
+
+        if (
+          result.data.type === 'session.hello' &&
+          result.data.protocolVersion !== REALTIME_PROTOCOL_VERSION
+        ) {
+          fail(4400, 'protocol_version_mismatch');
+          return;
+        }
+
+        try {
+          await driver.handle(result.data);
+        } catch (error) {
+          send({
+            type: 'error',
+            seq: 0,
+            code: 'internal_error',
+            message: 'Something went wrong in this conversation.',
+            fatal: false,
+          });
+          request.log.error({ err: error, sessionId }, 'realtime event failed');
+        }
+      };
+
+      if (flooded) {
+        fail(4429, 'too_many_pending_frames');
+        return;
+      }
+
+      // Admission is over. Everything that arrived during it is handled first,
+      // in the order it arrived, and everything after it follows the same
+      // queue. Done in one synchronous step so no frame can slip past the
+      // backlog it should have been behind.
+      deliver = handleFrame;
+      for (const text of pending.splice(0)) accept(text);
     },
   );
 }

@@ -31,6 +31,7 @@ function groupsFor(): Group[] {
         { href: '/biography', label: 'Biography', requires: 'biography.read' },
         { href: '/people', label: 'People', requires: 'entity.read' },
         { href: '/ask', label: 'Ask a question', requires: 'question.ask' },
+        { href: '/talk', label: 'Talk out loud', requires: 'realtime.session.read' },
       ],
     },
     {
@@ -39,12 +40,22 @@ function groupsFor(): Group[] {
         { href: '/interview', label: 'Guided interview', requires: 'interview.start' },
         { href: '/sources', label: 'Uploads', requires: 'source.read' },
         { href: '/memories', label: 'Review stories', requires: 'memory.read' },
+        {
+          href: '/learned',
+          label: 'What was learned',
+          requires: 'learning.candidate.read',
+        },
       ],
     },
     {
       heading: 'Control',
       items: [
         { href: '/consent', label: 'Permissions', requires: 'consent.read' },
+        {
+          href: '/learning',
+          label: 'Talking & learning',
+          requires: 'learning.policy.read',
+        },
         { href: '/members', label: 'People with access', requires: 'membership.read' },
         { href: '/consent/history', label: 'Consent history', requires: 'consent.history.read' },
         { href: '/audit', label: 'Activity', requires: 'audit.read' },

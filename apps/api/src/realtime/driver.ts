@@ -2,6 +2,7 @@ import type { ClientEvent, RealtimeState, ServerEvent } from '@everecho/contract
 import { acceptsAudio, isSpeakingOrThinking, type AudioFrame } from '@everecho/realtime';
 import { authorize, type Actor, type Decision, type Obligations } from '@everecho/consent';
 import {
+  attachSession,
   findArchive,
   findCurrentLearningPolicy,
   findCurrentPolicy,
@@ -175,13 +176,81 @@ export class SessionDriver {
           'transition_refused',
         message: (error as Error).message,
       });
+
+      // A refused transition must never leave a client with no idea where the
+      // conversation is. Two connections racing to advance one session is
+      // ordinary — a reconnect, a second tab — and the loser still has to be
+      // told the truth, or it sits showing "getting ready" forever while the
+      // session is live.
+      await this.resync();
       return false;
     }
   }
 
+  /**
+   * Brings a newly attached connection into sync with the session.
+   *
+   * A connection is not always the first one: a client may reconnect after a
+   * dropped socket, or open a second one. The session already has a state in
+   * that case, and driving it back through CREATED would be refused — leaving
+   * the live connection stuck while a dead one held the real state.
+   *
+   * So: advance a fresh session, resume a reconnecting one, and otherwise
+   * simply report where the conversation actually is.
+   */
+  /** Re-reads the session and tells this connection where it actually is. */
+  private async resync(): Promise<void> {
+    const { ctx, session } = this.deps;
+    const fresh = await ctx.db.withArchiveScope(session.archive_id, (tx) =>
+      findSession(tx, session.archive_id, session.id),
+    );
+    if (!fresh || fresh.state === this.state) return;
+    this.state = fresh.state;
+    await this.emitState('resynced');
+  }
+
+  /**
+   * Brings a newly attached connection into sync with the session.
+   *
+   * One atomic statement rather than a sequence of guarded transitions: a
+   * client may be the first connection, a reconnect after a dropped socket, or
+   * a second tab, and every one of those means "attach me to this
+   * conversation". Racing them against each other left the loser showing
+   * "getting ready" while the session was already live.
+   */
   async connect(): Promise<void> {
-    await this.move('CONNECT');
-    await this.move('CONNECTED');
+    const { ctx, session } = this.deps;
+    const attached = await ctx.db.withArchiveScope(session.archive_id, async (tx) => {
+      const row = await attachSession(tx, session.archive_id, session.id);
+      if (!row) return null;
+      const seq = await nextSequence(tx, session.archive_id, session.id);
+      await recordEvent(tx, {
+        archiveId: session.archive_id,
+        sessionId: session.id,
+        seq,
+        direction: 'server',
+        type: 'session.state',
+        toState: row.state,
+        reasonCode: 'attached',
+      });
+      return row;
+    });
+
+    if (!attached) {
+      const seq = await this.allocateSequence();
+      await this.deps.emit({
+        type: 'error',
+        seq,
+        code: 'realtime_session_not_live',
+        message: 'This conversation has already ended.',
+        fatal: true,
+      });
+      this.closed = true;
+      return;
+    }
+
+    this.state = attached.state;
+    await this.emitState('attached');
   }
 
   /**

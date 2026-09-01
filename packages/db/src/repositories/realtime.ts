@@ -141,6 +141,37 @@ export async function updateSessionState(
   );
 }
 
+/**
+ * Attaches a connection to a session, idempotently.
+ *
+ * Connecting is not a state change a client competes for: a second tab, a
+ * reconnect after a dropped socket, or a development double-mount all mean
+ * "attach me to this conversation", and all of them must succeed. Doing it as
+ * one conditional statement removes the read-then-write race that made two
+ * simultaneous connections fight, with the loser left believing the session
+ * had never started.
+ *
+ * A session already under way is returned unchanged, so the caller can report
+ * where the conversation actually is.
+ */
+export async function attachSession(
+  q: Queryable,
+  archiveId: string,
+  sessionId: string,
+): Promise<RealtimeSessionRow | null> {
+  return q.maybeOne<RealtimeSessionRow>(
+    `UPDATE realtime_session
+        SET state = CASE
+              WHEN state IN ('CREATED', 'CONNECTING', 'RECONNECTING') THEN 'READY'
+              ELSE state
+            END,
+            last_activity_at = now()
+      WHERE archive_id = $1 AND id = $2 AND deleted_at IS NULL AND ended_at IS NULL
+      RETURNING *`,
+    [archiveId, sessionId],
+  );
+}
+
 /** Monotonic per session. Allocated in the database so two instances cannot collide. */
 export async function nextSequence(
   q: Queryable,
