@@ -7,6 +7,7 @@ const req = (p: Partial<ActionRequirement> = {}): ActionRequirement => ({
   readsContent: false,
   storytellerOnly: false,
   mutates: false,
+  learning: null,
   ...p,
 });
 
@@ -100,6 +101,85 @@ export const ACTION_REQUIREMENTS: Record<Action, ActionRequirement> = {
   'admin.breakglass.request': req({ mutates: true }),
   'admin.worker.read': req({}),
 
+  // Real-time conversation.
+  //
+  // `realtime.interview.start` is storyteller-only because being interviewed is
+  // not something anyone can arrange on another adult's behalf. Every later
+  // action in a session is shared between modes: the storyteller reaching their
+  // own archive short-circuits the recipient-grant check anyway, so one
+  // requirement serves both modes correctly.
+  'realtime.interview.start': req({
+    minMode: 'organise',
+    storytellerOnly: true,
+    mutates: true,
+    learning: 'sessionContext',
+  }),
+  'realtime.assistant.start': req({
+    minMode: 'compose',
+    activity: 'generation',
+    readsContent: true,
+    mutates: true,
+    learning: 'sessionContext',
+  }),
+  'realtime.session.read': req({}),
+  'realtime.session.connect': req({ minMode: 'preserve', mutates: true }),
+  'realtime.session.listen': req({ minMode: 'preserve', mutates: true }),
+  'realtime.session.transcribe': req({
+    minMode: 'organise',
+    activity: 'transcription',
+    mutates: true,
+    learning: 'speechToText',
+  }),
+  'realtime.session.retrieve': req({ minMode: 'explore', readsContent: true }),
+  'realtime.session.generate': req({
+    minMode: 'compose',
+    activity: 'generation',
+    readsContent: true,
+    learning: 'composition',
+  }),
+  'realtime.session.speak': req({
+    minMode: 'compose',
+    activity: 'generation',
+    learning: 'speechSynthesis',
+  }),
+  'realtime.session.end': req({ mutates: true }),
+  'realtime.turn.read': req({ minMode: 'preserve', readsContent: true }),
+  'realtime.turn.correct': req({ minMode: 'organise', storytellerOnly: true, mutates: true }),
+  'realtime.audio.store': req({
+    minMode: 'preserve',
+    activity: 'storage',
+    mutates: true,
+    learning: 'audioRetention',
+  }),
+  'realtime.audio.delete': req({ storytellerOnly: true, mutates: true }),
+
+  // Consent-controlled learning.
+  'learning.policy.read': req({}),
+  'learning.policy.update': req({ storytellerOnly: true, mutates: true }),
+  'learning.candidate.create': req({
+    minMode: 'organise',
+    activity: 'transcription',
+    mutates: true,
+    learning: 'candidateExtraction',
+  }),
+  'learning.candidate.read': req({ minMode: 'organise', storytellerOnly: true, readsContent: true }),
+  'learning.candidate.edit': req({ minMode: 'organise', storytellerOnly: true, mutates: true }),
+  // Approval is the moment a conversation becomes family history. Only the
+  // storyteller, always, with no delegation path in v0.2.
+  'learning.candidate.approve': req({
+    minMode: 'organise',
+    storytellerOnly: true,
+    mutates: true,
+  }),
+  'learning.candidate.reject': req({
+    minMode: 'organise',
+    storytellerOnly: true,
+    mutates: true,
+  }),
+  'learning.preference.read': req({}),
+  'learning.preference.write': req({ mutates: true }),
+  'learning.preference.delete': req({ mutates: true }),
+
   'perform.synthesise_voice': req({}),
   'perform.synthesise_likeness': req({}),
   'perform.persona_chat': req({}),
@@ -141,6 +221,27 @@ const READER_ACTIONS: readonly Action[] = [
   'export.create',
   'export.read',
   'export.download',
+  // Live conversation with the archive. Listed here so that *consent* decides
+  // whether a reader may hold one, rather than the role table quietly deciding
+  // it for the storyteller. Starting an interview is deliberately absent:
+  // being interviewed is not something anyone arranges on another adult's
+  // behalf.
+  'realtime.assistant.start',
+  'realtime.session.read',
+  'realtime.session.connect',
+  'realtime.session.listen',
+  'realtime.session.transcribe',
+  'realtime.session.retrieve',
+  'realtime.session.generate',
+  'realtime.session.speak',
+  'realtime.session.end',
+  'realtime.turn.read',
+  'learning.policy.read',
+  // Interface preferences are facts about the person using the software, not
+  // about the archive, so every role may manage their own.
+  'learning.preference.read',
+  'learning.preference.write',
+  'learning.preference.delete',
 ];
 
 export const ROLE_ACTIONS: Record<Role, readonly Action[]> = {
@@ -177,6 +278,22 @@ export const ROLE_ACTIONS: Record<Role, readonly Action[]> = {
     'entity.read',
     'event.read',
     'relationship.read',
+    // As with the content actions above: present so a storyteller who chooses
+    // to name the buyer as a recipient can grant them. Consent still decides.
+    'realtime.assistant.start',
+    'realtime.session.read',
+    'realtime.session.connect',
+    'realtime.session.listen',
+    'realtime.session.transcribe',
+    'realtime.session.retrieve',
+    'realtime.session.generate',
+    'realtime.session.speak',
+    'realtime.session.end',
+    'realtime.turn.read',
+    'learning.policy.read',
+    'learning.preference.read',
+    'learning.preference.write',
+    'learning.preference.delete',
   ],
 
   family: READER_ACTIONS,
@@ -192,6 +309,10 @@ export const ROLE_ACTIONS: Record<Role, readonly Action[]> = {
     'export.read',
     'deletion.read',
     'audit.read',
+    'learning.policy.read',
+    'learning.preference.read',
+    'learning.preference.write',
+    'learning.preference.delete',
   ],
 
   support_admin: [

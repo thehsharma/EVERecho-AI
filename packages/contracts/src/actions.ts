@@ -98,6 +98,36 @@ export const actionSchema = z.enum([
   'admin.breakglass.request',
   'admin.worker.read',
 
+  // Real-time conversation (v0.2). Interview and assistant start separately
+  // because the two modes differ in who may begin one at all; every later
+  // action in a session is shared, and consent decides what it may reach.
+  'realtime.interview.start',
+  'realtime.assistant.start',
+  'realtime.session.read',
+  'realtime.session.connect',
+  'realtime.session.listen',
+  'realtime.session.transcribe',
+  'realtime.session.retrieve',
+  'realtime.session.generate',
+  'realtime.session.speak',
+  'realtime.session.end',
+  'realtime.turn.read',
+  'realtime.turn.correct',
+  'realtime.audio.store',
+  'realtime.audio.delete',
+
+  // Consent-controlled learning (v0.2)
+  'learning.policy.read',
+  'learning.policy.update',
+  'learning.candidate.create',
+  'learning.candidate.read',
+  'learning.candidate.edit',
+  'learning.candidate.approve',
+  'learning.candidate.reject',
+  'learning.preference.read',
+  'learning.preference.write',
+  'learning.preference.delete',
+
   // Prohibited in v0.1 — present so refusal is explicit and testable
   'perform.synthesise_voice',
   'perform.synthesise_likeness',
@@ -137,6 +167,12 @@ export const resourceTypeSchema = z.enum([
   'billing',
   'incident',
   'worker',
+  'realtime_session',
+  'realtime_turn',
+  'realtime_audio',
+  'learning_policy',
+  'memory_candidate',
+  'interaction_preference',
 ]);
 export type ResourceType = z.infer<typeof resourceTypeSchema>;
 
@@ -175,5 +211,19 @@ export const denyReasonSchema = z.enum([
   'breakglass_required',
   'breakglass_expired',
   'not_authenticated',
+  // v0.2 — realtime and learning
+  'learning_policy_missing',
+  'session_context_not_permitted',
+  'transcript_retention_not_permitted',
+  'audio_retention_not_permitted',
+  'candidate_extraction_not_permitted',
+  'candidate_category_not_permitted',
+  'correction_learning_not_permitted',
+  'preference_not_low_risk',
+  'preference_auto_save_not_permitted',
+  'provider_speech_not_consented',
+  'learning_policy_expired',
+  'realtime_session_not_live',
+  'cross_archive_learning_denied',
 ]);
 export type DenyReason = z.infer<typeof denyReasonSchema>;

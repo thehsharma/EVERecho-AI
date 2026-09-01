@@ -5,7 +5,14 @@ import {
   type Sensitivity,
 } from '@everecho/contracts';
 import { ACTION_REQUIREMENTS, MODE_RANK, ROLE_ACTIONS, SENSITIVITY_RANK } from './matrix';
-import type { AuthorizeInput, Decision, Obligations } from './types';
+import { deniedLearningObligations, resolveLearningObligations } from './learning';
+import type {
+  AuthorizeInput,
+  Decision,
+  LearningGate,
+  LearningObligations,
+  Obligations,
+} from './types';
 
 const EXPLANATIONS: Record<DenyReason, string> = {
   not_a_member: 'You do not have access to this archive.',
@@ -41,7 +48,75 @@ const EXPLANATIONS: Record<DenyReason, string> = {
   breakglass_required: 'Support access to this archive requires an approved, time-limited grant.',
   breakglass_expired: 'This support access grant has expired.',
   not_authenticated: 'Please sign in.',
+  learning_policy_missing:
+    'The storyteller has not yet decided what a conversation may be used for.',
+  session_context_not_permitted:
+    'The storyteller has not permitted conversations to be held in this archive.',
+  transcript_retention_not_permitted:
+    'The storyteller has not permitted conversation transcripts to be kept.',
+  audio_retention_not_permitted: 'The storyteller has not permitted recordings to be stored.',
+  candidate_extraction_not_permitted:
+    'The storyteller has not permitted conversations to produce suggested memories.',
+  candidate_category_not_permitted:
+    'The storyteller has not permitted this category of material to be suggested.',
+  correction_learning_not_permitted:
+    'The storyteller has not permitted corrections to update the archive.',
+  preference_not_low_risk:
+    'Only interface preferences can be remembered this way. Anything about the storyteller’s ' +
+    'life needs their review.',
+  preference_auto_save_not_permitted:
+    'The storyteller has asked to be consulted before anything is remembered.',
+  provider_speech_not_consented:
+    'The storyteller has not permitted an external provider to hear or speak this material.',
+  learning_policy_expired: 'The storyteller’s learning policy has expired and needs renewing.',
+  realtime_session_not_live: 'This conversation has already ended.',
+  cross_archive_learning_denied: 'Learning never crosses between archives.',
 };
+
+/** Which refusal a failed learning gate produces. Exhaustive by construction. */
+const LEARNING_DENIALS: Record<LearningGate, DenyReason> = {
+  sessionContext: 'session_context_not_permitted',
+  transcriptRetention: 'transcript_retention_not_permitted',
+  audioRetention: 'audio_retention_not_permitted',
+  candidateExtraction: 'candidate_extraction_not_permitted',
+  correctionLearning: 'correction_learning_not_permitted',
+  speechToText: 'provider_speech_not_consented',
+  speechSynthesis: 'provider_speech_not_consented',
+  composition: 'provider_speech_not_consented',
+};
+
+/**
+ * Whether the resolved learning obligations satisfy a gate.
+ *
+ * `speechToText`, `speechSynthesis` and `composition` gate only *provider* use.
+ * A session running entirely on local adapters never consults them, because no
+ * third party hears anything — which is why the local demonstration path works
+ * under the default policy.
+ */
+function learningGateSatisfied(
+  gate: LearningGate,
+  learning: LearningObligations,
+  usesProvider: boolean,
+): boolean {
+  switch (gate) {
+    case 'sessionContext':
+      return true;
+    case 'transcriptRetention':
+      return learning.mayStoreTranscript;
+    case 'audioRetention':
+      return learning.mayStoreAudio;
+    case 'candidateExtraction':
+      return learning.mayExtractCandidates;
+    case 'correctionLearning':
+      return learning.mayLearnFromCorrections;
+    case 'speechToText':
+      return !usesProvider || learning.mayUseProviderSpeechToText;
+    case 'speechSynthesis':
+      return !usesProvider || learning.mayUseProviderSpeechSynthesis;
+    case 'composition':
+      return !usesProvider || learning.mayUseProviderComposition;
+  }
+}
 
 function deny(reasonCode: DenyReason, policyVersion: string): Decision {
   return { effect: 'DENY', reasonCode, policyVersion, explanation: EXPLANATIONS[reasonCode] };
@@ -103,6 +178,22 @@ export function authorize(input: AuthorizeInput): Decision {
   const requirement = ACTION_REQUIREMENTS[action];
   const isStoryteller =
     subject.storytellerUserId !== null && actor.userId === subject.storytellerUserId;
+
+  // Resolved once. Consent is the ceiling: a learning policy that permits
+  // provider transcription cannot enable it if consent forbids provider
+  // processing, which is why the consent document is an input here.
+  const consentDoc = subject.policy?.document ?? null;
+  const learningExpired =
+    subject.learningPolicy?.document.expiresAt != null &&
+    context.now.getTime() > Date.parse(subject.learningPolicy.document.expiresAt);
+  const learning = resolveLearningObligations({
+    document: subject.learningPolicy?.document ?? null,
+    expired: learningExpired,
+    consentAllowsProviderTranscription: consentDoc?.providerProcessing.transcription ?? false,
+    consentAllowsProviderGeneration: consentDoc?.providerProcessing.generation ?? false,
+    consentAllowsEmbedding: consentDoc?.activities.includes('embedding') ?? false,
+    consentDataCategories: consentDoc?.dataCategories ?? [],
+  });
 
   // 2. Platform administration is a separate world from archive membership.
   if (action.startsWith('admin.')) {
@@ -243,6 +334,19 @@ export function authorize(input: AuthorizeInput): Decision {
       }
     }
 
+    // The learning gate. Deliberately after the consent checks above: if the
+    // storyteller has not consented to transcription at all, "you have not
+    // permitted transcripts to be kept" is the wrong thing to tell them.
+    if (requirement.learning !== null) {
+      if (!subject.learningPolicy) return deny('learning_policy_missing', policyVersion);
+      if (learningExpired) return deny('learning_policy_expired', policyVersion);
+      if (
+        !learningGateSatisfied(requirement.learning, learning, context.usesProvider === true)
+      ) {
+        return deny(LEARNING_DENIALS[requirement.learning], policyVersion);
+      }
+    }
+
     // Export and contribution consult the recipient grant even though they do
     // not themselves read content: `mayExport` and `mayContribute` live there.
     const needsRecipientGrant =
@@ -282,6 +386,7 @@ export function authorize(input: AuthorizeInput): Decision {
         restrictedTopics: doc.restrictedTopics,
         mustAudit: true,
         mustLogAccess: action === 'source.download' || action === 'export.download',
+        learning,
       });
     }
 
@@ -292,7 +397,18 @@ export function authorize(input: AuthorizeInput): Decision {
       restrictedTopics: isStoryteller ? [] : doc.restrictedTopics,
       mustAudit: true,
       mustLogAccess: action === 'source.download' || action === 'export.download',
+      learning,
     });
+  }
+
+  // Actions with no consent-mode requirement can still be learning-gated:
+  // `learning.preference.write` needs no mode but does need an auto-save policy.
+  if (requirement.learning !== null) {
+    if (!subject.learningPolicy) return deny('learning_policy_missing', policyVersion);
+    if (learningExpired) return deny('learning_policy_expired', policyVersion);
+    if (!learningGateSatisfied(requirement.learning, learning, context.usesProvider === true)) {
+      return deny(LEARNING_DENIALS[requirement.learning], policyVersion);
+    }
   }
 
   return allow(policyVersion, {
@@ -301,6 +417,7 @@ export function authorize(input: AuthorizeInput): Decision {
     restrictedTopics: isStoryteller ? [] : (subject.policy?.document.restrictedTopics ?? []),
     mustAudit: requirement.mutates,
     mustLogAccess: false,
+    learning,
   });
 }
 
@@ -321,6 +438,9 @@ function obligationsForAdmin(): Obligations {
     restrictedTopics: [],
     mustAudit: true,
     mustLogAccess: true,
+    // Support access never learns anything. There is no path from an
+    // administrator's session to a candidate memory.
+    learning: deniedLearningObligations(),
   };
 }
 

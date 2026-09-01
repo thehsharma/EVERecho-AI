@@ -246,6 +246,15 @@ importers:
         specifier: 4.5.4
         version: 4.5.4
 
+  packages/realtime:
+    dependencies:
+      '@everecho/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      zod:
+        specifier: 4.5.4
+        version: 4.5.4
+
 packages:
 
   '@anthropic-ai/sdk@0.122.0':

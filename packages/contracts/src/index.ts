@@ -14,4 +14,6 @@ export * from './lifecycle';
 export * from './billing';
 export * from './admin';
 export * from './analytics';
+export * from './learning';
+export * from './realtime';
 export * from './actions';

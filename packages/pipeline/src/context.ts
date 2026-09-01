@@ -6,9 +6,11 @@ import { authorize, type Actor, type ResourceRef } from '@everecho/consent';
 import type { Action } from '@everecho/contracts';
 import {
   findArchive,
+  findCurrentLearningPolicy,
   findCurrentPolicy,
   hasActiveDisputeHold,
   toConsentPolicy,
+  toLearningPolicy,
 } from '@everecho/db';
 
 /**
@@ -51,7 +53,13 @@ export class ConsentRevokedError extends Error {
 export async function assertProcessingAllowed(
   ctx: PipelineContext,
   tx: Transaction,
-  input: { archiveId: string; action: Action; resource?: Partial<ResourceRef> },
+  input: {
+    archiveId: string;
+    action: Action;
+    resource?: Partial<ResourceRef>;
+    /** True when this job will send material to an external provider. */
+    usesProvider?: boolean;
+  },
 ): Promise<void> {
   const archive = await findArchive(tx, input.archiveId);
   if (!archive) throw new ConsentRevokedError('archive_deleted');
@@ -60,6 +68,7 @@ export async function assertProcessingAllowed(
   }
 
   const policyRow = await findCurrentPolicy(tx, input.archiveId);
+  const learningRow = await findCurrentLearningPolicy(tx, input.archiveId);
   const actor: Actor = {
     userId: archive.storyteller_user_id ?? '00000000-0000-4000-8000-000000000000',
     isPlatformAdmin: false,
@@ -76,9 +85,14 @@ export async function assertProcessingAllowed(
       storytellerUserId: actor.userId,
       lifeState: archive.life_state,
       policy: policyRow ? toConsentPolicy(policyRow) : null,
+      learningPolicy: learningRow ? toLearningPolicy(learningRow) : null,
       disputeHoldActive: await hasActiveDisputeHold(tx, input.archiveId),
     },
-    context: { now: new Date(), policyEngineVersion: ctx.branding.policyEngineVersion },
+    context: {
+      now: new Date(),
+      policyEngineVersion: ctx.branding.policyEngineVersion,
+      usesProvider: input.usesProvider ?? false,
+    },
   });
 
   if (decision.effect === 'DENY') throw new ConsentRevokedError(decision.reasonCode);

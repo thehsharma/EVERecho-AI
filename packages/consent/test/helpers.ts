@@ -1,5 +1,12 @@
-import type { ConsentPolicy, ConsentPolicyDocument, Role } from '@everecho/contracts';
+import type {
+  ConsentPolicy,
+  ConsentPolicyDocument,
+  LearningPolicy,
+  LearningPolicyDocument,
+  Role,
+} from '@everecho/contracts';
 import { compileConsentPolicy, defaultConsentDocument } from '../src/policy';
+import { compileLearningPolicy, defaultLearningDocument } from '../src/learning';
 import type { Actor, AuthContext, ResourceRef, Subject } from '../src/types';
 
 export const NOW = new Date('2026-06-01T12:00:00.000Z');
@@ -74,6 +81,49 @@ export function openPolicy(overrides: Partial<ConsentPolicyDocument> = {}): Cons
   });
 }
 
+export function learningPolicy(
+  overrides: Partial<LearningPolicyDocument> = {},
+): LearningPolicy {
+  const { document, policyHash } = compileLearningPolicy({
+    ...defaultLearningDocument(),
+    ...overrides,
+  });
+  return {
+    id: '77777777-7777-4777-8777-777777777777',
+    archiveId: ARCHIVE,
+    version: 2,
+    document,
+    policyHash,
+    policyEngineVersion: 'policy-1',
+    createdByUserId: STORYTELLER,
+    effectiveFrom: NOW.toISOString(),
+    supersededAt: null,
+    createdAt: NOW.toISOString(),
+  };
+}
+
+/** A learning policy permitting everything a learning policy is allowed to permit. */
+export function openLearningPolicy(
+  overrides: Partial<LearningPolicyDocument> = {},
+): LearningPolicy {
+  return learningPolicy({
+    transcriptRetention: 'until_deleted',
+    audioRetention: 'explicit_archive_source',
+    candidateExtraction: true,
+    lowRiskPreferenceMemory: 'auto_save',
+    correctionLearning: true,
+    providerProcessing: {
+      mode: 'named_providers',
+      speechToText: true,
+      speechSynthesis: true,
+      composition: true,
+      namedProviders: ['test-provider'],
+      retentionDays: 0,
+    },
+    ...overrides,
+  });
+}
+
 export function actor(role: Role, userId: string, overrides: Partial<Actor> = {}): Actor {
   return {
     userId,
@@ -90,6 +140,7 @@ export function subject(overrides: Partial<Subject> = {}): Subject {
     storytellerUserId: STORYTELLER,
     lifeState: 'living',
     policy: openPolicy(),
+    learningPolicy: openLearningPolicy(),
     disputeHoldActive: false,
     ...overrides,
   };

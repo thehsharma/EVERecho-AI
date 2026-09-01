@@ -9,11 +9,13 @@ import {
 import type { Action } from '@everecho/contracts';
 import {
   findArchive,
+  findCurrentLearningPolicy,
   findCurrentPolicy,
   findMembership,
   hasActiveDisputeHold,
   recordAuditEvent,
   toConsentPolicy,
+  toLearningPolicy,
   type ArchiveRow,
   type MembershipRow,
   type Transaction,
@@ -52,6 +54,12 @@ export async function withArchiveAccess<T>(
     auditMetadata?: Record<string, unknown>;
     /** Recorded even on success. Reads default to not writing an audit row. */
     auditOnAllow?: boolean;
+    /**
+     * Whether this operation will send material to an external provider.
+     * Callers derive it from the configured adapter, so a deployment running
+     * entirely on local adapters never trips the provider consent gates.
+     */
+    usesProvider?: boolean;
   },
   handler: (access: ArchiveAccess) => Promise<T>,
 ): Promise<T> {
@@ -83,6 +91,7 @@ export async function withArchiveAccess<T>(
     // time, so concurrent queries on one transaction interleave on the wire.
     const membership = await findMembership(tx, input.archiveId, user.id);
     const policyRow = await findCurrentPolicy(tx, input.archiveId);
+    const learningRow = await findCurrentLearningPolicy(tx, input.archiveId);
     const disputeHoldActive = await hasActiveDisputeHold(tx, input.archiveId);
     const breakGlass = user.isPlatformAdmin
       ? await findBreakGlass(tx, input.archiveId, user.id)
@@ -108,6 +117,7 @@ export async function withArchiveAccess<T>(
       storytellerUserId: archive.storyteller_user_id,
       lifeState: archive.life_state,
       policy: policyRow ? toConsentPolicy(policyRow) : null,
+      learningPolicy: learningRow ? toLearningPolicy(learningRow) : null,
       disputeHoldActive,
     };
 
@@ -126,6 +136,7 @@ export async function withArchiveAccess<T>(
         now: new Date(),
         policyEngineVersion: ctx.branding.policyEngineVersion,
         requestId: request.id,
+        usesProvider: input.usesProvider ?? false,
       },
     });
 
