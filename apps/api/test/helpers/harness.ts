@@ -73,6 +73,16 @@ export class TestClient {
     return [...this.cookies.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
   }
 
+  /**
+   * The same cookies, for a real WebSocket handshake.
+   *
+   * A socket upgrade does not go through `app.inject`, so transport tests need
+   * to present the session the way a browser would.
+   */
+  cookieHeaderForTransport(): string {
+    return this.cookieHeader();
+  }
+
   private captureCookies(raw: string | string[] | undefined): void {
     if (!raw) return;
     for (const line of Array.isArray(raw) ? raw : [raw]) {

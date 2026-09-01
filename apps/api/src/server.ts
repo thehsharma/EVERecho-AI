@@ -9,6 +9,7 @@ import { ApiError } from './errors';
 import { csrfTokenValid, resolveSession, type SessionUser } from './lib/session';
 import type { AppContext } from './context';
 import { registerRoutes } from './modules';
+import { registerRealtimeSocket } from './realtime/ws';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -221,5 +222,8 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
   });
 
   await registerRoutes(app, ctx);
+  // The media plane, registered after the control plane so it inherits the
+  // same session-resolving and rate-limiting hooks.
+  await registerRealtimeSocket(app, ctx);
   return app;
 }
