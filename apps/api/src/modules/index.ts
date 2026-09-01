@@ -5,6 +5,15 @@ import { registerAuthRoutes } from './auth';
 import { registerArchiveRoutes } from './archives';
 import { registerInvitationRoutes } from './invitations';
 import { registerConsentRoutes } from './consent';
+import { registerObjectRoutes } from './objects';
+import { registerSourceRoutes } from './sources';
+import { registerInterviewRoutes } from './interviews';
+import { registerMemoryRoutes } from './memories';
+import { registerDerivedRoutes } from './derived';
+import { registerQaRoutes } from './qa';
+import { registerLifecycleRoutes } from './lifecycle';
+import { registerBillingRoutes } from './billing';
+import { registerAdminRoutes } from './admin';
 
 export async function registerRoutes(app: FastifyInstance, ctx: AppContext): Promise<void> {
   registerHealthRoutes(app, ctx);
@@ -12,4 +21,13 @@ export async function registerRoutes(app: FastifyInstance, ctx: AppContext): Pro
   registerArchiveRoutes(app, ctx);
   registerInvitationRoutes(app, ctx);
   registerConsentRoutes(app, ctx);
+  registerObjectRoutes(app, ctx);
+  registerSourceRoutes(app, ctx);
+  registerInterviewRoutes(app, ctx);
+  registerMemoryRoutes(app, ctx);
+  registerDerivedRoutes(app, ctx);
+  registerQaRoutes(app, ctx);
+  registerLifecycleRoutes(app, ctx);
+  registerBillingRoutes(app, ctx);
+  registerAdminRoutes(app, ctx);
 }

@@ -58,7 +58,9 @@ export async function withArchiveAccess<T>(
     // An archive the caller has no relationship with is reported as missing,
     // not as forbidden: a 403 would confirm that the id names something real.
     if (!archive) {
-      await recordAuditEvent(tx, {
+      // Written on a separate connection: this transaction is about to roll
+      // back, and a refusal that vanishes with it is a refusal nobody can audit.
+      await recordAuditEvent(ctx.db, {
         archiveId: null,
         actorUserId: user.id,
         actorDisplay: user.displayName,
@@ -71,12 +73,14 @@ export async function withArchiveAccess<T>(
       throw notFound();
     }
 
-    const [membership, policyRow, disputeHoldActive, breakGlass] = await Promise.all([
-      findMembership(tx, input.archiveId, user.id),
-      findCurrentPolicy(tx, input.archiveId),
-      hasActiveDisputeHold(tx, input.archiveId),
-      user.isPlatformAdmin ? findBreakGlass(tx, input.archiveId, user.id) : Promise.resolve(null),
-    ]);
+    // Sequential, not Promise.all: a single pg client executes one query at a
+    // time, so concurrent queries on one transaction interleave on the wire.
+    const membership = await findMembership(tx, input.archiveId, user.id);
+    const policyRow = await findCurrentPolicy(tx, input.archiveId);
+    const disputeHoldActive = await hasActiveDisputeHold(tx, input.archiveId);
+    const breakGlass = user.isPlatformAdmin
+      ? await findBreakGlass(tx, input.archiveId, user.id)
+      : null;
 
     const actor: Actor = {
       userId: user.id,
@@ -116,7 +120,10 @@ export async function withArchiveAccess<T>(
     });
 
     if (decision.effect === 'DENY') {
-      await recordAuditEvent(tx, {
+      // Deliberately NOT on `tx`. Throwing below rolls this transaction back,
+      // which would take the record of the refusal with it — and being able to
+      // see that someone was turned away is half of trusting the permissions.
+      await recordAuditEvent(ctx.db, {
         archiveId: archive.id,
         actorUserId: user.id,
         actorDisplay: user.displayName,

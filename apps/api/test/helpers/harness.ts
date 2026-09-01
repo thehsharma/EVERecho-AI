@@ -193,3 +193,55 @@ export function consentDocument(overrides: Record<string, unknown> = {}) {
     ...overrides,
   };
 }
+
+/** Uploads bytes through the real signed-URL flow, as a browser would. */
+export async function uploadSource(
+  h: Harness,
+  client: TestClient,
+  archiveId: string,
+  input: {
+    filename: string;
+    mimeType: string;
+    bytes: Buffer;
+    kind: 'audio' | 'video' | 'photo' | 'document' | 'text';
+    sidecarText?: string;
+    privacy?: Partial<Record<string, unknown>>;
+  },
+): Promise<{ sourceId: string; status: number }> {
+  const created = await client.post<{ ticket: { sourceId: string; uploadUrl: string } }>(
+    `/v1/archives/${archiveId}/sources`,
+    {
+      filename: input.filename,
+      mimeType: input.mimeType,
+      byteSize: input.bytes.length,
+      kind: input.kind,
+      idempotencyKey: `upload-${input.filename}-${Math.random().toString(36).slice(2)}`,
+      privacy: {
+        allowTranscription: true,
+        allowOcr: true,
+        allowEmbedding: true,
+        allowGeneration: true,
+        allowExport: true,
+        sensitivity: 'normal',
+        dataCategories: [input.kind === 'document' ? 'document' : input.kind === 'photo' ? 'photo' : 'audio'],
+        ...input.privacy,
+      },
+    },
+  );
+  if (created.status !== 201) return { sourceId: '', status: created.status };
+
+  const url = new URL(created.body.ticket.uploadUrl);
+  const put = await h.app.inject({
+    method: 'PUT',
+    url: `${url.pathname}${url.search}`,
+    headers: { 'content-type': input.mimeType },
+    payload: input.bytes,
+  });
+  if (put.statusCode !== 200) throw new Error(`upload PUT failed: ${put.statusCode} ${put.body}`);
+
+  const completed = await client.post(
+    `/v1/archives/${archiveId}/sources/${created.body.ticket.sourceId}/complete`,
+    input.sidecarText ? { sidecarText: input.sidecarText, durationMs: 30_000 } : {},
+  );
+  return { sourceId: created.body.ticket.sourceId, status: completed.status };
+}

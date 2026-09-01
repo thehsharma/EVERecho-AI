@@ -1,0 +1,16 @@
+{
+  "name": "@everecho/pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@everecho/adapters": "workspace:*",
+    "@everecho/ai": "workspace:*",
+    "@everecho/config": "workspace:*",
+    "@everecho/consent": "workspace:*",
+    "@everecho/contracts": "workspace:*",
+    "@everecho/db": "workspace:*",
+    "zod": "4.5.4"
+  }
+}

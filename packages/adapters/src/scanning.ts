@@ -44,9 +44,22 @@ export class LocalScanAdapter implements ScanAdapter {
         scanner: this.name,
       };
     }
+    // Images, PDFs, audio and video always begin with a recognisable signature.
+    // Bytes that carry none, under one of those declared types, are not what
+    // the upload claims — the "shell script called holiday.jpg" case.
+    if (!sniffed && REQUIRES_SIGNATURE.some((prefix) => meta.mimeType.startsWith(prefix))) {
+      return {
+        verdict: 'infected',
+        detail: `Declared ${meta.mimeType} but the bytes carry no matching signature`,
+        scanner: this.name,
+      };
+    }
     return { verdict: 'clean', detail: null, scanner: this.name };
   }
 }
+
+/** Declared types that must begin with a recognisable signature. */
+const REQUIRES_SIGNATURE = ['image/', 'audio/', 'video/', 'application/pdf'];
 
 /** Magic-number sniffing for the formats EverEcho accepts. */
 export function sniffType(body: Buffer): string | null {

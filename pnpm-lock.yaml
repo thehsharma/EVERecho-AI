@@ -56,6 +56,9 @@ importers:
       '@everecho/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@everecho/pipeline':
+        specifier: workspace:*
+        version: link:../../packages/pipeline
       '@fastify/cookie':
         specifier: 11.1.2
         version: 11.1.2
@@ -80,6 +83,30 @@ importers:
       zod:
         specifier: 4.5.4
         version: 4.5.4
+
+  apps/worker:
+    dependencies:
+      '@everecho/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
+      '@everecho/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      '@everecho/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@everecho/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@everecho/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@everecho/pipeline':
+        specifier: workspace:*
+        version: link:../../packages/pipeline
+      pino:
+        specifier: 10.3.1
+        version: 10.3.1
 
   packages/adapters:
     dependencies:
@@ -166,6 +193,30 @@ importers:
       '@types/pg':
         specifier: 8.15.6
         version: 8.15.6
+
+  packages/pipeline:
+    dependencies:
+      '@everecho/adapters':
+        specifier: workspace:*
+        version: link:../adapters
+      '@everecho/ai':
+        specifier: workspace:*
+        version: link:../ai
+      '@everecho/config':
+        specifier: workspace:*
+        version: link:../config
+      '@everecho/consent':
+        specifier: workspace:*
+        version: link:../consent
+      '@everecho/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@everecho/db':
+        specifier: workspace:*
+        version: link:../db
+      zod:
+        specifier: 4.5.4
+        version: 4.5.4
 
 packages:
 

@@ -302,10 +302,8 @@ export function registerConsentRoutes(app: FastifyInstance, ctx: AppContext): vo
           resource: { type: 'consent_policy' },
         },
         async ({ tx }) => {
-          const [versions, records] = await Promise.all([
-            listPolicyVersions(tx, params.archiveId),
-            listConsentRecords(tx, params.archiveId),
-          ]);
+          const versions = await listPolicyVersions(tx, params.archiveId);
+          const records = await listConsentRecords(tx, params.archiveId);
           return {
             versions: versions.map(toConsentPolicy),
             records: records.map((r) => ({
