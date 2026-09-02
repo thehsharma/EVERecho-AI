@@ -68,6 +68,9 @@ function groupsFor(): Group[] {
         { href: '/interview', label: 'Guided interview', requires: 'interview.start' },
         { href: '/sources', label: 'Uploads', requires: 'source.read' },
         { href: '/memories', label: 'Review stories', requires: 'memory.read' },
+        // Not "Gaps" and not "Completeness". The label a person sees is an
+        // invitation, because the thing itself is one.
+        { href: '/gaps', label: 'Say more', requires: 'memoryGap.read' },
         {
           href: '/learned',
           label: 'What was learned',

@@ -57,6 +57,9 @@ export const analyticsEventNameSchema = z.enum([
   'capsule_created',
   'capsule_opened',
   'capsule_revoked',
+  'memory_gap_offered',
+  'memory_gap_answered',
+  'memory_gap_dismissed',
 ]);
 export type AnalyticsEventName = z.infer<typeof analyticsEventNameSchema>;
 

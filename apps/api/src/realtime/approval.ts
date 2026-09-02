@@ -58,8 +58,9 @@ export async function approveCandidate(
   }
 
   // Where the words came from. A conversation is promoted to a source on the
-  // first approval from it; an answer to a family question was already promoted
-  // when it was given, because the person who asked could cite it immediately.
+  // first approval from it; anything the storyteller typed — an answer to a
+  // family question, an answer to something the coverage radar asked — was
+  // already promoted when it was given, because it was final on send.
   const sessionId = candidate.session_id;
   const sourceAssetId = sessionId
     ? await ensureConversationSource(ctx, tx, {
@@ -94,9 +95,9 @@ export async function approveCandidate(
       candidate.occurred_on_value,
       candidate.occurred_on_precision,
       candidate.topics,
-      // A conversation is an interview; an answer to a family question is the
-      // storyteller writing something down. Both are their own words, and the
-      // difference is worth keeping in the record.
+      // A conversation is an interview; anything typed is the storyteller
+      // writing something down. Both are their own words, and the difference
+      // is worth keeping in the record.
       candidate.session_id ? 'interview' : 'storyteller_written',
     ],
   );

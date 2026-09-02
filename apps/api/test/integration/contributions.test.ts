@@ -410,3 +410,247 @@ describe('archive isolation holds for proposals', () => {
     expect(unscoped[0]?.n).toBe(0);
   });
 });
+
+describe('the coverage radar', () => {
+  /**
+   * A list of questions, and never a score. The tests below are mostly about
+   * what it refuses to do: infer, nag, or come back after being told not to.
+   */
+  it('offers a question about something the archive never explained', async () => {
+    await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      tx.query(
+        `INSERT INTO memory (archive_id, title, body, status, origin, sensitivity, evidence_class,
+                             approved_at)
+         VALUES ($1,'Leaving','He told us to leave before the monsoon, so we packed that night.',
+                 'approved','interview','normal','P1_DIRECT_STATEMENT', now())`,
+        [archiveId],
+      ),
+    );
+
+    const response = await storyteller.get<{
+      gaps: { id: string; kind: string; prompt: string; reference: string }[];
+    }>(`/v1/archives/${archiveId}/gaps`);
+    expect(response.status).toBe(200);
+
+    const gap = response.body.gaps.find((g) => g.kind === 'unresolved_person');
+    expect(gap).toBeDefined();
+    // It quotes the words that produced it, so the question explains itself.
+    expect(gap!.prompt).toContain(gap!.reference);
+    expect(gap!.prompt).toContain('?');
+  });
+
+  it('never reports a score, a percentage or a completeness verdict', async () => {
+    const response = await storyteller.get(`/v1/archives/${archiveId}/gaps`);
+    const body = JSON.stringify(response.body);
+    expect(body).not.toMatch(/percent|score|complete|streak|progress|remaining/i);
+  });
+
+  it('keeps it to the storyteller', async () => {
+    // What an archive does not say about somebody is nobody else's business,
+    // and a list of gaps handed to family is a list they could chase them with.
+    for (const client of [family, contributor, buyer]) {
+      const response = await client.get(`/v1/archives/${archiveId}/gaps`);
+      expect([403, 404]).toContain(response.status);
+    }
+  });
+
+  it('does not come back once it is told never to ask again', async () => {
+    const before = await storyteller.get<{ gaps: { id: string }[] }>(
+      `/v1/archives/${archiveId}/gaps`,
+    );
+    const target = before.body.gaps[0];
+    expect(target).toBeDefined();
+
+    const dismissed = await storyteller.post(
+      `/v1/archives/${archiveId}/gaps/${target!.id}/dismiss`,
+      { decision: 'never' },
+    );
+    expect(dismissed.status).toBe(200);
+
+    // Re-detection runs on every read, and must not resurrect it.
+    const after = await storyteller.get<{ gaps: { id: string }[] }>(
+      `/v1/archives/${archiveId}/gaps`,
+    );
+    expect(after.body.gaps.some((g) => g.id === target!.id)).toBe(false);
+  });
+
+  it('hides a snoozed one until its time, then offers it again', async () => {
+    const before = await storyteller.get<{ gaps: { id: string }[] }>(
+      `/v1/archives/${archiveId}/gaps`,
+    );
+    // Asserted rather than skipped: a test that quietly passes when the state
+    // it needs is absent has stopped checking anything.
+    const target = before.body.gaps[0];
+    expect(target).toBeDefined();
+
+    await storyteller.post(`/v1/archives/${archiveId}/gaps/${target!.id}/dismiss`, {
+      decision: 'snooze',
+      snoozeDays: 30,
+    });
+    const hidden = await storyteller.get<{ gaps: { id: string }[] }>(
+      `/v1/archives/${archiveId}/gaps`,
+    );
+    expect(hidden.body.gaps.some((g) => g.id === target!.id)).toBe(false);
+
+    // Brought forward rather than waited for: the rule is about the clock,
+    // and the test should not be.
+    await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      tx.query(`UPDATE memory_gap SET snoozed_until = now() - interval '1 day' WHERE id = $1`, [
+        target!.id,
+      ]),
+    );
+    const back = await storyteller.get<{ gaps: { id: string }[] }>(
+      `/v1/archives/${archiveId}/gaps`,
+    );
+    expect(back.body.gaps.some((g) => g.id === target!.id)).toBe(true);
+  });
+});
+
+describe('answering something the radar asked', () => {
+  /**
+   * The other half of the loop. A radar that can only be dismissed is a list
+   * of complaints; the point is that saying more is easy, and that saying more
+   * still does not put anything into the archive without a decision.
+   */
+
+  /**
+   * A gap of its own, named by the reference it must produce.
+   *
+   * Matching on the reference rather than taking the first item is what makes
+   * these independent of each other: a gap is unique per (kind, reference),
+   * so a test that reused a phrase an earlier one had already closed would
+   * find nothing and quietly test nothing.
+   */
+  const freshGap = async (body: string, reference: string) => {
+    await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      tx.query(
+        `INSERT INTO memory (archive_id, title, body, status, origin, sensitivity, evidence_class,
+                             approved_at)
+         VALUES ($1,'A story',$2,'approved','interview','normal','P1_DIRECT_STATEMENT', now())`,
+        [archiveId, body],
+      ),
+    );
+    const listed = await storyteller.get<{ gaps: { id: string; reference: string }[] }>(
+      `/v1/archives/${archiveId}/gaps`,
+    );
+    const gap = listed.body.gaps.find((g) => g.reference === reference);
+    expect(gap).toBeDefined();
+    return gap!;
+  };
+
+  it('keeps the answer as a real source, with a transcript that can be cited', async () => {
+    const gap = await freshGap(
+      'My aunt gave us the key on the morning we left, and said nothing.',
+      'my aunt',
+    );
+
+    const answered = await storyteller.post<{ sourceAssetId: string; candidateCount: number }>(
+      `/v1/archives/${archiveId}/gaps/${gap.id}/answer`,
+      { body: 'That was my mother-in-law, Shanta. She ran the shop below us for years.' },
+    );
+    expect(answered.status).toBe(200);
+
+    const stored = await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      tx.one<{ kind: string; status: string; text: string }>(
+        `SELECT sa.kind, sa.status, ts.text
+           FROM source_asset sa
+           JOIN transcript t ON t.source_asset_id = sa.id
+           JOIN transcript_segment ts ON ts.transcript_id = t.id
+          WHERE sa.id = $1`,
+        [answered.body.sourceAssetId],
+      ),
+    );
+    expect(stored.kind).toBe('text');
+    expect(stored.status).toBe('processed');
+    // The exact words, so a citation resolves to what was actually written.
+    expect(stored.text).toContain('Shanta');
+  });
+
+  it('writes no memory of its own — everything waits for a decision', async () => {
+    const gap = await freshGap(
+      'My cousin took me to the station in the dark, that other time.',
+      'my cousin',
+    );
+
+    const before = await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      tx.one<{ n: number }>(`SELECT count(*)::int AS n FROM memory WHERE archive_id = $1`, [
+        archiveId,
+      ]),
+    );
+    await storyteller.post(`/v1/archives/${archiveId}/gaps/${gap.id}/answer`, {
+      body: 'My cousin Prakash drove us. He was nineteen and had borrowed the car.',
+    });
+    const after = await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      tx.one<{ n: number }>(`SELECT count(*)::int AS n FROM memory WHERE archive_id = $1`, [
+        archiveId,
+      ]),
+    );
+    // Not "fewer new memories". None. The storyteller decides, or nothing
+    // happens — this is measured against the database, not asserted in prose.
+    expect(after.n).toBe(before.n);
+  });
+
+  it('leaves anything it suggests in the review queue, tied back to the question', async () => {
+    const gap = await freshGap(
+      'My sister sent us a letter after the wedding, and we kept it.',
+      'my sister',
+    );
+    await storyteller.post(`/v1/archives/${archiveId}/gaps/${gap.id}/answer`, {
+      body: 'That was Meera, my eldest sister. She wrote to us every year until 1994.',
+    });
+
+    const candidates = await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      tx.query<{ status: string; session_id: string | null }>(
+        `SELECT status, session_id FROM memory_candidate WHERE memory_gap_id = $1`,
+        [gap.id],
+      ),
+    );
+    for (const candidate of candidates) {
+      expect(candidate.status).toBe('pending');
+      // Origin is exactly one thing. A gap answer is not a conversation.
+      expect(candidate.session_id).toBeNull();
+    }
+  });
+
+  it('closes the question once it is answered, without a second nudge', async () => {
+    const gap = await freshGap(
+      'My friend showed me the house, the old place, before it was sold.',
+      'my friend',
+    );
+    await storyteller.post(`/v1/archives/${archiveId}/gaps/${gap.id}/answer`, {
+      body: 'It was on Tilak Road, above the tailor. My aunt Sudha lived there until 1988.',
+    });
+
+    const after = await storyteller.get<{ gaps: { id: string }[] }>(
+      `/v1/archives/${archiveId}/gaps`,
+    );
+    expect(after.body.gaps.some((g) => g.id === gap.id)).toBe(false);
+  });
+
+  it('refuses to answer one that was put away for good', async () => {
+    const gap = await freshGap(
+      'The neighbour brought us food every evening that winter.',
+      'the neighbour',
+    );
+    await storyteller.post(`/v1/archives/${archiveId}/gaps/${gap.id}/dismiss`, {
+      decision: 'never',
+    });
+
+    // "Never" has to hold against the id as well as against the list, or it is
+    // only a filter.
+    const response = await storyteller.post(`/v1/archives/${archiveId}/gaps/${gap.id}/answer`, {
+      body: 'I would rather not have been asked this at all.',
+    });
+    expect(response.status).toBe(404);
+  });
+
+  it('lets nobody else answer for the storyteller', async () => {
+    const gap = await freshGap('That man wrote to us from the coast, that first year.', 'that man');
+    for (const client of [family, contributor, buyer]) {
+      const response = await client.post(`/v1/archives/${archiveId}/gaps/${gap.id}/answer`, {
+        body: 'I think I know who that was.',
+      });
+      expect([403, 404]).toContain(response.status);
+    }
+  });
+});

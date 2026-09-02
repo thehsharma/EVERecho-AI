@@ -238,6 +238,19 @@ export const ACTION_REQUIREMENTS: Record<Action, ActionRequirement> = {
   // copy outlives every revocation, so both have to say yes.
   'capsule.download': req({ minMode: 'explore', activity: 'export', readsContent: true }),
 
+  // Coverage (v0.3). The storyteller's alone: what an archive does not say
+  // about somebody is nobody else's business, and offering the list to family
+  // would turn it into a to-do list they could chase somebody about.
+  'memoryGap.read': req({ minMode: 'organise', storytellerOnly: true, readsContent: true }),
+  // Answering matches reading rather than `interview.answer`'s `preserve`:
+  // a question that cannot be seen cannot be answered, so a lower bound here
+  // would be one that is never reachable.
+  'memoryGap.answer': req({ minMode: 'organise', storytellerOnly: true, mutates: true }),
+  'memoryGap.dismiss': req({ minMode: 'organise', storytellerOnly: true, mutates: true }),
+  'storyMission.read': req({ minMode: 'organise', storytellerOnly: true, readsContent: true }),
+  'storyMission.complete': req({ minMode: 'organise', storytellerOnly: true, mutates: true }),
+  'storyMission.dismiss': req({ minMode: 'organise', storytellerOnly: true, mutates: true }),
+
   'perform.synthesise_voice': req({}),
   'perform.synthesise_likeness': req({}),
   'perform.persona_chat': req({}),

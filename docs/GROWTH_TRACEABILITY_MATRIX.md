@@ -70,17 +70,31 @@ between the decline and the money.
 | Private acceptance and private decline | Invitation respond; `decline_reason` never sent to the inviter | `consent-journey.test.ts` "refuses an invitation opened by someone it was not addressed to" | done (v0.1) |
 | Refund / reservation-release state; no card data stored | `released` status distinct from `refunded`, with a reason code; the deposit is released automatically when the storyteller declines; the local provider signs the same webhook a real one would | `consent-journey.test.ts` "releases the deposit when the storyteller declines, and tells the buyer nothing" | done |
 
-### Slice 4: Gap radar, missions, multilingual
+### Slice 4: Gap radar and answering
+
+The detector is pure and runs over approved memories only, so it can never
+surface material the storyteller has not already accepted. Answering closes the
+loop through the same source → candidate → review path the interview uses.
 
 | Requirement | Implementation | Proof | Status |
 | --- | --- | --- | --- |
-| Coverage detection for people, dates, places, conflicts, unfinished stories | | | planned |
-| Dismiss, skip, snooze, never ask again | | | planned |
-| No sensitive inference, no legacy score, no pressure | | | planned |
+| Coverage detection for unnamed people, vague dates, unnamed places, unfinished stories | `detectGaps` in `packages/ai/src/gaps.ts`, over approved memories only | `gaps.test.ts` "spots a person who is never named", "spots a date given only as a feeling", "spots a story that was promised and never told", "spots a place that is never named" | done |
+| Conflicting-timeline and thin-relationship kinds | Declared in the schema, the CHECK constraint and `promptForGap`; **no detector emits them yet** | `gaps.test.ts` covers the prompt copy only | partial — see the handoff |
+| Snooze, never ask again, resolved | `POST …/gaps/:gapId/dismiss`; `never_ask` filters the list *and* refuses the answer endpoint | Integration "does not come back once it is told never to ask again", "hides a snoozed one until its time, then offers it again", "refuses to answer one that was put away for good"; E2E "a question put away for good does not come back" | done |
+| No sensitive inference | The detector reports absences of detail in a sentence, never the absence of a subject | `gaps.test.ts` "says nothing about a life that is simply short on entries", "infers nothing about health, money, belief or relationships" | done |
+| No legacy score, no percentage, no streak | No such column, contract field, response field or UI element exists | Integration "never reports a score, a percentage or a completeness verdict"; E2E "shows questions about the archive, and never a score" scans the whole page for any measure | done |
+| No pressure | "Not now" and "Never ask again" sit beside answering at the same weight, with no confirmation step and no persuasion; the list is capped at three until asked to show more | E2E "offers ‘never ask again’ at the same weight as answering"; `gaps.test.ts` "invites rather than reports a deficiency" | done |
+| Does not ask who the storyteller is | A bare pronoun becomes a question only when it acted on the narrator or the family (`INTERACTION`) | `gaps.test.ts` "does not ask who the storyteller is", "still asks when the pronoun acted on the family" | done |
+| Does not ask about somebody the sentence already names | `isNamedInPlace` suppresses a relation followed by a capitalised name | `gaps.test.ts` "does not ask who a relation is when the sentence already says", "does not treat the next sentence’s first word as the name" | done |
+| Answering produces a source, never a memory | `promoteGapAnswerToSource` writes `source_asset` + `transcript` + `transcript_segment`; extraction runs under the learning policy and leaves candidates pending | Integration "keeps the answer as a real source, with a transcript that can be cited", "writes no memory of its own — everything waits for a decision" (measured against the database), "leaves anything it suggests in the review queue, tied back to the question" | done |
+| Exactly one candidate origin | `memory_candidate_has_one_origin` widened to three columns; `originColumns()` derives them in one place | Integration asserts `session_id` is null on a gap-answer candidate; the CHECK is the enforcement | done |
+| Storyteller only | `memoryGap.read/answer/dismiss` are all `storytellerOnly: true`; the nav entry is gated on the reported capability | Integration "keeps it to the storyteller", "lets nobody else answer for the storyteller"; E2E "nobody but the storyteller is offered it" | done |
+| Accessible at WCAG 2.2 AA | The list and the open answer box, on two viewports | `accessibility.spec.ts` "the questions, and one of them open to answer" — zero violations | done |
 | English, Hindi, Hinglish with the original preserved | | | planned |
 | Translation stored as a separately labelled derived artefact citing the original | | | planned |
 | Named entities preserved; user can correct script and detection | | | planned |
 | Honest failure when a language combination is unsupported | | | planned |
+| Story missions | `story_mission` table exists; **no routes and no screen** | — | planned |
 
 ---
 

@@ -147,6 +147,12 @@ export const actionSchema = z.enum([
   'capsule.revoke',
   'capsule.open',
   'capsule.download',
+  'memoryGap.read',
+  'memoryGap.answer',
+  'memoryGap.dismiss',
+  'storyMission.read',
+  'storyMission.complete',
+  'storyMission.dismiss',
 
   // Prohibited in v0.1 — present so refusal is explicit and testable
   'perform.synthesise_voice',
@@ -196,6 +202,7 @@ export const resourceTypeSchema = z.enum([
   'family_question',
   'contributor_proposal',
   'story_capsule',
+  'memory_gap',
 ]);
 export type ResourceType = z.infer<typeof resourceTypeSchema>;
 

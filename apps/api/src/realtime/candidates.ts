@@ -157,10 +157,11 @@ export interface StoredCandidate {
 /**
  * Where a candidate came from.
  *
- * Exactly one origin, always — a conversational turn or an answer the
- * storyteller gave to a family question. The database enforces the same thing
- * with `memory_candidate_has_one_origin`, because a candidate with no origin
- * could reach approval with nothing to cite.
+ * Exactly one origin, always — a conversational turn, an answer the
+ * storyteller gave to a family question, or an answer to something the
+ * coverage radar asked. The database enforces the same thing with
+ * `memory_candidate_has_one_origin`, because a candidate with no origin could
+ * reach approval with nothing to cite.
  */
 export type CandidateOrigin =
   | { kind: 'conversation'; sessionId: string; turnId: string }
@@ -169,7 +170,60 @@ export type CandidateOrigin =
       responseId: string;
       sourceAssetId: string;
       transcriptSegmentId: string | null;
+    }
+  | {
+      kind: 'gap_answer';
+      gapId: string;
+      sourceAssetId: string;
+      transcriptSegmentId: string | null;
     };
+
+/**
+ * The origin, as the four columns that record it.
+ *
+ * Derived in one place rather than at each call site, because the three kinds
+ * disagree about which columns apply and a `?:` chain repeated across two
+ * INSERTs is exactly where a fourth kind would later be added to one and not
+ * the other.
+ */
+function originColumns(origin: CandidateOrigin): {
+  sessionId: string | null;
+  turnId: string | null;
+  responseId: string | null;
+  gapId: string | null;
+  sourceAssetId: string | null;
+  transcriptSegmentId: string | null;
+} {
+  switch (origin.kind) {
+    case 'conversation':
+      return {
+        sessionId: origin.sessionId,
+        turnId: origin.turnId,
+        responseId: null,
+        gapId: null,
+        sourceAssetId: null,
+        transcriptSegmentId: null,
+      };
+    case 'question_answer':
+      return {
+        sessionId: null,
+        turnId: null,
+        responseId: origin.responseId,
+        gapId: null,
+        sourceAssetId: origin.sourceAssetId,
+        transcriptSegmentId: origin.transcriptSegmentId,
+      };
+    case 'gap_answer':
+      return {
+        sessionId: null,
+        turnId: null,
+        responseId: null,
+        gapId: origin.gapId,
+        sourceAssetId: origin.sourceAssetId,
+        transcriptSegmentId: origin.transcriptSegmentId,
+      };
+  }
+}
 
 export async function storeCandidates(
   tx: Transaction,
@@ -199,6 +253,7 @@ export async function storeCandidates(
   );
 
   const stored: StoredCandidate[] = [];
+  const origin = originColumns(input.origin);
 
   for (const candidate of input.candidates) {
     const duplicateMemory = findDuplicate(candidate.body, existing);
@@ -224,16 +279,16 @@ export async function storeCandidates(
 
     const row = await tx.one<{ id: string }>(
       `INSERT INTO memory_candidate
-         (archive_id, session_id, family_question_response_id, kind, title, body,
+         (archive_id, session_id, family_question_response_id, memory_gap_id, kind, title, body,
           occurred_on_value, occurred_on_precision,
           topics, entity_names, place_name, data_categories, sensitivity, evidence_class,
           confidence, duplicate_of_memory_id, duplicate_of_candidate_id, contradicts_memory_ids,
           extractor_name, extractor_version, prompt_version, requires_storyteller_review)
-       VALUES ($1,$2,$22,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+       VALUES ($1,$2,$22,$23,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
        RETURNING id`,
       [
         input.archiveId,
-        input.origin.kind === 'conversation' ? input.origin.sessionId : null,
+        origin.sessionId,
         candidate.kind,
         candidate.title,
         candidate.body,
@@ -254,7 +309,8 @@ export async function storeCandidates(
         EXTRACTOR_VERSION,
         EXTRACTION_PROMPT_VERSION,
         requiresReview,
-        input.origin.kind === 'question_answer' ? input.origin.responseId : null,
+        origin.responseId,
+        origin.gapId,
       ],
     );
 
@@ -270,13 +326,13 @@ export async function storeCandidates(
       [
         input.archiveId,
         row.id,
-        input.origin.kind === 'conversation' ? input.origin.turnId : null,
+        origin.turnId,
         JSON.stringify({ kind: 'text_range', startChar: 0, endChar: candidate.quotedText.length }),
         candidate.quotedText,
         candidate.firstHand,
         candidate.firstHand ? 'storyteller' : 'reported',
-        input.origin.kind === 'question_answer' ? input.origin.sourceAssetId : null,
-        input.origin.kind === 'question_answer' ? input.origin.transcriptSegmentId : null,
+        origin.sourceAssetId,
+        origin.transcriptSegmentId,
       ],
     );
 
@@ -284,7 +340,7 @@ export async function storeCandidates(
       await recordLearningDecision(tx, {
         archiveId: input.archiveId,
         candidateId: row.id,
-        sessionId: input.origin.kind === 'conversation' ? input.origin.sessionId : null,
+        sessionId: origin.sessionId,
         decision: 'deduplicated',
         decidedBy: 'system',
         learningPolicyId: input.learningPolicyId,

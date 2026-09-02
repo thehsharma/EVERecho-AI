@@ -262,6 +262,29 @@ test.describe('the capsule screens meet WCAG 2.2 AA', () => {
   });
 });
 
+test.describe('the coverage radar meets WCAG 2.2 AA', () => {
+  test.use({ storageState: 'tests/e2e/.auth/storyteller.json' });
+
+  test('the questions, and one of them open to answer', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    const list = await scan(page, `/archives/${archiveId}/gaps`);
+    expect(describeViolations(list.violations)).toBe('');
+
+    // The textarea and its explanation are not on the page until somebody
+    // chooses to say more, so the at-rest scan would never reach them.
+    const card = page.locator('.card').first();
+    await expect(
+      card,
+      'no coverage questions left in the demonstration archive — run pnpm db:seed',
+    ).toBeVisible();
+    await card.getByRole('button', { name: 'Say more' }).click();
+    await expect(card.getByLabel('Your answer')).toBeVisible();
+
+    const open = await new AxeBuilder({ page }).withTags(STANDARD).analyze();
+    expect(describeViolations(open.violations)).toBe('');
+  });
+});
+
 test.describe('keyboard and focus', () => {
   test.use({ storageState: 'tests/e2e/.auth/family.json' });
 

@@ -19,4 +19,5 @@ export * from './realtime';
 export * from './family-questions';
 export * from './contributions';
 export * from './capsules';
+export * from './gaps';
 export * from './actions';

@@ -204,3 +204,82 @@ all.
 
 The reason code is a code. The storyteller's own words about why they declined
 never reach this row, because it is read by whoever is looking at the money.
+
+---
+
+## G-014 — The coverage radar has no score, and no column that could hold one
+
+**Decision.** `memory_gap` records a kind, the exact words that produced it,
+and a status. There is no completeness field, no percentage, no streak and no
+count exposed anywhere in the contract, the API response, the screen or the
+navigation. A browser test asserts the whole page carries no measure, and the
+tests that check it live next to the ones that check the questions themselves.
+
+**Why.** Every instinct in product design pulls towards a number here, and it
+is the wrong number. "Your archive is 40% complete" tells somebody their life
+is a form they are behind on, and the people using this are frequently elderly
+and sometimes unwell. The absence has to be structural rather than a style
+choice, because a percentage is one product review away from being added by
+somebody who did not read this file.
+
+The one place the words *score* and *complete* appear on the screen is the
+sentence denying them, so the test forbids them on a question card rather than
+on the page — a blunt string ban would have forbidden making the promise.
+
+---
+
+## G-015 — Detection reads sentences, never lives
+
+**Decision.** `detectGaps` finds absences of detail in text the storyteller
+already approved: an unnamed person, a date given as a feeling, a place called
+"back there", a story referred to and not told. It never reports the absence of
+a *subject*.
+
+**Why.** "You have not talked about your father" is a claim about somebody's
+life, assembled by software that has read a fraction of it. "You said 'he told
+us to leave' and never said who" is a fact about a sentence, and the person can
+see the sentence. The first is an inference the product has no standing to
+make; the second is the product paying attention.
+
+Two corrections came out of running it against real material rather than
+fixtures. A bare pronoun in an approved memory is usually the subject herself
+— "she taught for thirty-one years" — so a pronoun only becomes a question when
+it acted on the narrator or the family. And a relation who is named in the same
+breath is not unnamed: "My brother Ramesh taught me to ride a bicycle" was
+producing "you mentioned 'my brother' — who was that?", which reads as the
+software not having read the sentence. One of those is worse for trust than ten
+questions never asked.
+
+---
+
+## G-016 — "Never" has to hold against the id, not only against the list
+
+**Decision.** `never_ask` filters the list *and* refuses the answer endpoint:
+answering a gap that was put away for good returns not-found, exactly as if it
+had never existed.
+
+**Why.** A dismissal that only hides a row is a filter, and a filter is
+something the next feature routes around. Detection re-runs on every read, so
+the insert is idempotent by `(kind, lower(reference))` and cannot resurrect
+something already refused; the endpoint enforces the same rule so a stale
+browser tab cannot either.
+
+---
+
+## G-017 — Answering a gap produces a source, never a memory
+
+**Decision.** `POST …/gaps/:gapId/answer` promotes what the storyteller typed
+to a real `source_asset` with a `transcript` and a `transcript_segment`, runs
+extraction under the learning policy, and leaves every suggestion in the review
+queue. `memory_candidate` gains a third origin column and the one-origin CHECK
+widens to three rather than relaxing.
+
+**Why.** A radar that can only be dismissed is a list of complaints. The
+compounding loop is answer → source → candidate → the storyteller decides, and
+it is the same loop the interview and the family question inbox already use, so
+citation, export and deletion work on the result with no special cases. The
+constraint widening matters: a candidate that claimed three origins at once
+would have no coherent citation, and the database is where that is settled.
+
+An integration test measures the memory count across the whole operation and
+asserts it is unchanged — not "fewer new memories", none.

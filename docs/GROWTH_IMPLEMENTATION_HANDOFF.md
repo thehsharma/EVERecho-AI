@@ -37,8 +37,41 @@ Verified: 453 unit and integration tests (15 new), 141 browser tests (15 new),
 50 accessibility scans with zero violations, 48/48 evaluations, `pnpm verify`
 clean.
 
-**Next, in order:** the gift/reservation flow (Phase 3's second half), then gap
-radar and multilingual (Phase 4), then portability (Phase 5).
+**Phase 3, gift and reservation: complete.** A storyteller's decline releases
+the buyer's deposit automatically, with a reason code, and tells the buyer
+nothing about why.
+
+**Phase 4, gap radar: complete.** The archive's own words are read for things
+they mention and never explain; the storyteller can answer, put one away for a
+while, or refuse it permanently. Answering produces a source and a review
+queue, never a memory.
+
+Verified: 480 unit and integration tests (27 new for this slice), 153 browser
+tests (12 new), 40 accessibility scans per viewport with zero violations,
+48/48 evaluations, `pnpm verify` clean, 107 OpenAPI routes.
+
+> The accessibility figure is recomputed from the spec: 34 screens reached
+> through `scan()` plus 6 states scanned after interaction, run on two
+> viewports. Earlier entries in this file carry a differently derived number;
+> this is the one that can be reproduced from `tests/e2e/accessibility.spec.ts`.
+
+**Known incomplete in Phase 4.** Two gap kinds — `conflicting_timeline` and
+`thin_relationship` — exist in the schema, the CHECK constraint and the prompt
+copy, and **no detector emits either**. They were left declared because the
+contradiction machinery that would feed the first already exists elsewhere and
+the storage should not have to change when it is wired up. Nothing in the
+product claims they work. Story missions have a table and no routes or screen.
+
+**A note on the browser fixtures.** "Never ask again" is permanent by design,
+so the gap specs consume demonstration fixtures that do not come back: a full
+two-viewport run uses four of the eleven the seed produces. The suite expects a
+seeded database, and if the questions run out the assertion fails with
+`no coverage questions left in the demonstration archive — run pnpm db:seed`
+rather than skipping. It is not a flake; it is the fixture asking to be reseeded.
+
+**Next, in order:** multilingual (Phase 4's second half — English, Hindi and
+Hinglish with the original preserved and any translation labelled as a derived
+artefact), then portability (Phase 5).
 
 The traceability matrix (`docs/GROWTH_TRACEABILITY_MATRIX.md`) is the live
 status. Anything marked `planned` there is not built. Anything marked `done`

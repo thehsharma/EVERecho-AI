@@ -95,6 +95,37 @@ const RECORDINGS: readonly SeedRecording[] = [
     sensitivity: 'sensitive',
   },
   {
+    // People do not narrate with footnotes. This session leaves several things
+    // genuinely unexplained — an unnamed "he", a date given as a feeling, a
+    // place called "back there", a story referred to and not told — so the
+    // coverage radar has real material rather than a contrived example.
+    filename: 'session-06-leaving.webm',
+    kind: 'audio',
+    mimeType: 'audio/webm',
+    text: [
+      'He told us to leave before the monsoon, and we did, with two trunks between us.',
+      'My cousin sent word from Nagpur a few years later, when things had settled down.',
+      'We went back there every summer until the house was sold.',
+      'The neighbour kept our things safe the whole time we were away.',
+      'There was a woman on the platform who sat with the children the whole way, but that is another story.',
+    ].join(' '),
+  },
+  {
+    // A second one, later in life and on a different subject. Two sessions
+    // rather than one long list: five unexplained things in a single sitting
+    // reads as a contrivance, and the demonstration archive is meant to look
+    // like somebody talking.
+    filename: 'session-07-after.webm',
+    kind: 'audio',
+    mimeType: 'audio/webm',
+    text: [
+      'My friend drove down from Nashik the week after the funeral and stayed with me.',
+      'That man from the bank came twice about the papers and I never did understand what he wanted.',
+      'We had lived at the old house for so long that the new one did not feel like anywhere for years.',
+      'Somebody left flowers at the gate every Thursday and never once knocked.',
+    ].join(' '),
+  },
+  {
     filename: 'session-04-family.webm',
     kind: 'audio',
     mimeType: 'audio/webm',
