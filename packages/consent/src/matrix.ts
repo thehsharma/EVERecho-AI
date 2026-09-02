@@ -209,6 +209,20 @@ export const ACTION_REQUIREMENTS: Record<Action, ActionRequirement> = {
   // their question, and withdrawing it is not a claim about anybody's life.
   'familyQuestion.withdraw': req({ minMode: 'organise', mutates: true }),
 
+  // Contributions (v0.3).
+  //
+  // Proposing requires the `mayContribute` grant, which `authorize()` applies
+  // through `contribution_not_permitted` — being a family member is not the
+  // same as being invited to add to somebody's life story.
+  'contribution.create': req({ minMode: 'organise', readsContent: true, mutates: true }),
+  'contribution.read': req({ minMode: 'organise', readsContent: true }),
+  'contribution.edit': req({ minMode: 'organise', mutates: true }),
+  // Approval is the storyteller's alone. A contributor who could approve their
+  // own proposal would be an editor of somebody else's memory.
+  'contribution.approve': req({ minMode: 'organise', storytellerOnly: true, mutates: true }),
+  'contribution.reject': req({ minMode: 'organise', storytellerOnly: true, mutates: true }),
+  'contribution.withdraw': req({ minMode: 'organise', mutates: true }),
+
   'perform.synthesise_voice': req({}),
   'perform.synthesise_likeness': req({}),
   'perform.persona_chat': req({}),
@@ -276,6 +290,9 @@ const READER_ACTIONS: readonly Action[] = [
   'familyQuestion.create',
   'familyQuestion.read',
   'familyQuestion.withdraw',
+  // Every reader may see what has been proposed and what became of it: the
+  // review trail is part of trusting the archive, not a private queue.
+  'contribution.read',
 ];
 
 export const ROLE_ACTIONS: Record<Role, readonly Action[]> = {
@@ -332,7 +349,14 @@ export const ROLE_ACTIONS: Record<Role, readonly Action[]> = {
 
   family: READER_ACTIONS,
 
-  contributor: [...READER_ACTIONS, 'source.upload', 'correction.propose'],
+  contributor: [
+    ...READER_ACTIONS,
+    'source.upload',
+    'correction.propose',
+    'contribution.create',
+    'contribution.edit',
+    'contribution.withdraw',
+  ],
 
   /** Narrowly delegated continuity tasks. Not the executor. Not the owner. */
   steward: [

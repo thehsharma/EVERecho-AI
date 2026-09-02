@@ -96,3 +96,47 @@ and enums. No question text, no answer text, no titles, no names.
 **Why.** The existing analytics schema already refuses strings by construction,
 which is what makes this cheap to keep true. A funnel that needed content to be
 useful would be a funnel worth losing.
+
+---
+
+## G-007 — An alternate account is added, never applied
+
+**Decision.** Approving "I remember it differently" creates a second memory
+beside the first, marked `contributor_proposed` at P3, with the proposal
+promoted to a citable source and a `contradiction` linking the two claims, left
+open. The storyteller's memory is not touched: same words, same version.
+
+**Why.** Families disagree about the past. A product that resolves that
+disagreement has decided who was right, and it has decided it in favour of
+whoever submitted last. Keeping both is the only honest option, and the
+contradiction is what makes the disagreement visible to a reader rather than
+buried.
+
+**Reversal trigger.** None foreseen. If storytellers ask to merge two accounts,
+that is an editing action they take themselves, with both versions still in the
+correction history.
+
+---
+
+## G-008 — A correction is not a contradiction
+
+**Decision.** Approving a correction records the previous value and bumps the
+version. It does *not* create a contradiction row.
+
+**Why.** A fix is not a family dispute. Marking it as one would leave a
+permanent "these two disagree" mark on a memory that was simply improved, and
+would train storytellers to reject corrections to avoid the mark.
+
+---
+
+## G-009 — Contributing is a grant, not a role
+
+**Decision.** Every action that puts material in front of the storyteller —
+`correction.propose`, `contribution.create`, `contribution.edit` — is gated on
+the recipient grant's `mayContribute`, not on the role table alone.
+
+**Why.** Found by a test: `mayContribute` gated only `correction.propose`, so
+the new contribution actions would have been permitted by role and would have
+bypassed the storyteller's decision entirely. Being a family member is not the
+same as being invited to add to somebody's life story, and the storyteller
+decides which.

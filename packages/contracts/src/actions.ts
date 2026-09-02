@@ -135,6 +135,12 @@ export const actionSchema = z.enum([
   'familyQuestion.decline',
   'familyQuestion.restrict',
   'familyQuestion.withdraw',
+  'contribution.create',
+  'contribution.read',
+  'contribution.edit',
+  'contribution.approve',
+  'contribution.reject',
+  'contribution.withdraw',
 
   // Prohibited in v0.1 — present so refusal is explicit and testable
   'perform.synthesise_voice',
@@ -182,6 +188,7 @@ export const resourceTypeSchema = z.enum([
   'memory_candidate',
   'interaction_preference',
   'family_question',
+  'contributor_proposal',
 ]);
 export type ResourceType = z.infer<typeof resourceTypeSchema>;
 
@@ -238,5 +245,8 @@ export const denyReasonSchema = z.enum([
   'question_not_yours',
   'question_already_decided',
   'answer_not_for_you',
+  'proposal_not_yours',
+  'proposal_already_decided',
+  'proposal_target_missing',
 ]);
 export type DenyReason = z.infer<typeof denyReasonSchema>;

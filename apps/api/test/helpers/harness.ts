@@ -206,6 +206,13 @@ export function consentDocument(overrides: Record<string, unknown> = {}) {
         mayExport: false,
         mayContribute: false,
       },
+      {
+        role: 'contributor',
+        maxSensitivity: 'normal',
+        lifeStates: ['living'],
+        mayExport: false,
+        mayContribute: true,
+      },
     ],
     restrictedTopics: [],
     excludedSourceIds: [],

@@ -52,6 +52,8 @@ export const analyticsEventNameSchema = z.enum([
   'family_question_decided',
   'family_question_answer_read',
   'family_question_candidate_approved',
+  'contribution_proposed',
+  'contribution_decided',
 ]);
 export type AnalyticsEventName = z.infer<typeof analyticsEventNameSchema>;
 

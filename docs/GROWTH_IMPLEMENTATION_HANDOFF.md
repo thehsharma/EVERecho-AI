@@ -20,7 +20,16 @@ Verified: 424 unit and integration tests (26 new for this slice), 106 browser
 tests (18 new), 44 accessibility scans with zero violations, 48/48 evaluations,
 `pnpm verify` clean.
 
-**Phase 2 next:** the contributor loop.
+**Phase 2 complete.** The contributor loop works end to end: eight proposal
+kinds, provenance on each, contradictions surfaced at proposal time, a
+correction that keeps the original, and an alternate account that changes
+nothing at all.
+
+Verified: 438 unit and integration tests (14 new), 129 browser tests (23 new),
+48 accessibility scans with zero violations, 48/48 evaluations, `pnpm verify`
+clean.
+
+**Phase 3 next:** private capsules and the gift/reservation flow.
 
 The traceability matrix (`docs/GROWTH_TRACEABILITY_MATRIX.md`) is the live
 status. Anything marked `planned` there is not built. Anything marked `done`

@@ -47,6 +47,12 @@ function groupsFor(): Group[] {
           requires: 'familyQuestion.create',
           notFor: ['storyteller'],
         },
+        {
+          href: '/contribute',
+          label: 'Add what you know',
+          requires: 'contribution.create',
+          notFor: ['storyteller'],
+        },
         { href: '/talk', label: 'Talk out loud', requires: 'realtime.session.read' },
       ],
     },
@@ -54,6 +60,11 @@ function groupsFor(): Group[] {
       heading: 'Recording',
       items: [
         { href: '/inbox', label: 'Questions for you', requires: 'familyQuestion.respond' },
+        {
+          href: '/proposals',
+          label: 'Family suggestions',
+          requires: 'contribution.approve',
+        },
         { href: '/interview', label: 'Guided interview', requires: 'interview.start' },
         { href: '/sources', label: 'Uploads', requires: 'source.read' },
         { href: '/memories', label: 'Review stories', requires: 'memory.read' },

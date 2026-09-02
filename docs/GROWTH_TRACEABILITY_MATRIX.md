@@ -35,13 +35,19 @@ Updated after each vertical slice. Nothing is marked done before its tests run.
 
 ### Slice 2: Contributor mode
 
+**Status: done.** 14 integration tests, 23 browser tests across two viewports,
+4 accessibility scans with zero violations.
+
 | Requirement | Implementation | Proof | Status |
 | --- | --- | --- | --- |
-| Propose photos, documents, dates, places, people, corrections, notes, alternate accounts | | | planned |
-| No silent overwrite of an approved memory | | | planned |
-| Every proposal carries provenance, source consent, status, approval | | | planned |
-| Contradictions surfaced, not resolved | | | planned |
-| Original and every correction version preserved | | | planned |
+| Propose photos, documents, dates, places, people, corrections, notes, alternate accounts | `contributor_proposal.kind` — eight kinds; `POST /v1/archives/:id/contributions` | `contributions.test.ts` "lets a contributor propose"; E2E covers the kind selector | done |
+| No silent overwrite of an approved memory | Approval is a separate act by the storyteller; a correction writes `previous_value` first; an alternate account writes nothing to the original | "records the previous value, bumps the version and reaches retrieval"; "stands beside the original" asserts the target is byte-identical after approval | done |
+| Every proposal carries provenance, source consent, status, approval | `proposal_evidence` with `first_hand`; the proposal becomes a `source_asset` on approval so the second account is citable | "the second account is citable, and the citation says whose it is" | done |
+| Contradictions surfaced, not resolved | `contradicts_memory_ids` at proposal time; a `contradiction` row linking both claims, left `open` | "the disagreement is surfaced at proposal time, before anyone decides"; contradiction status asserted `open` | done |
+| Original and every correction version preserved | `correction.previous_value`; `memory.version` incremented; `was_corrected` set | "records the previous value…" asserts version 2 and the 1962 original still present | done |
+| A contributor cannot decide their own proposal | `contribution.approve` is storyteller-only; the review screen renders decisions only when the API reports the capability | "refuses to let them approve their own proposal"; E2E "is never offered a decision on their own suggestion" | done |
+| Contributing is a grant, not a role | `CONTRIBUTION_ACTIONS` gated on `mayContribute` in `authorize()` | "refuses a family member who was not given permission to contribute" | done |
+| Archive isolation | Forced RLS on both new tables | "never returns one archive’s proposals in another’s scope" | done |
 
 ### Slice 3: Capsules, gift and reservation
 

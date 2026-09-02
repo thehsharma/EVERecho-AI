@@ -76,6 +76,9 @@ const EXPLANATIONS: Record<DenyReason, string> = {
   // Deliberately says nothing about who *can* see it, or that a narrower
   // answer exists: "not for you" is the whole message.
   answer_not_for_you: 'This answer was shared with someone else.',
+  proposal_not_yours: 'You can only change suggestions you made.',
+  proposal_already_decided: 'The storyteller has already decided on this one.',
+  proposal_target_missing: 'What this was about is no longer in the archive.',
 };
 
 /** Which refusal a failed learning gate produces. Exhaustive by construction. */
@@ -126,6 +129,13 @@ function learningGateSatisfied(
 function deny(reasonCode: DenyReason, policyVersion: string): Decision {
   return { effect: 'DENY', reasonCode, policyVersion, explanation: EXPLANATIONS[reasonCode] };
 }
+
+/** Everything that adds material to somebody else's archive. */
+const CONTRIBUTION_ACTIONS: readonly Action[] = [
+  'correction.propose',
+  'contribution.create',
+  'contribution.edit',
+];
 
 /** Actions that remain readable after deletion begins, so a user can watch it finish. */
 const READABLE_WHILE_DELETING: readonly Action[] = [
@@ -379,7 +389,11 @@ export function authorize(input: AuthorizeInput): Decision {
       if ((action === 'export.download' || action === 'export.create') && !grant.mayExport) {
         return deny('export_not_permitted', policyVersion);
       }
-      if (action === 'correction.propose' && !grant.mayContribute) {
+      // Contributing is a grant, not a role. A relative may be trusted to read
+      // an archive and not to add to it, and the storyteller decides which —
+      // so every action that puts material in front of them is gated here,
+      // rather than only the one that existed when this check was written.
+      if (CONTRIBUTION_ACTIONS.includes(action) && !grant.mayContribute) {
         return deny('contribution_not_permitted', policyVersion);
       }
 

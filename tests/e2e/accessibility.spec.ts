@@ -225,6 +225,26 @@ test.describe('a family member’s question screen meets WCAG 2.2 AA', () => {
   });
 });
 
+test.describe('the contributor screens meet WCAG 2.2 AA', () => {
+  test.use({ storageState: 'tests/e2e/.auth/contributor.json' });
+
+  test('adding what you know', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    const results = await scan(page, `/archives/${archiveId}/contribute`);
+    expect(describeViolations(results.violations)).toBe('');
+  });
+});
+
+test.describe('the review queue meets WCAG 2.2 AA', () => {
+  test.use({ storageState: 'tests/e2e/.auth/storyteller.json' });
+
+  test('family suggestions, including a disagreement', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    const results = await scan(page, `/archives/${archiveId}/proposals`);
+    expect(describeViolations(results.violations)).toBe('');
+  });
+});
+
 test.describe('keyboard and focus', () => {
   test.use({ storageState: 'tests/e2e/.auth/family.json' });
 

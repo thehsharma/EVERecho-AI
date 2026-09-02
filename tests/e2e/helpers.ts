@@ -6,6 +6,7 @@ export const ACCOUNTS = {
   storyteller: 'kamala@everecho.example',
   buyer: 'anil@everecho.example',
   family: 'anjali@everecho.example',
+  contributor: 'ravi@everecho.example',
   support: 'support@everecho.example',
 } as const;
 

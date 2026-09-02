@@ -15,6 +15,7 @@ import { registerLifecycleRoutes } from './lifecycle';
 import { registerBillingRoutes } from './billing';
 import { registerAdminRoutes } from './admin';
 import { registerFamilyQuestionRoutes } from './family-questions';
+import { registerContributionRoutes } from './contributions';
 import { registerRealtimeRoutes } from '../realtime/routes';
 
 export async function registerRoutes(app: FastifyInstance, ctx: AppContext): Promise<void> {
@@ -34,4 +35,5 @@ export async function registerRoutes(app: FastifyInstance, ctx: AppContext): Pro
   registerAdminRoutes(app, ctx);
   registerRealtimeRoutes(app, ctx);
   registerFamilyQuestionRoutes(app, ctx);
+  registerContributionRoutes(app, ctx);
 }

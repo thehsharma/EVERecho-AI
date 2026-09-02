@@ -17,4 +17,5 @@ export * from './analytics';
 export * from './learning';
 export * from './realtime';
 export * from './family-questions';
+export * from './contributions';
 export * from './actions';

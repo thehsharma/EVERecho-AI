@@ -326,6 +326,67 @@ export async function seedDemoArchive(ctx: PipelineContext): Promise<SeedResult>
   });
 
   /**
+   * Two suggestions from the contributor, waiting.
+   *
+   * One ordinary and one awkward: a correction, and a relative who remembers
+   * it differently. The second is the case the review screen exists for, and a
+   * demo that only shows the easy one teaches the wrong thing about what this
+   * product does with disagreement.
+   */
+  await ctx.db.withArchiveScope(archiveId, async (tx) => {
+    const target = await tx.maybeOne<{ id: string }>(
+      `SELECT id FROM memory WHERE archive_id = $1 AND status = 'candidate' LIMIT 1`,
+      [archiveId],
+    );
+    const proposals = [
+      {
+        kind: 'note',
+        title: 'The neighbours on the left',
+        body: 'The Kulkarnis lived next door and their son taught me to ride a bicycle in 1971.',
+        firstHand: true,
+        target: null as string | null,
+      },
+      {
+        kind: 'alternate_account',
+        title: 'I remember the move being later',
+        body: 'My uncle always said the family moved after the monsoon, not before it.',
+        firstHand: false,
+        target: target?.id ?? null,
+      },
+    ];
+
+    for (const proposal of proposals) {
+      if (proposal.kind === 'alternate_account' && !proposal.target) continue;
+      const row = await tx.one<{ id: string }>(
+        `INSERT INTO contributor_proposal
+           (archive_id, proposed_by_user_id, kind, target_type, target_id, title, body,
+            contradicts_memory_ids)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+        [
+          archiveId,
+          contributor,
+          proposal.kind,
+          proposal.target ? 'memory' : null,
+          proposal.target,
+          proposal.title,
+          proposal.body,
+          proposal.target ? [proposal.target] : [],
+        ],
+      );
+      await tx.query(
+        `INSERT INTO proposal_evidence (archive_id, proposal_id, first_hand, note)
+         VALUES ($1,$2,$3,$4)`,
+        [
+          archiveId,
+          row.id,
+          proposal.firstHand,
+          proposal.firstHand ? 'I was there.' : 'What my uncle told me.',
+        ],
+      );
+    }
+  });
+
+  /**
    * The storyteller approves everything except the last interview, so demo mode
    * opens on a real review queue rather than a finished archive with nothing
    * left to do. Chosen by which recording the material came from, not by
