@@ -163,3 +163,95 @@ duplicate client events are idempotent by `(session_id, client_event_id)`.
 
 **Why.** A client-authoritative state machine is a permission system a user can
 edit in a debugger.
+
+---
+
+## RT-013 — Frames are taken off the socket before admission finishes
+
+**Decision.** The WebSocket handler attaches its `message` listener before its
+first `await`, buffers what arrives during admission, and delivers it once the
+driver exists. Frames are then handled one at a time, in order.
+
+**Why.** The handshake completes before the route handler runs, so a browser
+sends `session.hello` while the server is still reading consent from the
+database. `ws` emits that frame whether or not anything is listening, so a
+listener attached after those reads never hears it and the person waits at
+"getting ready" over a socket that is open and perfectly healthy. Ordering is
+the same class of problem one layer up: an interruption must not land before
+the audio it was meant to interrupt.
+
+**Reversal trigger.** A transport that guarantees delivery of pre-handshake
+frames — LiveKit's data channel, for instance — would make the buffer
+unnecessary. The ordering queue stays regardless.
+
+---
+
+## RT-014 — Hosted real-time providers are opt-in per stage, and local by default
+
+**Decision.** Three independent drivers — `REALTIME_STT_DRIVER`,
+`REALTIME_LLM_DRIVER`, `REALTIME_TTS_DRIVER` — each defaulting to `local`. The
+local implementations are complete: the whole conversation runs with no
+credentials and no network.
+
+**Why.** Sending a finished transcript to a provider and sending live
+microphone audio to one are different decisions, and a deployment should be
+able to make them separately. A single `PROVIDER=hosted` switch would force a
+deployment that wants a better recogniser to also send every question and every
+answer off the host.
+
+**Reversal trigger.** If the three stages are always configured together in
+practice, collapse them into one setting.
+
+---
+
+## RT-015 — `mip_opt_out=true` is hard-coded, not configurable
+
+**Decision.** Every Deepgram connection carries `mip_opt_out=true`. It is set
+by the adapter, in code, with no environment variable able to change it. The
+provider factory additionally refuses to start if any configured provider
+declares `permitsModelTraining`.
+
+**Why.** "No provider is ever permitted to train a model on this conversation"
+is a sentence on a permissions screen that a storyteller reads before agreeing
+to be recorded. A setting is something somebody can turn off; a hard-coded
+query parameter and a start-up check are not.
+
+**Reversal trigger.** None that keeps the promise. If a provider stops
+offering an opt-out, the adapter is removed rather than the parameter.
+
+---
+
+## RT-016 — The model is given proposal tools only, and no retrieval tool
+
+**Decision.** The hosted composer is offered six tools, all of which record an
+intention for a person to review. It has no tool that reads an archive, and no
+database, shell, HTTP or code-execution tool of any kind. Retrieval happens
+before composition, authorised by the server, with only permitted passages
+placed in the prompt.
+
+**Why.** A model that can ask for evidence is a model whose requests have to be
+authorised, and an authorisation path driven by model output is one more place
+a prompt injection can aim at. Retrieving first means the question of what this
+reader may see is settled before the model sees anything at all.
+
+**Reversal trigger.** Multi-hop questions that pre-retrieval genuinely cannot
+serve. The tool would then be added with its own `authorize()` call on every
+invocation, never with the session's initial decision.
+
+---
+
+## RT-017 — The composer cites by passage number, and the server resolves it
+
+**Decision.** Passages are numbered in the prompt; the model ends each sentence
+with the numbers supporting it; the adapter strips the markers and maps them to
+evidence ids. A clause whose citation is missing, malformed, or points at a
+passage that was never supplied arrives with no evidence and is discarded by
+the verifier.
+
+**Why.** Free prose cannot carry structured citations reliably, and a tool call
+per sentence would not stream. Numbering is the smallest thing that streams and
+still fails safe: the worst outcome of a mis-citation is silence, never a
+confident sentence attached to the wrong source.
+
+**Reversal trigger.** A structured streaming format that carries citations
+natively.

@@ -115,6 +115,28 @@ export const envSchema = z.object({
   AI_PROVIDER_NO_TRAINING: bool.default(true),
   AI_PROVIDER_RETENTION_DAYS: int(0, 3650).default(0),
 
+  // ---- Real-time providers ------------------------------------------------
+  //
+  // Separate from the batch drivers above on purpose. A deployment may be
+  // happy to send a finished transcript to a provider for extraction and
+  // unwilling to send live microphone audio to one, and that is a decision it
+  // should be able to make. All three default to local, so a deployment that
+  // configures nothing sends nothing.
+  REALTIME_STT_DRIVER: z.enum(['local', 'deepgram']).default('local'),
+  REALTIME_LLM_DRIVER: z.enum(['local', 'anthropic']).default('local'),
+  REALTIME_TTS_DRIVER: z.enum(['local', 'deepgram']).default('local'),
+  DEEPGRAM_API_KEY: z.string().optional(),
+  DEEPGRAM_STT_MODEL: z.string().default('nova-3'),
+  DEEPGRAM_BASE_URL: z.string().optional(),
+  /**
+   * An EverEcho voice identifier, never a provider one.
+   *
+   * The value is checked against the permitted generic list at start-up, and
+   * the adapter maps it to the provider's own stock voice. There is no setting
+   * anywhere that can name a voice belonging to a person.
+   */
+  REALTIME_VOICE_ID: z.string().default('assistant-neutral-en-v1'),
+
   // ---- Email / notifications ---------------------------------------------
   EMAIL_DRIVER: z.enum(['local', 'smtp', 'resend']).default('local'),
   EMAIL_FROM: z.email().default('no-reply@everecho.example'),

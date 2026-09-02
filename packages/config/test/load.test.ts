@@ -53,6 +53,52 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ ...base, SESSION_SECRET: 'short' })).toThrow(ConfigError);
   });
 
+  it('sends nothing anywhere unless a deployment asks it to', () => {
+    // The default has to be local, not "local unless someone forgot". A
+    // deployment that configures nothing must not put live microphone audio on
+    // somebody else's network.
+    const cfg = loadConfig(base);
+    expect(cfg.env.REALTIME_STT_DRIVER).toBe('local');
+    expect(cfg.env.REALTIME_LLM_DRIVER).toBe('local');
+    expect(cfg.env.REALTIME_TTS_DRIVER).toBe('local');
+  });
+
+  it('requires credentials for each hosted real-time provider', () => {
+    expect(() => loadConfig({ ...base, REALTIME_STT_DRIVER: 'deepgram' })).toThrow(
+      /DEEPGRAM_API_KEY/,
+    );
+    expect(() => loadConfig({ ...base, REALTIME_TTS_DRIVER: 'deepgram' })).toThrow(
+      /DEEPGRAM_API_KEY/,
+    );
+    expect(() => loadConfig({ ...base, REALTIME_LLM_DRIVER: 'anthropic' })).toThrow(/LLM_API_KEY/);
+  });
+
+  it('refuses a hosted real-time provider that may train on what it is sent', () => {
+    // Refused in every environment, not only production: a developer pointing
+    // a real microphone at such a provider is exactly the case this is for.
+    expect(() =>
+      loadConfig({
+        ...base,
+        REALTIME_STT_DRIVER: 'deepgram',
+        DEEPGRAM_API_KEY: 'k',
+        AI_PROVIDER_NO_TRAINING: 'false',
+      }),
+    ).toThrow(/AI_PROVIDER_NO_TRAINING must remain true/);
+  });
+
+  it('accepts a fully configured hosted real-time deployment', () => {
+    const cfg = loadConfig({
+      ...base,
+      REALTIME_STT_DRIVER: 'deepgram',
+      REALTIME_TTS_DRIVER: 'deepgram',
+      REALTIME_LLM_DRIVER: 'anthropic',
+      DEEPGRAM_API_KEY: 'dg-key',
+      LLM_API_KEY: 'llm-key',
+    });
+    expect(cfg.env.DEEPGRAM_STT_MODEL).toBe('nova-3');
+    expect(cfg.env.REALTIME_VOICE_ID).toBe('assistant-neutral-en-v1');
+  });
+
   it('exposes branding and hard-disabled feature flags', () => {
     const cfg = loadConfig(base);
     expect(branding(cfg).trademarkStatus).toBe('working-codename-pending-clearance');

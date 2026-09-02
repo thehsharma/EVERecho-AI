@@ -1,4 +1,7 @@
 import {
+  AnthropicStreamingLanguageModel,
+  DeepgramStreamingSpeechToText,
+  DeepgramStreamingTextToSpeech,
   LocalStreamingLanguageModel,
   LocalStreamingSpeechToText,
   LocalStreamingTextToSpeech,
@@ -40,10 +43,34 @@ export interface StreamingProviders {
 }
 
 export function createStreamingProviders(ctx: AppContext): StreamingProviders {
+  const { env } = ctx.cfg;
+
   const providers: StreamingProviders = {
-    stt: new LocalStreamingSpeechToText(),
-    llm: new LocalStreamingLanguageModel(),
-    tts: new LocalStreamingTextToSpeech(),
+    stt:
+      env.REALTIME_STT_DRIVER === 'deepgram'
+        ? new DeepgramStreamingSpeechToText({
+            apiKey: requireKey(env.DEEPGRAM_API_KEY, 'DEEPGRAM_API_KEY'),
+            model: env.DEEPGRAM_STT_MODEL,
+            baseUrl: env.DEEPGRAM_BASE_URL,
+          })
+        : new LocalStreamingSpeechToText(),
+    llm:
+      env.REALTIME_LLM_DRIVER === 'anthropic'
+        ? new AnthropicStreamingLanguageModel({
+            apiKey: requireKey(env.LLM_API_KEY, 'LLM_API_KEY'),
+            model: env.ANTHROPIC_MODEL,
+            maxTokens: env.ANTHROPIC_MAX_TOKENS,
+            baseURL: env.LLM_BASE_URL,
+          })
+        : new LocalStreamingLanguageModel(),
+    tts:
+      env.REALTIME_TTS_DRIVER === 'deepgram'
+        ? new DeepgramStreamingTextToSpeech({
+            apiKey: requireKey(env.DEEPGRAM_API_KEY, 'DEEPGRAM_API_KEY'),
+            voiceId: env.REALTIME_VOICE_ID,
+            baseUrl: env.DEEPGRAM_BASE_URL,
+          })
+        : new LocalStreamingTextToSpeech(),
     vad: new LocalVoiceActivityDetector(),
     turnDetector: new LocalTurnDetector(),
   };
@@ -56,8 +83,24 @@ export function createStreamingProviders(ctx: AppContext): StreamingProviders {
         'EverEcho never synthesises a person’s voice.',
     );
   }
-  void ctx;
+  // Same reasoning: a provider that reserves the right to train on what it is
+  // sent is refused here, not discovered afterwards in a privacy review.
+  for (const provider of [providers.stt, providers.llm, providers.tts]) {
+    if (provider.capabilities.permitsModelTraining) {
+      throw new Error(
+        `Provider "${provider.capabilities.name}" permits model training on what it is sent. ` +
+          'EverEcho never sends memories to a provider that may train on them.',
+      );
+    }
+  }
   return providers;
+}
+
+function requireKey(value: string | undefined, name: string): string {
+  // Configuration validation catches this at start-up; this is the guard that
+  // makes the type honest rather than the one that reports the problem.
+  if (!value) throw new Error(`${name} is required for the configured real-time provider`);
+  return value;
 }
 
 /** Whether any of the configured providers sends material off the host. */

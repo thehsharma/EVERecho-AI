@@ -139,9 +139,27 @@ export function loadConfig(source?: Record<string, string | undefined>): AppConf
     [env.LLM_DRIVER, 'LLM_API_KEY'],
     [env.EMBEDDINGS_DRIVER, 'EMBEDDINGS_API_KEY'],
     [env.STT_DRIVER, 'STT_API_KEY'],
+    [env.REALTIME_LLM_DRIVER, 'LLM_API_KEY'],
+    [env.REALTIME_STT_DRIVER, 'DEEPGRAM_API_KEY'],
+    [env.REALTIME_TTS_DRIVER, 'DEEPGRAM_API_KEY'],
   ] as const) {
     if (driver !== 'local' && !env[key])
       issues.push(`${key} is required when using a hosted provider`);
+  }
+
+  // Live audio leaves the deployment the moment a hosted real-time provider is
+  // configured, so the no-training setting stops being advisory. Refused in
+  // every environment rather than only in production: a developer pointing a
+  // real microphone at a provider that may train on it is the case this is for.
+  if (
+    !env.AI_PROVIDER_NO_TRAINING &&
+    (env.REALTIME_STT_DRIVER !== 'local' ||
+      env.REALTIME_LLM_DRIVER !== 'local' ||
+      env.REALTIME_TTS_DRIVER !== 'local')
+  ) {
+    issues.push(
+      'AI_PROVIDER_NO_TRAINING must remain true when a hosted real-time provider is configured',
+    );
   }
 
   if (issues.length > 0) {
