@@ -51,8 +51,10 @@ Updated after each vertical slice. Nothing is marked done before its tests run.
 
 ### Slice 3: Capsules, gift and reservation
 
-**Capsules: done.** 15 integration tests, 15 browser tests, 2 accessibility
-scans with zero violations. **Gift and reservation: planned.**
+**Status: done.** Capsules: 15 integration tests, 15 browser tests, 2
+accessibility scans. Gift and reservation: the buyer/consent separation and
+private decline were already enforced in v0.1; what v0.3 adds is the link
+between the decline and the money.
 
 | Requirement | Implementation | Proof | Status |
 | --- | --- | --- | --- |
@@ -64,9 +66,9 @@ scans with zero violations. **Gift and reservation: planned.**
 | Taking a copy is separate from reading | `capsule.download` gated by the `export` activity, the grant's `mayExport` and the capsule's own `allowDownload` | `EXPORTING_ACTIONS` in `authorize()`; stated in the UI at the moment of the decision | done |
 | Only a storyteller may make one | `capsule.create` is storyteller-only; the screen offers creation only when the API reports the capability | "refuses to let a family member make one"; E2E "is not offered a way to make one" | done |
 | Archive isolation | Forced RLS on all four new tables | "never returns one archive’s capsules in another’s scope" | done |
-| Buyer may reserve; cannot consent for the storyteller or gain access by paying | | | planned |
-| Private acceptance and private decline | | | planned |
-| Refund / reservation-release state; no card data stored | | | planned |
+| Buyer may reserve; cannot consent for the storyteller or gain access by paying | `buyer_cannot_consent_for_storyteller` in `authorize()`; the buyer's role holds no content rights | `authorize.test.ts`; `consent-journey.test.ts` "cannot withdraw anyone's access" | done (v0.1) |
+| Private acceptance and private decline | Invitation respond; `decline_reason` never sent to the inviter | `consent-journey.test.ts` "refuses an invitation opened by someone it was not addressed to" | done (v0.1) |
+| Refund / reservation-release state; no card data stored | `released` status distinct from `refunded`, with a reason code; the deposit is released automatically when the storyteller declines; the local provider signs the same webhook a real one would | `consent-journey.test.ts` "releases the deposit when the storyteller declines, and tells the buyer nothing" | done |
 
 ### Slice 4: Gap radar, missions, multilingual
 

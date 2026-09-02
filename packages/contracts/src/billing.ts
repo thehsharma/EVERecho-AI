@@ -9,7 +9,13 @@ export const createReservationRequestSchema = z.object({
 
 export const reservationSchema = z.object({
   id: idSchema,
-  status: z.enum(['pending', 'paid', 'refunded', 'failed', 'cancelled']),
+  /**
+   * `released` is not `refunded`. A refund is something the buyer asked for; a
+   * release is what happens when the person the archive was bought for
+   * declines. Same movement of money, different event, and collapsing them
+   * would lose the only signal that says how often a gift is turned down.
+   */
+  status: z.enum(['pending', 'paid', 'refunded', 'failed', 'cancelled', 'released']),
   currency: z.enum(['INR', 'USD']),
   amountMinor: z.number().int(),
   /** Refundable by design: a deposit is a signal of intent, not a lock-in. */
@@ -19,6 +25,9 @@ export const reservationSchema = z.object({
   createdAt: timestampSchema,
   paidAt: timestampSchema.nullable(),
   refundedAt: timestampSchema.nullable(),
+  releasedAt: timestampSchema.nullable(),
+  /** Why it was released. A reason code, never the storyteller's own words. */
+  releaseReasonCode: z.string().nullable(),
 });
 export type Reservation = z.infer<typeof reservationSchema>;
 

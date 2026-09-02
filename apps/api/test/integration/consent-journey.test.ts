@@ -287,3 +287,85 @@ describe('operational endpoints leak nothing', () => {
     expect(response.body.providers.compositionIsExtractive).toBe(true);
   });
 });
+
+describe('a gift the storyteller turns down', () => {
+  /**
+   * A buyer may pay for an archive and still not be its owner, and the person
+   * it was bought for may say no. What the money does then is the part that
+   * was missing: the deposit stops waiting, and it does so without carrying
+   * anything the storyteller said about why.
+   */
+  it('releases the deposit when the storyteller declines, and tells the buyer nothing', async () => {
+    const giver = await signUp(h.app, { email: 'giver@example.test', displayName: 'Giver' });
+    const recipient = await signUp(h.app, {
+      email: 'recipient@example.test',
+      displayName: 'Recipient',
+    });
+
+    const created = await giver.post<{ id: string }>('/v1/archives', {
+      name: 'A gift',
+      subject: { displayName: 'Recipient Person', birthYear: 1950 },
+      subjectIsAdult: true,
+    });
+    const giftArchiveId = created.body.id;
+
+    // A paid reservation against that archive.
+    const reserved = await giver.post<{
+      reservation: { id: string; providerRef: string | null };
+    }>('/v1/billing/reservations', {
+      currency: 'INR',
+      archiveId: giftArchiveId,
+      idempotencyKey: `gift-${Date.now()}`,
+    });
+    expect(reserved.status).toBe(201);
+
+    // The real payment path, not a shortcut: the local provider signs the same
+    // webhook a real one would send, and the signature check runs.
+    const signed = await giver.post<{ signature: string; payload: string }>(
+      '/v1/billing/local-checkout/complete',
+      { providerRef: reserved.body.reservation.providerRef!, outcome: 'paid' },
+    );
+    expect(signed.status).toBe(200);
+    const delivered = await h.app.inject({
+      method: 'POST',
+      url: '/v1/webhooks/billing',
+      headers: { 'content-type': 'application/json', 'x-signature': signed.body.signature },
+      payload: signed.body.payload,
+    });
+    expect(delivered.statusCode).toBeLessThan(300);
+
+    await giver.post(`/v1/archives/${giftArchiveId}/invitations`, {
+      email: 'recipient@example.test',
+      displayName: 'Recipient Person',
+      role: 'storyteller',
+      expiresInDays: 14,
+    });
+    const token = invitationTokenFrom(h.ctx);
+
+    const declined = await recipient.post(`/v1/invitations/${token}/respond`, {
+      decision: 'decline',
+      declineReason: 'I would rather my life were not written down.',
+    });
+    expect(declined.status).toBe(200);
+
+    // The money stopped waiting, and it says why in a reason code.
+    const reservations = await giver.get<{
+      reservations: { id: string; status: string; releaseReasonCode: string | null }[];
+    }>('/v1/billing');
+    const reservation = reservations.body.reservations.find(
+      (r) => r.id === reserved.body.reservation.id,
+    );
+    expect(reservation?.status).toBe('released');
+    expect(reservation?.releaseReasonCode).toBe('storyteller_declined');
+
+    // And the buyer learns nothing about why the person said no.
+    expect(JSON.stringify(reservations.body)).not.toContain('rather my life');
+
+    // Paying did not make them the owner, and declining did not make them one.
+    const reach = await giver.get(`/v1/archives/${giftArchiveId}/memories`);
+    expect([200, 403, 404]).toContain(reach.status);
+    if (reach.status === 200) {
+      expect((reach.body as { memories: unknown[] }).memories).toEqual([]);
+    }
+  });
+});

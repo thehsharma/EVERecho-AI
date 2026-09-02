@@ -312,6 +312,35 @@ export function registerInvitationRoutes(app: FastifyInstance, ctx: AppContext):
           );
           if (invitation.role === 'storyteller') {
             await updateArchiveStatus(tx, invitation.archive_id, 'declined');
+
+            // The person this was bought for said no, so the money stops
+            // waiting. Released rather than refunded: the buyer did not ask
+            // for it back, and keeping the two apart is the only way to know
+            // later how often this happens.
+            //
+            // The storyteller's reason is not carried here in any form. It is
+            // theirs, and this row is read by whoever is looking at the money.
+            const released = await tx.query<{ id: string }>(
+              `UPDATE reservation
+                  SET status = 'released', released_at = now(),
+                      release_reason_code = 'storyteller_declined'
+                WHERE archive_id = $1 AND status IN ('pending','paid')
+                RETURNING id`,
+              [invitation.archive_id],
+            );
+            for (const reservation of released) {
+              await recordAuditEvent(tx, {
+                archiveId: invitation.archive_id,
+                actorUserId: user.id,
+                actorDisplay: 'system',
+                action: 'billing.manage',
+                resourceType: 'billing',
+                resourceId: reservation.id,
+                outcome: 'success',
+                requestId: request.id,
+                metadata: { released: true, reasonCode: 'storyteller_declined' },
+              });
+            }
           }
           await recordAuditEvent(tx, {
             archiveId: invitation.archive_id,

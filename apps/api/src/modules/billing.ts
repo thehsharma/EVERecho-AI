@@ -10,13 +10,15 @@ import type { AppContext } from '../context';
 interface ReservationRow {
   id: string;
   user_id: string;
-  status: 'pending' | 'paid' | 'refunded' | 'failed' | 'cancelled';
+  status: 'pending' | 'paid' | 'refunded' | 'failed' | 'cancelled' | 'released';
   currency: 'INR' | 'USD';
   amount_minor: number;
   provider_ref: string | null;
   created_at: Date;
   paid_at: Date | null;
   refunded_at: Date | null;
+  released_at: Date | null;
+  release_reason_code: string | null;
 }
 
 function toReservation(row: ReservationRow, checkoutUrl: string | null = null) {
@@ -31,6 +33,8 @@ function toReservation(row: ReservationRow, checkoutUrl: string | null = null) {
     createdAt: row.created_at.toISOString(),
     paidAt: row.paid_at?.toISOString() ?? null,
     refundedAt: row.refunded_at?.toISOString() ?? null,
+    releasedAt: row.released_at?.toISOString() ?? null,
+    releaseReasonCode: row.release_reason_code,
   };
 }
 

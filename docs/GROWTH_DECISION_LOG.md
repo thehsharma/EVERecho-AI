@@ -186,3 +186,21 @@ their own suggestion, and a family member was shown "Make a capsule" for
 somebody else's archive. Neither was an authorisation hole — the server refused
 both — but a button that will be refused is a promise the product does not
 keep, and a person who meets two of them stops believing the third.
+
+---
+
+## G-013 — A release is not a refund
+
+**Decision.** When a storyteller declines a gifted archive, the buyer's deposit
+moves to `released`, not `refunded`, with a reason code of
+`storyteller_declined`.
+
+**Why.** They are the same movement of money and completely different events. A
+refund is something the buyer asked for; a release is what the product did
+because the person it was bought for said no. Collapsing them would destroy the
+only signal that says how often a gift is turned down — which is exactly the
+number a founder needs before deciding whether gifting is a viable channel at
+all.
+
+The reason code is a code. The storyteller's own words about why they declined
+never reach this row, because it is read by whoever is looking at the money.
