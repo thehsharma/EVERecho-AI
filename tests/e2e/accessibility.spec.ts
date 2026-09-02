@@ -93,6 +93,93 @@ test.describe('a family member’s screens meet WCAG 2.2 AA', () => {
   });
 });
 
+test.describe('the conversation screens meet WCAG 2.2 AA', () => {
+  test.use({ storageState: 'tests/e2e/.auth/storyteller.json' });
+
+  test('every screen the conversation added', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    const failures: string[] = [];
+    for (const path of ['/talk', '/learning', '/learned']) {
+      const results = await scan(page, `/archives/${archiveId}${path}`);
+      if (results.violations.length > 0) {
+        failures.push(`${path}\n${describeViolations(results.violations)}`);
+      }
+    }
+    const results = await scan(page, '/account/preferences');
+    if (results.violations.length > 0) {
+      failures.push(`/account/preferences\n${describeViolations(results.violations)}`);
+    }
+    expect(failures.join('\n\n')).toBe('');
+  });
+
+  test('the live screen is accessible while a conversation is running', async ({ page }) => {
+    // Scanned live rather than at rest: the state that matters is the one with
+    // a transcript growing in it, a visualiser moving, and controls changing
+    // label as the conversation moves between listening and speaking.
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/talk`);
+    await page.getByRole('button', { name: 'Begin' }).click();
+    await page.waitForURL(/\/talk\/[0-9a-f-]{36}/);
+    await expect(page.getByText('Ready when you are')).toBeVisible({ timeout: 15000 });
+
+    await page.getByLabel('Type instead of speaking').fill('We moved to Pune in 1962.');
+    await page.getByRole('button', { name: 'Send' }).click();
+    await expect(page.locator('.turn-assistant').first()).toBeVisible({ timeout: 15000 });
+
+    const results = await new AxeBuilder({ page }).withTags(STANDARD).analyze();
+    expect(describeViolations(results.violations)).toBe('');
+  });
+
+  test('what is happening is announced, not only shown', async ({ page }) => {
+    // Somebody using a screen reader has to know the assistant started
+    // listening. A visualiser that only animates tells them nothing.
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/talk`);
+    await page.getByRole('button', { name: 'Begin' }).click();
+    await page.waitForURL(/\/talk\/[0-9a-f-]{36}/);
+    await expect(page.getByText('Ready when you are')).toBeVisible({ timeout: 15000 });
+
+    // The status region carries the state in words, so a screen reader
+    // announces the change as it happens. Asserted on the region itself rather
+    // than on any element with aria-live: the caption region is also live and
+    // is empty until somebody speaks, which would make a loose match pass
+    // while announcing nothing.
+    // Scoped to the conversation's own status region: the identity notice is
+    // also a status region, deliberately, so that what a person is talking to
+    // is announced before anything else happens.
+    const status = page.locator('.live-status');
+    await expect(status).toHaveAttribute('role', 'status');
+    await expect(status).toContainText('Ready when you are');
+    await expect(status).toContainText('Connected');
+
+    // And it keeps announcing as the conversation moves.
+    await page.getByRole('button', { name: 'Pause', exact: true }).click();
+    await expect(status).toContainText('Paused', { timeout: 10000 });
+  });
+});
+
+test.describe('a family member’s conversation screens meet WCAG 2.2 AA', () => {
+  test.use({ storageState: 'tests/e2e/.auth/family.json' });
+
+  test('an answer with a source open is accessible mid-conversation', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/talk`);
+    await page.getByRole('button', { name: 'Begin' }).click();
+    await page.waitForURL(/\/talk\/[0-9a-f-]{36}/);
+    await expect(page.getByText('Ready when you are')).toBeVisible({ timeout: 15000 });
+
+    await page.getByLabel('Type instead of speaking').fill('Where did the family move to?');
+    await page.getByRole('button', { name: 'Send' }).click();
+    const turn = page.locator('.turn-assistant').first();
+    await expect(turn).toBeVisible({ timeout: 20000 });
+    await turn.locator('.citation-chip').first().click();
+    await expect(page.getByRole('dialog', { name: 'Source' })).toBeVisible();
+
+    const results = await new AxeBuilder({ page }).withTags(STANDARD).analyze();
+    expect(describeViolations(results.violations)).toBe('');
+  });
+});
+
 test.describe('keyboard and focus', () => {
   test.use({ storageState: 'tests/e2e/.auth/family.json' });
 

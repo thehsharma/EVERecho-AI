@@ -11,7 +11,7 @@ a real family uses this. Every claim carries an evidence label:
 | **ASSUMPTION** | Believed, not established. |
 | **UNKNOWN** | Not established, and not guessed. |
 
-Last updated: Phase 4 of the v0.2 build.
+Last updated: the end of the v0.2 build.
 
 ---
 
@@ -34,12 +34,29 @@ not a configuration a careful operator has to remember to choose.
 
 | Check | Result |
 | --- | --- |
-| Unit and integration tests | 378 passed, 15 files |
-| Browser tests (Chromium, two viewports) | 80 passed |
-| AI evaluations | 32/32 cases; four release-blocking targets met |
+| Unit and integration tests | 398 passed, 16 files |
+| Browser tests (Chromium, two viewports) | 88 passed, 4 files |
+| Accessibility (axe, WCAG 2.2 AA) | 36 scans, zero violations |
+| AI evaluations | 48/48 cases; six release-blocking metrics met |
 | Typecheck (`tsc --noEmit`, whole graph) | clean |
 | Lint (`eslint .`) | clean |
 | Format (`prettier --check`) | clean |
+
+The six release-blocking metrics, as measured:
+
+| Metric | Result | Target |
+| --- | --- | --- |
+| Claim-to-citation correctness | 100.0% | ≥ 95% |
+| Unsupported material claims | 0.00% | ≤ 1% |
+| Abstention on no-evidence and sensitive | 100.0% | 100% |
+| Permission leaks | 0 | 0 |
+| Spoken clause citations | 100.0% of 8 | 100% |
+| Memories saved without review | 0 | 0 |
+
+Spoken clauses are held to 100% rather than 95% on purpose. A reader can see a
+citation and check it; a listener hears a sentence and a chip they are not
+looking at. One wrong spoken clause in a hundred is one family told something
+false about someone who died.
 
 The browser suite was run six consecutive times with no failure after the
 transport defect described in §5 was fixed.
@@ -116,6 +133,20 @@ deployment that has not arranged it is making a promise it cannot keep.
 
 ---
 
+## 4a. What Phases 5 to 7 added, and what each is worth
+
+**VERIFIED**, all by execution:
+
+| Added | Why it exists |
+| --- | --- |
+| Cross-instance revocation | Closing the sockets one API instance holds is revocation on one machine. Narrowing now ends every live conversation with a database write, and each connection re-reads its own session every five seconds — the case that needs it is the tablet left open with nobody talking. |
+| Narrowing ends conversations; widening does not | A conversation in flight has work at several stages, each authorised a moment ago under rules that no longer hold. Guessing which is still permitted risks exactly what the storyteller just refused. Hanging up on somebody who granted *more* would be a bug they experience as rejection, so widening is explicitly excluded, with its own test. |
+| Session, daily and archive spending ceilings | An unbounded voice session is an unbounded invoice and the person holding the microphone cannot see it. Reaching a ceiling degrades to text rather than ending the call. |
+| Circuit breakers per provider | Without one, a provider that is down for ten minutes costs a request and a timeout on every turn while the person wonders what they did wrong. |
+| Backpressure that drops audio, never text | `send` never blocks, so a slow connection makes the server accumulate rather than slow down. A gap in the audio is a gap; a transcript missing a clause is a transcript that lies. |
+| Conversations in the export and the deletion | An export covering uploads but not conversations quietly keeps something back. A deletion removing a memory but not the suggestion it came from deletes the memory and keeps the same words. Audio objects are deleted before the rows that name them, so nothing is left in object storage that nothing points at. |
+| Live evaluation cases | Eight cases driving real conversations end to end, plus five boundary checks measured against the database rather than the screen. |
+
 ## 5. The defect found by running it
 
 **VERIFIED.** The browser suite failed intermittently — one to three tests per
@@ -152,15 +183,43 @@ Not yet done. In order:
    account. Without these, §4's declarations are unsupported.
 2. **Run the adapters.** Every item in §3 needs a real run and a recorded
    result. Until then this document must keep saying UNKNOWN.
-3. **Reliability** (Phase 5): reconnection under real packet loss, backpressure
-   under a slow consumer, per-session and per-archive cost limits, circuit
-   breakers, cancellation across instances.
-4. **Learning pipeline** (Phase 6): duplicate and contradiction detection at
-   scale, correction versioning, embedding refresh on approval, revocation and
-   deletion propagation with receipts.
-5. **Accessibility and evaluation** (Phase 7): axe scans on the five new
-   screens, realtime evaluation cases, latency and cost measurement.
-6. **A legal review** of the consent and learning documents, which has not
+3. **Load and failure testing under real conditions.** The reliability work in
+   Phase 5 is verified by tests, not by a real outage: backpressure was proved
+   with an injected socket, not a congested mobile network; the breaker with a
+   fake clock, not a provider that actually went down. **UNKNOWN**: how any of
+   it behaves under genuine load.
+4. **Real cost and latency figures.** The instrumentation is in place and the
+   ceilings work against it. The rate card is configuration and the numbers in
+   `REALTIME_COST_AND_LATENCY.md` are modelled, not measured.
+5. **A legal review** of the consent and learning documents, which has not
    happened and is not something this build can substitute for.
 
 **Do not deploy this to real people until §3 is empty and §6 is done.**
+
+---
+
+## 7. What would worry an experienced reviewer, stated first
+
+Rather than wait to be found:
+
+1. **Three adapters have never run.** Everything in §3. The local path is
+   complete and the hosted path is a careful guess at three protocols.
+2. **`retentionDays: 0` is a declaration.** Zero retention is a contractual
+   setting on a provider account. This code cannot verify it and does not
+   pretend to.
+3. **The citation-marker scheme is unproven with a real model.** Clauses cite
+   by passage number and the server resolves it. If a real model marks
+   inconsistently, the failure is safe — clauses are discarded and the
+   assistant abstains — but a product that abstains too often is not useful.
+   Measuring the discard rate is the first thing to do with credentials.
+4. **The circuit breaker is per process.** Two instances can disagree about
+   whether a provider is healthy. That costs one extra probe and is deliberate;
+   coordinating it would put a write on the path of every turn.
+5. **Duplicate detection is lexical.** Content-word coverage in both
+   directions. It will miss a genuine restatement in different words, which
+   surfaces to the storyteller as the same story suggested twice — annoying,
+   not dangerous, and the safe direction to fail in.
+6. **The interview is scripted, locally.** The local interviewer works from a
+   question bank and unresolved-reference detection. It is a real interviewer
+   in structure and a limited one in range. The hosted composer is what makes
+   it responsive, and it has not run.

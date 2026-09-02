@@ -4,4 +4,4 @@ dist
 coverage
 pnpm-lock.yaml
 *.md
-openapi.generated.json
+docs/openapi.json

@@ -124,3 +124,37 @@ voice conversation. Partial transcripts never become evidence. Biographical
 candidates never auto-approve. No cross-archive memory. No memory content in
 logs, analytics, traces, notification previews, email subjects or support
 dashboards.
+
+---
+
+## Outcome
+
+All eight phases are complete. What was actually delivered, and what was not:
+
+| Phase | Delivered | Verified by |
+| --- | --- | --- |
+| 0 | Baseline audit, architecture and transport decisions | `REALTIME_DECISION_LOG.md` RT-001…RT-012 |
+| 1 | Consent actions, learning policy, state machine, 16 tables | 178 unit tests across `consent` and `realtime` |
+| 2 | Deterministic vertical slice, end to end, no credentials | 32 slice tests |
+| 3 | Five screens, WebSocket media plane, browser client | 22 browser tests × 2 viewports; 17 transport tests |
+| 4 | Three hosted adapters behind the interfaces | 35 contract tests; **never executed against a real provider** |
+| 5 | Cross-instance revocation, ceilings, breakers, backpressure | breaker and narrowing tests; transport tests |
+| 6 | Conversations in export and deletion | 5 lifecycle tests measured against the database |
+| 7 | Live evaluations, accessibility, documentation | 48/48 eval cases; 36 axe scans, zero violations |
+
+**Final measurements**, all executed:
+
+- 398 unit and integration tests, 16 files
+- 88 browser tests across two viewports, 4 files
+- 48/48 evaluation cases; six release-blocking metrics met
+- 36 accessibility scans at WCAG 2.2 AA, zero violations
+- Local turn latency: retrieval p50 6 ms, first audio p50 9 ms, whole turn
+  p50 29 ms
+- Typecheck, lint and format clean
+
+**The reconciliation left open in Phase 0** — 54 browser tests recorded as
+UNKNOWN — is closed: the suite now runs 88 tests across two viewports and all
+pass.
+
+**What remains unknown** is stated in `REALTIME_PRODUCTION_READINESS.md` §3 and
+§7, and is dominated by one thing: no hosted provider has ever been called.
