@@ -39,6 +39,15 @@ const MAX_CONCURRENT_SESSIONS_PER_USER = 3;
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 
 /**
+ * How often a live connection re-reads its own session.
+ *
+ * Short, because it is the longest a silent conversation can stay open after
+ * somebody has withdrawn their consent on another device. One indexed read per
+ * live socket every five seconds is a price worth paying for that.
+ */
+const REVOCATION_SWEEP_MS = 5_000;
+
+/**
  * Frames held while a connection is still being admitted.
  *
  * A legitimate client sends exactly one — `session.hello` — and audio frames
@@ -47,6 +56,19 @@ const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
  * make the server hold anything on its behalf.
  */
 const MAX_PENDING_FRAMES = 16;
+
+/**
+ * How much unsent data may sit in the socket's own buffer.
+ *
+ * A browser on a slow connection cannot drain audio as fast as the server
+ * produces it, and `send` never blocks — the bytes simply accumulate in
+ * process memory until the machine is in trouble. Beyond this, audio is
+ * dropped and text is not: captions falling behind is a worse experience than
+ * a gap in the audio, and a transcript with a hole in it is a transcript that
+ * lies. Two seconds of 16 kHz PCM16 is 64 KB, so this is a few seconds of
+ * backlog rather than a hard ceiling on a healthy connection.
+ */
+const MAX_BUFFERED_BYTES = 512 * 1024;
 
 interface LiveConnection {
   driver: SessionDriver;
@@ -100,7 +122,25 @@ export async function registerRealtimeSocket(app: FastifyInstance, ctx: AppConte
     '/v1/archives/:archiveId/realtime-sessions/:sessionId/socket',
     { websocket: true },
     async (socket, request) => {
+      // Set once when audio starts being dropped, so the person is told rather
+      // than left wondering why the voice went quiet.
+      let droppedAudio = false;
+
       const send = (event: ServerEvent) => {
+        const buffered = (socket as { bufferedAmount?: number }).bufferedAmount ?? 0;
+        if (buffered > MAX_BUFFERED_BYTES && event.type === 'assistant.audio.chunk') {
+          if (!droppedAudio) {
+            droppedAudio = true;
+            send({
+              type: 'warning',
+              seq: 0,
+              code: 'connection_too_slow_for_audio',
+              message: 'The connection is slow, so this is text for now.',
+            });
+          }
+          return;
+        }
+        if (buffered <= MAX_BUFFERED_BYTES) droppedAudio = false;
         try {
           socket.send(JSON.stringify(event));
         } catch {
@@ -271,9 +311,29 @@ export async function registerRealtimeSocket(app: FastifyInstance, ctx: AppConte
       connections.set(sessionId, connection);
 
       const idle = setInterval(() => {
-        if (Date.now() - connection.lastActivity < IDLE_TIMEOUT_MS) return;
-        void driver.end('idle_timeout').finally(() => socket.close(4408, 'idle_timeout'));
-      }, 30_000);
+        void (async () => {
+          // Ended somewhere else — a storyteller withdrawing consent from
+          // another device, another API instance, or the archive being
+          // deleted. Consent is re-read before every decision point, so a
+          // *talking* session already obeys immediately; this is what reaches
+          // one that is sitting silent between turns.
+          const fresh = await loadSession(ctx, archiveId, sessionId).catch(() => undefined);
+          if (fresh?.ended_at) {
+            send({
+              type: 'error',
+              seq: 0,
+              code: fresh.ended_reason ?? 'session_ended',
+              message: 'This conversation has ended.',
+              fatal: true,
+            });
+            socket.close(4003, fresh.ended_reason ?? 'session_ended');
+            return;
+          }
+          if (Date.now() - connection.lastActivity < IDLE_TIMEOUT_MS) return;
+          await driver.end('idle_timeout').catch(() => undefined);
+          socket.close(4408, 'idle_timeout');
+        })();
+      }, REVOCATION_SWEEP_MS);
 
       /**
        * Removes this connection, and only this one.

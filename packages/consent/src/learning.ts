@@ -281,6 +281,55 @@ export function diffLearningPolicies(
 }
 
 /**
+ * True when one learning document permits strictly less than another.
+ *
+ * The obligation-level check above answers "may this turn still do what it was
+ * about to do". This one answers a different question, asked at the moment the
+ * policy is saved: has the storyteller just taken something away? It compares
+ * documents rather than obligations so the answer does not depend on what
+ * consent happens to allow today — a storyteller who switches off transcript
+ * retention has narrowed their policy whether or not consent was permitting it.
+ */
+export function isNarrowingDocument(
+  previous: LearningPolicyDocument | null,
+  next: LearningPolicyDocument,
+): boolean {
+  if (!previous) return false;
+
+  const retentionRank = { never: 0, session: 1, until_deleted: 2 } as const;
+  const rankOf = (value: string): number =>
+    value in retentionRank ? retentionRank[value as keyof typeof retentionRank] : 0;
+
+  if (rankOf(next.transcriptRetention) < rankOf(previous.transcriptRetention)) return true;
+  if (rankOf(next.audioRetention) < rankOf(previous.audioRetention)) return true;
+
+  const booleans = ['sessionContext', 'candidateExtraction'] as const;
+  if (booleans.some((key) => previous[key] && !next[key])) return true;
+
+  const providers = ['speechToText', 'speechSynthesis', 'composition'] as const;
+  if (providers.some((key) => previous.providerProcessing[key] && !next.providerProcessing[key])) {
+    return true;
+  }
+  if (
+    previous.providerProcessing.mode === 'named_providers' &&
+    next.providerProcessing.mode === 'local_only'
+  ) {
+    return true;
+  }
+
+  // A category that was allowed and no longer is.
+  const kept = new Set(next.candidateCategories);
+  if (previous.candidateCategories.some((category) => !kept.has(category))) return true;
+
+  const preferenceRank = { never: 0, ask_every_time: 1, auto_save: 2 } as const;
+  const preferenceOf = (value: string): number =>
+    value in preferenceRank ? preferenceRank[value as keyof typeof preferenceRank] : 0;
+  return (
+    preferenceOf(next.lowRiskPreferenceMemory) < preferenceOf(previous.lowRiskPreferenceMemory)
+  );
+}
+
+/**
  * True when the change narrows what a live session may do, which the session
  * must act on immediately rather than at the next turn.
  */

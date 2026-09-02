@@ -108,6 +108,15 @@ export interface TurnDeps {
   emit: (event: { type: 'clause'; clause: ClauseEmission }) => Promise<void>;
   token: CancellationToken;
   now?: () => number;
+  /**
+   * Why this turn will not be spoken aloud, if it will not be.
+   *
+   * Set when a spending ceiling has been reached or the speech provider's
+   * circuit is open. The turn still happens — it is retrieved, verified and
+   * shown as text — because losing the voice is an inconvenience and losing
+   * the conversation is losing what somebody was in the middle of saying.
+   */
+  textOnlyReason?: string | null;
 }
 
 /**
@@ -467,7 +476,8 @@ async function handleStreamEvent(args: {
       }
 
       const audio: ClauseEmission['audio'] = [];
-      for await (const chunk of ttsStream.speak(spokenText)) {
+      // Degraded to text: verified, cited and shown, but not spoken.
+      for await (const chunk of deps.textOnlyReason ? [] : ttsStream.speak(spokenText)) {
         if (deps.token.isCancelled) break;
         if (latency.firstAudioMs === null) latency.firstAudioMs = args.clock() - args.startedAt;
         audio.push({

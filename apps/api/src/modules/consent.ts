@@ -20,6 +20,8 @@ import {
 } from '@everecho/consent';
 import {
   cancelJobsForArchive,
+  endLiveSessions,
+  revokeReconnectTokens,
   findCurrentPolicy,
   insertPolicyVersion,
   listConsentRecords,
@@ -29,6 +31,7 @@ import {
   updateArchiveStatus,
 } from '@everecho/db';
 import { cacheKeys } from '@everecho/adapters';
+import { closeArchiveConnections } from '../realtime/ws';
 import { defineRoute } from '../http/route';
 import { withArchiveAccess } from '../lib/access';
 import { conflict, validationFailed } from '../errors';
@@ -264,8 +267,16 @@ export function registerConsentRoutes(app: FastifyInstance, ctx: AppContext): vo
           const narrowed =
             previousRow &&
             previousRow.document.activities.some((a) => !compiled.document.activities.includes(a));
+          let endedConversations = 0;
           if (narrowed) {
             cancelledJobs = await cancelJobsForArchive(tx, archive.id, 'consent_narrowed');
+            // A live conversation is running under permissions that no longer
+            // hold. Ended in the database first, so every API instance sees
+            // it, and then locally, so the socket this process holds stops
+            // within the same request rather than at the next sweep.
+            endedConversations = (await endLiveSessions(tx, archive.id, 'consent_narrowed')).length;
+            await revokeReconnectTokens(tx, archive.id, null);
+            await closeArchiveConnections(archive.id, 'consent_narrowed');
           }
           await ctx.cache.deletePrefix(cacheKeys.archivePrefix(archive.id));
 
@@ -275,7 +286,7 @@ export function registerConsentRoutes(app: FastifyInstance, ctx: AppContext): vo
           await ctx.analytics.track('consent_updated', {
             actorId: user.id,
             archiveId: archive.id,
-            props: { version: row.version, cancelledJobs },
+            props: { version: row.version, cancelledJobs, endedConversations },
           });
 
           return { policy: toConsentPolicy(row), changes, cancelledJobs };

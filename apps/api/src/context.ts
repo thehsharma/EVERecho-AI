@@ -1,5 +1,6 @@
 import { config as loadSharedConfig, branding, features, type AppConfig } from '@everecho/config';
 import { Database, db as sharedDb } from '@everecho/db';
+import { BreakerRegistry } from '@everecho/realtime';
 import {
   createAnalytics,
   createBilling,
@@ -46,6 +47,14 @@ export interface AppContext {
   ocr: OcrAdapter;
   branding: ReturnType<typeof branding>;
   features: ReturnType<typeof features>;
+  /**
+   * Provider circuit breakers, one per provider, for the life of the process.
+   *
+   * On the context rather than inside the realtime module because a breaker
+   * that is recreated per session learns that a provider is down once per
+   * conversation, which is once per conversation too late.
+   */
+  breakers: BreakerRegistry;
 }
 
 export function createContext(
@@ -86,5 +95,9 @@ export function createContext(
     ocr: createOcr(cfg),
     branding: branding(cfg),
     features: features(cfg),
+    breakers: new BreakerRegistry({
+      threshold: cfg.env.REALTIME_BREAKER_THRESHOLD,
+      cooldownMs: cfg.env.REALTIME_BREAKER_COOLDOWN_MS,
+    }),
   };
 }

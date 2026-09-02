@@ -255,3 +255,81 @@ confident sentence attached to the wrong source.
 
 **Reversal trigger.** A structured streaming format that carries citations
 natively.
+
+---
+
+## RT-018 — Revocation is written to the database, not only to open sockets
+
+**Decision.** Narrowing consent or the learning policy ends every live
+conversation in the archive with an UPDATE, and *then* closes the sockets this
+process holds. Each live connection also re-reads its own session every five
+seconds.
+
+**Why.** Closing the sockets one API instance happens to hold is not
+revocation; it is revocation on one machine. The only thing every instance
+shares is the database. A conversation mid-turn already obeys immediately —
+consent is re-read before every decision point — so the sweep exists for the
+one sitting silent between turns, which is exactly the case a person leaves
+open on a tablet and forgets about.
+
+**Reversal trigger.** A pub/sub channel every instance subscribes to would
+replace the sweep with a push. The database write stays either way: it is what
+makes the decision durable rather than in flight.
+
+---
+
+## RT-019 — Narrowing ends the conversation rather than trying to continue it
+
+**Decision.** A learning policy that permits strictly less than before ends
+every live session outright. Widening does not.
+
+**Why.** A conversation in flight has retrieval, composition and synthesis at
+different stages, each authorised a moment ago under rules that no longer hold.
+Working out which of that is still permitted is a guess, and the failure mode
+of guessing wrong is material a storyteller has just said they did not want.
+Ending it costs them a restart; the alternative costs them the thing they were
+trying to prevent. Widening is not narrowing and must not hang up on somebody
+who just granted more — a distinction with its own test.
+
+---
+
+## RT-020 — A spending ceiling degrades to text; it does not end the call
+
+**Decision.** Session, daily and archive-wide ceilings are checked before every
+assistant turn. Reaching one turns the voice off and says so. The conversation
+continues in text.
+
+**Why.** An unbounded voice session is an unbounded invoice, and the person
+holding the microphone has no idea what it is costing. But losing the voice is
+an inconvenience and losing the session is losing what somebody was in the
+middle of saying. The same reasoning applies to a speech provider whose circuit
+has opened.
+
+---
+
+## RT-021 — Under backpressure, audio is dropped and text is not
+
+**Decision.** When the socket's unsent buffer passes half a megabyte, audio
+frames are dropped and everything else is still sent. The person is told once.
+
+**Why.** `send` never blocks, so a browser on a slow connection does not slow
+the server down — it makes it accumulate. Something has to give, and audio is
+the right thing: a gap in the audio is a gap, while a transcript missing a
+clause is a transcript that lies about what was said.
+
+---
+
+## RT-022 — Everything a conversation produced is exported and deleted with it
+
+**Decision.** The export bundle carries the conversations word for word, their
+corrections, the summaries, every suggestion with the words it came from, every
+decision made about one, all learning-policy versions, and the requester's own
+preferences. Deletion removes all of it, and the stored audio objects before
+the rows that name them.
+
+**Why.** An export that covered uploads but not conversations would be quietly
+keeping something back, and a deletion that removed a memory but left the
+suggestion it came from would delete the memory while keeping the same words.
+Deleting the audio objects first matters for a different reason: cascading the
+rows away first would leave the audio in object storage with nothing pointing
+at it, which is the worst possible outcome — undeletable and unfindable.

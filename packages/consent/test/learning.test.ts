@@ -5,6 +5,7 @@ import {
   candidateRequiresReview,
   compileLearningPolicy,
   defaultLearningDocument,
+  isNarrowingDocument,
   deniedLearningObligations,
   diffLearningPolicies,
   isLowRiskPreference,
@@ -333,5 +334,57 @@ describe('policy change reporting', () => {
     expect(isNarrowing(wide, narrow)).toBe(true);
     expect(isNarrowing(narrow, wide)).toBe(false);
     expect(isNarrowing(wide, wide)).toBe(false);
+  });
+});
+
+describe('narrowing, as the storyteller sees it', () => {
+  const base = defaultLearningDocument();
+
+  it('is not narrowing when there was nothing before', () => {
+    expect(isNarrowingDocument(null, base)).toBe(false);
+  });
+
+  it('is not narrowing when nothing changed', () => {
+    expect(isNarrowingDocument(base, { ...base })).toBe(false);
+  });
+
+  it('notices keeping less of the conversation', () => {
+    const wider = { ...base, transcriptRetention: 'until_deleted' as const };
+    expect(isNarrowingDocument(wider, base)).toBe(true);
+    expect(isNarrowingDocument(base, wider)).toBe(false);
+  });
+
+  it('notices switching off suggestions', () => {
+    expect(isNarrowingDocument(base, { ...base, candidateExtraction: false })).toBe(true);
+  });
+
+  it('notices withdrawing a provider', () => {
+    const withProvider = {
+      ...base,
+      providerProcessing: {
+        ...base.providerProcessing,
+        mode: 'named_providers' as const,
+        speechToText: true,
+        namedProviders: ['deepgram'],
+      },
+    };
+    expect(isNarrowingDocument(withProvider, base)).toBe(true);
+  });
+
+  it('notices a category being taken away', () => {
+    const wider = {
+      ...base,
+      candidateCategories: [...base.candidateCategories, 'health' as const],
+    };
+    expect(isNarrowingDocument(wider, base)).toBe(true);
+  });
+
+  it('does not call a widening a narrowing', () => {
+    // The distinction matters: a narrowing ends every live conversation, and
+    // doing that to somebody who just granted *more* would be a bug they
+    // experience as the product hanging up on them.
+    const wider = { ...base, lowRiskPreferenceMemory: 'auto_save' as const };
+    expect(isNarrowingDocument(base, wider)).toBe(false);
+    expect(isNarrowingDocument(wider, base)).toBe(true);
   });
 });

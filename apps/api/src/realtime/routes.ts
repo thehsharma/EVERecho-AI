@@ -23,6 +23,7 @@ import {
   defaultLearningDocument,
   diffLearningPolicies,
   isLowRiskPreference,
+  isNarrowingDocument,
 } from '@everecho/consent';
 import {
   deleteInteractionPreference,
@@ -37,10 +38,12 @@ import {
   mintReconnectToken,
   readUsage,
   recordLearningDecision,
+  endLiveSessions,
   revokeReconnectTokens,
   upsertInteractionPreference,
 } from '@everecho/db';
 import { defineRoute } from '../http/route';
+import { closeArchiveConnections } from './ws';
 import { withArchiveAccess } from '../lib/access';
 import { conflict, notFound, validationFailed } from '../errors';
 import type { AppContext } from '../context';
@@ -720,10 +723,17 @@ export function registerRealtimeRoutes(app: FastifyInstance, ctx: AppContext): v
           // minted under the old policy stop working now rather than at expiry.
           await revokeReconnectTokens(tx, params.archiveId, null);
 
-          return {
-            policy: toLearningPolicyView(row),
-            changes: diffLearningPolicies(previous?.document ?? null, compiled.document),
-          };
+          // And a conversation already under way is running under rules the
+          // storyteller has just changed. Rather than guess which of its
+          // in-flight work is still permitted, it is ended: they can start
+          // another one immediately, under the rules they actually chose.
+          const changes = diffLearningPolicies(previous?.document ?? null, compiled.document);
+          if (isNarrowingDocument(previous?.document ?? null, compiled.document)) {
+            await endLiveSessions(tx, params.archiveId, 'learning_policy_narrowed');
+            await closeArchiveConnections(params.archiveId, 'learning_policy_narrowed');
+          }
+
+          return { policy: toLearningPolicyView(row), changes };
         },
       ),
   });

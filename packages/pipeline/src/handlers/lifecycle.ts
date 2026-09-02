@@ -18,13 +18,16 @@ export async function runExport({ ctx, tx, payload }: JobArgs): Promise<void> {
   const job = await tx.maybeOne<{
     id: string;
     archive_id: string;
+    requested_by_user_id: string | null;
     options: {
       includeOriginals?: boolean;
       includeTranscripts?: boolean;
       includeProvenance?: boolean;
     };
     status: string;
-  }>(`SELECT id, archive_id, options, status FROM export_job WHERE id = $1`, [exportId]);
+  }>(`SELECT id, archive_id, requested_by_user_id, options, status FROM export_job WHERE id = $1`, [
+    exportId,
+  ]);
   if (!job || job.status === 'ready') return;
 
   await tx.query(`UPDATE export_job SET status = 'running' WHERE id = $1`, [job.id]);
@@ -96,6 +99,68 @@ export async function runExport({ ctx, tx, payload }: JobArgs): Promise<void> {
     [job.archive_id],
   );
 
+  // Everything the conversations produced.
+  //
+  // An export that covered uploads but not conversations would be an export
+  // that quietly kept something back, which is the opposite of what an export
+  // is for. A person who spoke to this product for an hour gets the hour.
+  const conversations = await tx.query<Record<string, unknown>>(
+    `SELECT s.id, s.mode, s.state, s.language, s.started_at, s.ended_at, s.ended_reason,
+            coalesce(json_agg(json_build_object(
+              'index', t.idx, 'speaker', t.speaker, 'text', t.text,
+              'abstained', t.abstained, 'abstentionReason', t.abstention_reason,
+              'cancelled', t.cancelled, 'at', t.created_at
+            ) ORDER BY t.idx) FILTER (WHERE t.id IS NOT NULL AND t.is_final), '[]') AS turns
+     FROM realtime_session s LEFT JOIN realtime_turn t ON t.session_id = s.id
+     WHERE s.archive_id = $1 AND s.deleted_at IS NULL
+     GROUP BY s.id ORDER BY s.started_at`,
+    [job.archive_id],
+  );
+  const revisions = await tx.query<Record<string, unknown>>(
+    `SELECT r.turn_id, r.revision, r.text, r.reason, r.created_at
+     FROM transcript_revision r JOIN realtime_turn t ON t.id = r.turn_id
+     WHERE t.archive_id = $1 ORDER BY r.created_at`,
+    [job.archive_id],
+  );
+  const summaries = await tx.query<Record<string, unknown>>(
+    `SELECT session_id, text, model_name, model_version, prompt_version, created_at
+     FROM conversation_summary WHERE archive_id = $1 ORDER BY created_at`,
+    [job.archive_id],
+  );
+  const candidates = await tx.query<Record<string, unknown>>(
+    `SELECT c.id, c.session_id, c.kind, c.status, c.title, c.body, c.sensitivity,
+            c.evidence_class, c.confidence, c.occurred_on_value, c.occurred_on_precision,
+            c.topics, c.entity_names, c.place_name, c.requires_storyteller_review,
+            c.reviewed_at, c.review_note, c.approved_memory_id, c.duplicate_of_memory_id,
+            c.contradicts_memory_ids, c.extractor_name, c.extractor_version, c.created_at,
+            coalesce(json_agg(json_build_object(
+              'quotedText', e.quoted_text, 'firstHand', e.first_hand, 'turnId', e.turn_id
+            )) FILTER (WHERE e.id IS NOT NULL), '[]') AS evidence
+     FROM memory_candidate c LEFT JOIN memory_candidate_evidence e ON e.candidate_id = c.id
+     WHERE c.archive_id = $1 AND c.deleted_at IS NULL
+     GROUP BY c.id ORDER BY c.created_at`,
+    [job.archive_id],
+  );
+  const decisions = await tx.query<Record<string, unknown>>(
+    `SELECT candidate_id, session_id, decision, decided_by, note, created_at
+     FROM learning_decision WHERE archive_id = $1 ORDER BY created_at`,
+    [job.archive_id],
+  );
+  const learningPolicies = await tx.query<Record<string, unknown>>(
+    `SELECT version, document, policy_hash, effective_from, superseded_at
+     FROM learning_policy WHERE archive_id = $1 ORDER BY version`,
+    [job.archive_id],
+  );
+  // The requester's own preferences, and nobody else's: these are per-person,
+  // not per-archive, and exporting somebody else's would be a leak.
+  const preferences = job.requested_by_user_id
+    ? await tx.query<Record<string, unknown>>(
+        `SELECT key, value, origin, created_at, updated_at
+         FROM interaction_preference WHERE user_id = $1 ORDER BY key`,
+        [job.requested_by_user_id],
+      )
+    : [];
+
   addJson('metadata/archive.json', {
     name: archive.name,
     subject: archive.subject_display_name,
@@ -112,6 +177,14 @@ export async function runExport({ ctx, tx, payload }: JobArgs): Promise<void> {
     sources.map(({ storage_key: _ignored, ...rest }) => rest),
   );
   if (job.options.includeTranscripts !== false) addJson('metadata/transcripts.json', transcripts);
+
+  addJson('conversations/conversations.json', conversations);
+  addJson('conversations/corrections.json', revisions);
+  addJson('conversations/summaries.json', summaries);
+  addJson('conversations/suggestions.json', candidates);
+  addJson('conversations/decisions.json', decisions);
+  addJson('conversations/learning-history.json', learningPolicies);
+  addJson('conversations/your-preferences.json', preferences);
 
   if (job.options.includeOriginals !== false) {
     for (const source of sources) {
@@ -158,6 +231,8 @@ export async function runExport({ ctx, tx, payload }: JobArgs): Promise<void> {
         claimCount: claims.length,
         transcriptCount: transcripts.length,
         permissionCount: members.length,
+        conversationCount: conversations.length,
+        suggestionCount: candidates.length,
       }),
     ],
   );
@@ -174,6 +249,10 @@ function readme(ctx: PipelineContext, subject: string): string {
     '  originals/   Every file exactly as it was uploaded, unchanged.',
     '  metadata/    The memories, the claims made from them, and the exact place in the',
     '               original recording or document that each claim came from.',
+    '  conversations/  Every conversation held with the assistant, word for word, with any',
+    '               corrections that were made; everything it suggested keeping and what',
+    '               was decided about each one; every version of the settings that said',
+    '               what talking could be used for; and your own interface preferences.',
     '  manifest.json  A list of every file with a SHA-256 checksum, so you can verify',
     '               nothing has been altered since this export was made.',
     '',
@@ -182,7 +261,13 @@ function readme(ctx: PipelineContext, subject: string): string {
     '  actually said. Every claim records where it came from. Nothing here was invented,',
     `  and nothing simulates ${subject} speaking.`,
     '',
-    `Produced by ${ctx.branding.productName} v0.1. Questions: ${ctx.branding.supportEmail}`,
+    'About the conversations',
+    '  Recordings are not kept unless they were explicitly asked for, so the conversations',
+    '  folder holds text rather than audio. The assistant speaks in a generic synthetic',
+    `  voice that is not ${subject}'s, and no recording of anyone's voice was ever used to`,
+    '  make one.',
+    '',
+    `Produced by ${ctx.branding.productName} v0.2. Questions: ${ctx.branding.supportEmail}`,
     '',
   ].join('\n');
 }
@@ -209,9 +294,14 @@ function plan(scope: 'archive' | 'source' | 'memory'): DeletionStep[] {
   const common = [
     step('generated', 'Removing answers and generated text'),
     step('embeddings', 'Removing search indexes'),
+    // Before the memories they refer to: a suggestion holds the same words as
+    // the memory it produced, so deleting the memory and keeping the
+    // suggestion would delete nothing at all.
+    step('suggestions', 'Removing everything the conversations suggested'),
     step('claims', 'Removing claims and their evidence links'),
     step('memories', 'Removing story cards'),
     step('transcripts', 'Removing transcripts'),
+    step('conversations', 'Removing conversations and any recordings'),
     step('objects', 'Deleting stored files'),
     step('rows', 'Removing remaining records'),
     step('cache', 'Clearing caches'),
@@ -419,6 +509,68 @@ async function runStep(
         await tx.query(`DELETE FROM export_job WHERE archive_id = $1`, [archiveId]);
       }
       return rows.length;
+    }
+    case 'suggestions': {
+      // Suggestions carry the storyteller's own words. Whatever is being
+      // deleted, the copy held here goes with it.
+      const rows = await tx.query<{ id: string }>(
+        all
+          ? `DELETE FROM memory_candidate WHERE archive_id = $1 RETURNING id`
+          : `DELETE FROM memory_candidate
+              WHERE archive_id = $1 AND approved_memory_id = ANY($2::uuid[]) RETURNING id`,
+        all ? [archiveId] : [archiveId, scope.memoryIds],
+      );
+      // Decisions reference candidates with ON DELETE SET NULL, so they
+      // outlive the deletion unless they are removed explicitly. A decision
+      // note is something a person wrote about their own life.
+      await tx.query(
+        all
+          ? `DELETE FROM learning_decision WHERE archive_id = $1`
+          : `DELETE FROM learning_decision WHERE archive_id = $1 AND candidate_id IS NULL`,
+        [archiveId],
+      );
+      return rows.length;
+    }
+    case 'conversations': {
+      // Recordings first, while the rows that name them still exist: deleting
+      // the session would cascade the segments away and leave the audio itself
+      // sitting in object storage with nothing pointing at it.
+      const audio = await tx.query<{ storage_key: string | null }>(
+        all
+          ? `SELECT storage_key FROM realtime_audio_segment
+              WHERE archive_id = $1 AND storage_key IS NOT NULL`
+          : `SELECT storage_key FROM realtime_audio_segment
+              WHERE archive_id = $1 AND storage_key IS NOT NULL
+                AND source_asset_id = ANY($2::uuid[])`,
+        all ? [archiveId] : [archiveId, scope.sourceIds],
+      );
+      for (const segment of audio) {
+        if (segment.storage_key)
+          await ctx.storage.delete(segment.storage_key).catch(() => undefined);
+      }
+      await tx.query(
+        `UPDATE realtime_audio_segment
+            SET storage_key = NULL, storage_status = 'deleted', retention_state = 'deleted',
+                deleted_at = now()
+          WHERE archive_id = $1 AND storage_key IS NOT NULL`,
+        [archiveId],
+      );
+
+      if (!all) return audio.length;
+
+      // Everything else cascades from the session: participants, reconnect
+      // tokens, events, turns and their revisions, audio rows, interruptions,
+      // summaries and usage.
+      const sessions = await tx.query<{ id: string }>(
+        `DELETE FROM realtime_session WHERE archive_id = $1 RETURNING id`,
+        [archiveId],
+      );
+      // Safety events may have no session, so they do not all cascade.
+      await tx.query(`DELETE FROM realtime_safety_event WHERE archive_id = $1`, [archiveId]);
+      // The learning policy is a record of what the storyteller allowed. It
+      // goes with the archive, and only with the archive.
+      await tx.query(`DELETE FROM learning_policy WHERE archive_id = $1`, [archiveId]);
+      return sessions.length;
     }
     case 'cache':
       return ctx.cache.deletePrefix(`archive:${archiveId}:`);

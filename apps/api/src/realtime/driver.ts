@@ -1,5 +1,10 @@
 import type { ClientEvent, RealtimeState, ServerEvent } from '@everecho/contracts';
-import { acceptsAudio, isSpeakingOrThinking, type AudioFrame } from '@everecho/realtime';
+import {
+  acceptsAudio,
+  checkBudget,
+  isSpeakingOrThinking,
+  type AudioFrame,
+} from '@everecho/realtime';
 import { authorize, type Actor, type Decision, type Obligations } from '@everecho/consent';
 import {
   attachSession,
@@ -12,6 +17,7 @@ import {
   nextSequence,
   recordAuditEvent,
   recordEvent,
+  readSpend,
   recordUsage,
   toConsentPolicy,
   toLearningPolicy,
@@ -137,6 +143,75 @@ export class SessionDriver {
         },
       });
     });
+  }
+
+  /**
+   * Why this turn should not be spoken aloud, if it should not be.
+   *
+   * Two independent reasons, both of which degrade rather than refuse:
+   *
+   * A spending ceiling. An unbounded voice session is an unbounded invoice,
+   * and the person holding the microphone has no idea what it is costing.
+   * Three windows are checked — this conversation, today, this month — because
+   * a single long conversation and a hundred short ones are different problems.
+   *
+   * A speech provider that is not answering. Without the breaker every turn
+   * would wait for a timeout, cost a request, and leave the person wondering
+   * what they did wrong.
+   *
+   * Neither applies to a local provider, which costs nothing and cannot be
+   * down: the meter and the breaker both key off whether material actually
+   * leaves the host.
+   */
+  private async speechRestriction(): Promise<string | null> {
+    const { ctx, session, providers } = this.deps;
+    if (!providers.tts.capabilities.sendsDataOffHost) return null;
+
+    const breaker = ctx.breakers.for(providers.tts.capabilities.name);
+    if (!breaker.allows()) return 'speech_provider_unavailable';
+
+    const spend = await ctx.db.withArchiveScope(session.archive_id, (tx) =>
+      readSpend(tx, session.archive_id, session.id),
+    );
+    const decision = checkBudget({
+      spentThisSessionMinor: spend.sessionMinor,
+      sessionBudgetMinor: ctx.cfg.env.REALTIME_SESSION_BUDGET_MINOR,
+      spentTodayMinor: spend.todayMinor,
+      dailyLimitMinor: ctx.cfg.env.REALTIME_DAILY_LIMIT_MINOR,
+      spentThisMonthMinor: spend.monthMinor,
+      archiveCapMinor: ctx.cfg.env.REALTIME_ARCHIVE_CAP_MINOR,
+    });
+    return decision.allowed ? null : decision.reason;
+  }
+
+  /**
+   * Runs a turn and tells the breakers what happened.
+   *
+   * Success and failure are both reported, because a breaker that only ever
+   * hears about failures never closes again. A turn that was already degraded
+   * to text reports nothing about the speech provider: not calling it is not
+   * evidence that it recovered.
+   */
+  private async throughBreakers<T>(
+    textOnlyReason: string | null,
+    run: () => Promise<T>,
+  ): Promise<T> {
+    const { ctx, providers } = this.deps;
+    const involved = [
+      providers.llm.capabilities.sendsDataOffHost ? providers.llm.capabilities.name : null,
+      !textOnlyReason && providers.tts.capabilities.sendsDataOffHost
+        ? providers.tts.capabilities.name
+        : null,
+    ].filter((name): name is string => name !== null);
+
+    try {
+      const result = await run();
+      for (const name of involved) ctx.breakers.for(name).succeeded();
+      return result;
+    } catch (error) {
+      for (const name of involved) ctx.breakers.for(name).failed();
+      throw error;
+    }
   }
 
   private async emitState(reason: string | null = null): Promise<void> {
@@ -509,62 +584,80 @@ export class SessionDriver {
       findArchive(tx, session.archive_id),
     );
 
+    // What the deployment can still afford, and whether the speech provider is
+    // answering. Both degrade the turn to text rather than refusing it: a
+    // person mid-sentence should not lose the conversation because a ceiling
+    // was reached or a provider went down.
+    const textOnlyReason = await this.speechRestriction();
+    if (textOnlyReason) {
+      const warnSeq = await this.allocateSequence();
+      await this.deps.emit({
+        type: 'warning',
+        seq: warnSeq,
+        code: textOnlyReason,
+        message: 'Continuing in text for now. You can keep talking.',
+      });
+    }
+
     let spokeAnything = false;
 
-    const outcome = await ctx.db.withArchiveScope(session.archive_id, async (tx) =>
-      runAssistantTurn(
-        {
-          ctx,
-          tx,
-          llm: providers.llm,
-          tts: providers.tts,
-          session,
-          obligations: decision.obligations satisfies Obligations,
-          policyVersion: decision.policyVersion,
-          subjectName: archive?.subject_display_name ?? 'the storyteller',
-          token,
-          now: this.clock,
-          emit: async ({ clause }) => {
-            if (!spokeAnything) {
-              spokeAnything = true;
-              await this.move('SPEECH_SYNTHESIS_STARTED');
-            }
-            const textSeq = await this.allocateSequence();
-            await this.deps.emit({
-              type: 'assistant.text.delta',
-              seq: textSeq,
-              turnIndex: assistantTurn.idx,
-              clauseIndex: clause.clauseIndex,
-              text: clause.text,
-            });
-            const citeSeq = await this.allocateSequence();
-            await this.deps.emit({
-              type: 'assistant.citation',
-              seq: citeSeq,
-              turnIndex: assistantTurn.idx,
-              clauseIndex: clause.clauseIndex,
-              claim: clause.claim,
-            });
-            for (const chunk of clause.audio) {
-              if (token.isCancelled) break;
-              const audioSeq = await this.allocateSequence();
+    const outcome = await this.throughBreakers(textOnlyReason, () =>
+      ctx.db.withArchiveScope(session.archive_id, async (tx) =>
+        runAssistantTurn(
+          {
+            ctx,
+            tx,
+            llm: providers.llm,
+            tts: providers.tts,
+            session,
+            obligations: decision.obligations satisfies Obligations,
+            policyVersion: decision.policyVersion,
+            subjectName: archive?.subject_display_name ?? 'the storyteller',
+            token,
+            now: this.clock,
+            textOnlyReason,
+            emit: async ({ clause }) => {
+              if (!spokeAnything) {
+                spokeAnything = true;
+                await this.move('SPEECH_SYNTHESIS_STARTED');
+              }
+              const textSeq = await this.allocateSequence();
               await this.deps.emit({
-                type: 'assistant.audio.chunk',
-                seq: audioSeq,
+                type: 'assistant.text.delta',
+                seq: textSeq,
                 turnIndex: assistantTurn.idx,
                 clauseIndex: clause.clauseIndex,
-                audio: Buffer.from(chunk.data).toString('base64'),
-                sampleRate: chunk.sampleRate,
-                durationMs: chunk.durationMs,
+                text: clause.text,
               });
-            }
+              const citeSeq = await this.allocateSequence();
+              await this.deps.emit({
+                type: 'assistant.citation',
+                seq: citeSeq,
+                turnIndex: assistantTurn.idx,
+                clauseIndex: clause.clauseIndex,
+                claim: clause.claim,
+              });
+              for (const chunk of clause.audio) {
+                if (token.isCancelled) break;
+                const audioSeq = await this.allocateSequence();
+                await this.deps.emit({
+                  type: 'assistant.audio.chunk',
+                  seq: audioSeq,
+                  turnIndex: assistantTurn.idx,
+                  clauseIndex: clause.clauseIndex,
+                  audio: Buffer.from(chunk.data).toString('base64'),
+                  sampleRate: chunk.sampleRate,
+                  durationMs: chunk.durationMs,
+                });
+              }
+            },
           },
-        },
-        {
-          userTurn: finalText,
-          assistantTurnId: assistantTurn.id,
-          turnIndex: assistantTurn.idx,
-        },
+          {
+            userTurn: finalText,
+            assistantTurnId: assistantTurn.id,
+            turnIndex: assistantTurn.idx,
+          },
+        ),
       ),
     );
 

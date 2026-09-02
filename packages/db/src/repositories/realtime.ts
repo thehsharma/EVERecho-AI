@@ -445,6 +445,62 @@ export async function listLiveSessions(
   );
 }
 
+/**
+ * Ends every live conversation in an archive, in the database.
+ *
+ * The durable half of revocation. Closing the sockets this process happens to
+ * hold reaches one API instance; a storyteller who withdraws consent is
+ * withdrawing it from all of them, and the only thing every instance shares is
+ * the database. A driver on another instance sees the ended row on its next
+ * decision point or on the connection sweep, and stops.
+ */
+export async function endLiveSessions(
+  q: Queryable,
+  archiveId: string,
+  reason: string,
+): Promise<RealtimeSessionRow[]> {
+  return q.query<RealtimeSessionRow>(
+    `UPDATE realtime_session
+        SET state = 'ENDED', ended_at = now(), ended_reason = $2, last_activity_at = now()
+      WHERE archive_id = $1 AND ended_at IS NULL AND deleted_at IS NULL
+      RETURNING *`,
+    [archiveId, reason],
+  );
+}
+
+/**
+ * What a conversation has cost, and what the archive has spent around it.
+ *
+ * Three windows in one query because a budget decision needs all three and a
+ * live turn should not wait on three round trips to find out whether it may
+ * speak.
+ */
+export async function readSpend(
+  q: Queryable,
+  archiveId: string,
+  sessionId: string,
+): Promise<{ sessionMinor: number; todayMinor: number; monthMinor: number }> {
+  const row = await q.maybeOne<{
+    session_minor: string | null;
+    today_minor: string | null;
+    month_minor: string | null;
+  }>(
+    `SELECT
+       coalesce(sum(estimated_cost_minor) FILTER (WHERE session_id = $2), 0) AS session_minor,
+       coalesce(sum(estimated_cost_minor) FILTER (WHERE updated_at >= date_trunc('day', now())), 0)
+         AS today_minor,
+       coalesce(sum(estimated_cost_minor) FILTER (WHERE updated_at >= date_trunc('month', now())), 0)
+         AS month_minor
+     FROM realtime_provider_usage WHERE archive_id = $1`,
+    [archiveId, sessionId],
+  );
+  return {
+    sessionMinor: Number(row?.session_minor ?? 0),
+    todayMinor: Number(row?.today_minor ?? 0),
+    monthMinor: Number(row?.month_minor ?? 0),
+  };
+}
+
 export async function recordUsage(
   q: Queryable,
   input: {

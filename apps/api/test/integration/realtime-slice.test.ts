@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ServerEvent } from '@everecho/contracts';
 import { defaultLearningDocument } from '@everecho/consent';
+import { drainQueue, type PipelineContext } from '@everecho/pipeline';
 import { synthesiseSilence, synthesiseTone } from '@everecho/realtime';
 import { findSession, type RealtimeSessionRow } from '@everecho/db';
 import {
@@ -679,5 +680,144 @@ describe('duplicate delivery is a no-op', () => {
     // The same event, delivered twice — a retry after a flaky socket.
     await driver.handle({ type: 'session.hello', clientEventId: 'd-hello', protocolVersion: 1 });
     expect(events.length).toBe(afterFirst);
+  });
+});
+
+describe('everything the conversation remembered can be taken back', () => {
+  /**
+   * The promise being tested is not "there is an export button". It is that a
+   * person who spoke to this product for an hour can get the hour, and can
+   * make it stop existing. An export that covered uploads but not conversations
+   * would be quietly keeping something back; a deletion that left the
+   * suggestions behind would delete the memory and keep the same words.
+   */
+  const runWorker = () => drainQueue(h.ctx as unknown as PipelineContext, { workerId: 'test' });
+
+  it('puts the conversation, and what it suggested, in the export', async () => {
+    const created = await storyteller.post<{ export: { id: string } }>(
+      `/v1/archives/${archiveId}/exports`,
+      { includeOriginals: true, includeTranscripts: true, includeProvenance: true, format: 'zip' },
+    );
+    expect(created.status).toBe(202);
+    await runWorker();
+
+    const list = await storyteller.get<{
+      exports: {
+        id: string;
+        status: string;
+        downloadUrl: string | null;
+        manifest: { conversationCount: number; suggestionCount: number } | null;
+      }[];
+    }>(`/v1/archives/${archiveId}/exports`);
+    const job = list.body.exports.find((e) => e.id === created.body.export.id)!;
+    expect(job.status).toBe('ready');
+    expect(job.manifest!.conversationCount).toBeGreaterThan(0);
+    expect(job.manifest!.suggestionCount).toBeGreaterThan(0);
+
+    const url = new URL(job.downloadUrl!);
+    const response = await h.app.inject({ method: 'GET', url: `${url.pathname}${url.search}` });
+    const zip = response.rawPayload;
+    for (const path of [
+      'conversations/conversations.json',
+      'conversations/suggestions.json',
+      'conversations/decisions.json',
+      'conversations/learning-history.json',
+      'conversations/your-preferences.json',
+    ]) {
+      expect(zip.includes(Buffer.from(path))).toBe(true);
+    }
+    // Their actual words, not a summary of them.
+    expect(zip.includes(Buffer.from('Pune'))).toBe(true);
+  });
+
+  it('ends every live conversation the moment the rules are narrowed', async () => {
+    const created = await storyteller.post<{ session: { id: string } }>(
+      `/v1/archives/${archiveId}/realtime-sessions`,
+      { mode: 'interview', language: 'en' },
+    );
+    const sessionId = created.body.session.id;
+
+    const narrowed = await storyteller.put(`/v1/archives/${archiveId}/learning-policy`, {
+      document: { ...defaultLearningDocument(), candidateExtraction: false },
+    });
+    expect(narrowed.status).toBe(200);
+
+    const row = await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      findSession(tx, archiveId, sessionId),
+    );
+    // Ended in the database, so an API instance that is not this one sees it
+    // too. Consent is re-read before every decision point, so a talking
+    // session already obeys; this is what reaches one sitting between turns.
+    expect(row?.ended_at).not.toBeNull();
+    expect(row?.ended_reason).toBe('learning_policy_narrowed');
+  });
+
+  it('does not hang up on somebody who granted more', async () => {
+    const created = await storyteller.post<{ session: { id: string } }>(
+      `/v1/archives/${archiveId}/realtime-sessions`,
+      { mode: 'interview', language: 'en' },
+    );
+    const widened = await storyteller.put(`/v1/archives/${archiveId}/learning-policy`, {
+      document: { ...defaultLearningDocument(), transcriptRetention: 'until_deleted' },
+    });
+    expect(widened.status).toBe(200);
+
+    const row = await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      findSession(tx, archiveId, created.body.session.id),
+    );
+    expect(row?.ended_at).toBeNull();
+  });
+
+  it('leaves nothing behind when the archive is deleted', async () => {
+    const created = await storyteller.post<{ deletionRequest: { id: string } }>(
+      `/v1/archives/${archiveId}/deletion-requests`,
+      { scope: 'archive', confirmationPhrase: 'Kamala’s stories' },
+    );
+    expect(created.status).toBe(202);
+    await runWorker();
+
+    const counts = await h.ctx.db.one<{
+      sessions: number;
+      turns: number;
+      candidates: number;
+      evidence: number;
+      decisions: number;
+      policies: number;
+      summaries: number;
+      safety: number;
+    }>(
+      `SELECT
+         (SELECT count(*) FROM realtime_session WHERE archive_id = $1)::int AS sessions,
+         (SELECT count(*) FROM realtime_turn WHERE archive_id = $1)::int AS turns,
+         (SELECT count(*) FROM memory_candidate WHERE archive_id = $1)::int AS candidates,
+         (SELECT count(*) FROM memory_candidate_evidence e
+            JOIN memory_candidate c ON c.id = e.candidate_id
+           WHERE c.archive_id = $1)::int AS evidence,
+         (SELECT count(*) FROM learning_decision WHERE archive_id = $1)::int AS decisions,
+         (SELECT count(*) FROM learning_policy WHERE archive_id = $1)::int AS policies,
+         (SELECT count(*) FROM conversation_summary WHERE archive_id = $1)::int AS summaries,
+         (SELECT count(*) FROM realtime_safety_event WHERE archive_id = $1)::int AS safety`,
+      [archiveId],
+    );
+    expect(counts).toEqual({
+      sessions: 0,
+      turns: 0,
+      candidates: 0,
+      evidence: 0,
+      decisions: 0,
+      policies: 0,
+      summaries: 0,
+      safety: 0,
+    });
+  });
+
+  it('still proves the deletion happened', async () => {
+    // The tombstone outlives what it describes, on purpose: proving a deletion
+    // took place requires that the record of it survives the deletion.
+    const tombstone = await h.ctx.db.maybeOne<{ action: string }>(
+      `SELECT action FROM audit_event WHERE archive_id = $1 AND action = 'archive.deleted'`,
+      [archiveId],
+    );
+    expect(tombstone?.action).toBe('archive.deleted');
   });
 });

@@ -513,7 +513,7 @@ describe('reconnection', () => {
     expect(error?.code).toBe('reconnect_token_invalid');
   });
 
-  it('refuses a token minted before the learning policy narrowed', async () => {
+  it('will not resume a conversation whose rules the storyteller has narrowed', async () => {
     const sessionId = await newSession();
     const minted = await storyteller.post<{ reconnect: { token: string } }>(
       `/v1/archives/${archiveId}/realtime-sessions/${sessionId}/reconnect-token`,
@@ -533,7 +533,17 @@ describe('reconnection', () => {
       origin,
     });
     const error = result.events.find((e) => e.type === 'error') as { code: string } | undefined;
-    expect(error?.code).toBe('reconnect_token_invalid');
+    // Two things now stop this, and the more truthful one is reported first:
+    // narrowing ends the conversation outright rather than only invalidating
+    // its tokens, so there is nothing left to resume. The token is invalid too
+    // — the replay test above covers that on its own.
+    expect(error?.code).toBe('realtime_session_not_live');
+
+    const ended = await storyteller.get<{ session: { state: string; endedReason: string | null } }>(
+      `/v1/archives/${archiveId}/realtime-sessions/${sessionId}`,
+    );
+    expect(ended.body.session.state).toBe('ENDED');
+    expect(ended.body.session.endedReason).toBe('learning_policy_narrowed');
   });
 });
 

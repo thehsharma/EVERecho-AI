@@ -26,6 +26,8 @@ export const exportJobSchema = z.object({
       claimCount: z.number().int(),
       transcriptCount: z.number().int(),
       permissionCount: z.number().int(),
+      conversationCount: z.number().int(),
+      suggestionCount: z.number().int(),
     })
     .nullable(),
   error: z.string().nullable(),

@@ -137,6 +137,23 @@ export const envSchema = z.object({
    */
   REALTIME_VOICE_ID: z.string().default('assistant-neutral-en-v1'),
 
+  /**
+   * Spending ceilings for live conversation, in minor units.
+   *
+   * An unbounded voice session is an unbounded invoice, and the person holding
+   * the microphone has no idea what it is costing. Reaching a ceiling degrades
+   * the conversation to text rather than ending it: losing the voice is an
+   * inconvenience, losing the session is losing what somebody was in the
+   * middle of saying.
+   */
+  REALTIME_SESSION_BUDGET_MINOR: int(0, 100_000_000).default(6_000),
+  REALTIME_DAILY_LIMIT_MINOR: int(0, 100_000_000).default(30_000),
+  REALTIME_ARCHIVE_CAP_MINOR: int(0, 1_000_000_000).default(300_000),
+  /** Consecutive provider failures before the breaker opens. */
+  REALTIME_BREAKER_THRESHOLD: int(1, 100).default(3),
+  /** How long it stays open before one request is allowed through. */
+  REALTIME_BREAKER_COOLDOWN_MS: int(1_000, 600_000).default(30_000),
+
   // ---- Email / notifications ---------------------------------------------
   EMAIL_DRIVER: z.enum(['local', 'smtp', 'resend']).default('local'),
   EMAIL_FROM: z.email().default('no-reply@everecho.example'),

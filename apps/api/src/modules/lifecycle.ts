@@ -282,6 +282,11 @@ async function toExport(ctx: AppContext, row: ExportRow) {
           claimCount: row.manifest.claimCount ?? 0,
           transcriptCount: row.manifest.transcriptCount ?? 0,
           permissionCount: row.manifest.permissionCount ?? 0,
+          // Defaulted rather than required: an export produced before
+          // conversations existed has a manifest without these, and a
+          // person's old export should still open.
+          conversationCount: row.manifest.conversationCount ?? 0,
+          suggestionCount: row.manifest.suggestionCount ?? 0,
         }
       : null,
     error: row.error,
