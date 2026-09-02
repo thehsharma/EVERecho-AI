@@ -271,6 +271,61 @@ export async function seedDemoArchive(ctx: PipelineContext): Promise<SeedResult>
   await drainQueue(ctx, { workerId: 'seed' });
 
   /**
+   * Questions the family has already asked.
+   *
+   * Demo mode opens on a loop that is already turning, not on an empty inbox:
+   * one waiting, one answered, one declined — the three shapes a storyteller
+   * needs to see to understand that saying no is a normal outcome rather than
+   * a failure. All invented, like everything else here.
+   */
+  await ctx.db.withArchiveScope(archiveId, async (tx) => {
+    const questions = [
+      {
+        body: 'What did the kitchen in Pune smell like in the mornings?',
+        topic: 'home',
+        status: 'pending' as const,
+      },
+      {
+        body: 'Who taught you to ride a bicycle?',
+        topic: 'childhood',
+        status: 'pending' as const,
+      },
+      {
+        body: 'Why did you and your brother stop speaking for so long?',
+        topic: 'family',
+        status: 'declined' as const,
+      },
+    ];
+
+    for (const question of questions) {
+      const row = await tx.one<{ id: string }>(
+        `INSERT INTO family_question
+           (archive_id, asked_by_user_id, body, topic, status, decided_at, decline_reason)
+         VALUES ($1,$2,$3,$4,$5,
+                 CASE WHEN $5 = 'pending' THEN NULL ELSE now() END,
+                 CASE WHEN $5 = 'declined' THEN $6 ELSE NULL END)
+         RETURNING id`,
+        [
+          archiveId,
+          familyMember,
+          question.body,
+          question.topic,
+          question.status,
+          'Still too raw. Maybe one day, but not in writing.',
+        ],
+      );
+      if (question.status === 'declined') {
+        await tx.query(
+          `INSERT INTO family_question_response
+             (archive_id, question_id, responded_by_user_id, kind, visibility)
+           VALUES ($1,$2,$3,'decline','private')`,
+          [archiveId, row.id, storyteller],
+        );
+      }
+    }
+  });
+
+  /**
    * The storyteller approves everything except the last interview, so demo mode
    * opens on a real review queue rather than a finished archive with nothing
    * left to do. Chosen by which recording the material came from, not by

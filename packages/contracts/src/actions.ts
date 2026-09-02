@@ -128,6 +128,14 @@ export const actionSchema = z.enum([
   'learning.preference.write',
   'learning.preference.delete',
 
+  // The family growth loop (v0.3)
+  'familyQuestion.create',
+  'familyQuestion.read',
+  'familyQuestion.respond',
+  'familyQuestion.decline',
+  'familyQuestion.restrict',
+  'familyQuestion.withdraw',
+
   // Prohibited in v0.1 — present so refusal is explicit and testable
   'perform.synthesise_voice',
   'perform.synthesise_likeness',
@@ -173,6 +181,7 @@ export const resourceTypeSchema = z.enum([
   'learning_policy',
   'memory_candidate',
   'interaction_preference',
+  'family_question',
 ]);
 export type ResourceType = z.infer<typeof resourceTypeSchema>;
 
@@ -225,5 +234,9 @@ export const denyReasonSchema = z.enum([
   'learning_policy_expired',
   'realtime_session_not_live',
   'cross_archive_learning_denied',
+  // v0.3 — the family growth loop
+  'question_not_yours',
+  'question_already_decided',
+  'answer_not_for_you',
 ]);
 export type DenyReason = z.infer<typeof denyReasonSchema>;

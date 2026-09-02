@@ -9,6 +9,14 @@ interface Item {
   label: string;
   /** Shown only when the caller's role includes this capability. */
   requires?: string;
+  /**
+   * Roles this entry is pointless for.
+   *
+   * The storyteller technically may ask themselves a question — every action
+   * is in their role — but offering it would be confusing rather than
+   * permissive.
+   */
+  notFor?: readonly string[];
 }
 
 interface Group {
@@ -31,12 +39,21 @@ function groupsFor(): Group[] {
         { href: '/biography', label: 'Biography', requires: 'biography.read' },
         { href: '/people', label: 'People', requires: 'entity.read' },
         { href: '/ask', label: 'Ask a question', requires: 'question.ask' },
+        // Asking the archive and asking the person are different things, and
+        // the difference is the whole product. Two entries, deliberately.
+        {
+          href: '/questions',
+          label: 'Ask the storyteller',
+          requires: 'familyQuestion.create',
+          notFor: ['storyteller'],
+        },
         { href: '/talk', label: 'Talk out loud', requires: 'realtime.session.read' },
       ],
     },
     {
       heading: 'Recording',
       items: [
+        { href: '/inbox', label: 'Questions for you', requires: 'familyQuestion.respond' },
         { href: '/interview', label: 'Guided interview', requires: 'interview.start' },
         { href: '/sources', label: 'Uploads', requires: 'source.read' },
         { href: '/memories', label: 'Review stories', requires: 'memory.read' },
@@ -75,8 +92,9 @@ function groupsFor(): Group[] {
 export function ArchiveNav({ archive }: { archive: Archive }) {
   const pathname = usePathname();
   const base = `/archives/${archive.id}`;
-  const can = (capability?: string) =>
-    !capability || archive.viewerCapabilities.includes(capability);
+  const can = (item: Item) =>
+    (!item.requires || archive.viewerCapabilities.includes(item.requires)) &&
+    !(item.notFor ?? []).includes(archive.viewerRole);
 
   return (
     <nav className="archive-nav" aria-label="Archive sections">
@@ -84,7 +102,7 @@ export function ArchiveNav({ archive }: { archive: Archive }) {
         {archive.subjectDisplayName}
       </p>
       {groupsFor().map((group) => {
-        const items = group.items.filter((item) => can(item.requires));
+        const items = group.items.filter((item) => can(item));
         if (items.length === 0) return null;
         return (
           <div key={group.heading}>

@@ -57,6 +57,9 @@ export async function approveCandidate(
     );
   }
 
+  // Where the words came from. A conversation is promoted to a source on the
+  // first approval from it; an answer to a family question was already promoted
+  // when it was given, because the person who asked could cite it immediately.
   const sessionId = candidate.session_id;
   const sourceAssetId = sessionId
     ? await ensureConversationSource(ctx, tx, {
@@ -64,11 +67,11 @@ export async function approveCandidate(
         sessionId,
         policyVersion: input.policyVersion,
       })
-    : null;
+    : (evidence.find((e) => e.source_asset_id)?.source_asset_id ?? null);
 
   if (!sourceAssetId) {
     throw conflict(
-      'This suggestion is not linked to a conversation and cannot be approved yet.',
+      'This suggestion is not linked to a source and cannot be approved yet.',
       'candidate_no_source',
     );
   }
@@ -77,7 +80,7 @@ export async function approveCandidate(
     `INSERT INTO memory
        (archive_id, title, body, status, origin, sensitivity, evidence_class,
         occurred_on, occurred_precision, topics)
-     VALUES ($1,$2,$3,'approved','interview',$4,$5,$6,$7,$8)
+     VALUES ($1,$2,$3,'approved',$9,$4,$5,$6,$7,$8)
      RETURNING id`,
     [
       input.archiveId,
@@ -91,6 +94,10 @@ export async function approveCandidate(
       candidate.occurred_on_value,
       candidate.occurred_on_precision,
       candidate.topics,
+      // A conversation is an interview; an answer to a family question is the
+      // storyteller writing something down. Both are their own words, and the
+      // difference is worth keeping in the record.
+      candidate.session_id ? 'interview' : 'storyteller_written',
     ],
   );
 
@@ -138,13 +145,16 @@ export async function approveCandidate(
 
   for (const item of evidence) {
     // Each piece of conversational evidence becomes a transcript segment on the
-    // conversation source, so the citation resolves to an exact span.
-    const segmentId = await ensureSegmentForTurn(tx, {
-      archiveId: input.archiveId,
-      sourceAssetId,
-      turnId: item.turn_id,
-      text: item.quoted_text,
-    });
+    // conversation source, so the citation resolves to an exact span. An answer
+    // already has its segment: it was written when the answer was given.
+    const segmentId =
+      item.transcript_segment_id ??
+      (await ensureSegmentForTurn(tx, {
+        archiveId: input.archiveId,
+        sourceAssetId,
+        turnId: item.turn_id,
+        text: item.quoted_text,
+      }));
 
     await tx.query(
       `INSERT INTO claim_evidence
@@ -160,7 +170,7 @@ export async function approveCandidate(
           segmentId ? { kind: 'transcript_segment', segmentId } : { kind: 'whole_asset' },
         ),
         item.quoted_text,
-        'conversation_extraction',
+        candidate.session_id ? 'conversation_extraction' : 'answer_extraction',
         EXTRACTOR_VERSION,
         EXTRACTION_PROMPT_VERSION,
         input.policyVersion,

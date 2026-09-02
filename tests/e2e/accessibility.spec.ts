@@ -180,6 +180,51 @@ test.describe('a family member’s conversation screens meet WCAG 2.2 AA', () =>
   });
 });
 
+test.describe('the family loop screens meet WCAG 2.2 AA', () => {
+  test.use({ storageState: 'tests/e2e/.auth/storyteller.json' });
+
+  test('the storyteller’s inbox, at rest and with an answer open', async ({ page, browser }) => {
+    const archiveId = await openDemoArchive(page);
+
+    // Asked here rather than relying on one being left over from another
+    // spec. A test that only checks something when earlier tests happen to
+    // leave the right state behind is a test that silently stops checking.
+    const asker = await browser.newContext({ storageState: 'tests/e2e/.auth/family.json' });
+    const askerPage = await asker.newPage();
+    await askerPage.goto(`/archives/${archiveId}/questions`);
+    await askerPage
+      .getByLabel('What would you like to ask?')
+      .fill(`What was the walk to school like? ${Date.now()}`);
+    await askerPage.getByRole('button', { name: 'Send this question' }).click();
+    await expect(askerPage.getByText('Sent. It is in their own time now.')).toBeVisible({
+      timeout: 15000,
+    });
+    await asker.close();
+
+    const atRest = await scan(page, `/archives/${archiveId}/inbox`);
+    expect(describeViolations(atRest.violations)).toBe('');
+
+    // The state that matters: a textarea, a radio group and three buttons that
+    // all appeared after the page loaded.
+    const first = page.locator('.card').filter({ hasText: 'Asked by' }).first();
+    await first.getByRole('button', { name: 'Answer this' }).click();
+    await expect(page.getByRole('group', { name: 'Who should see this?' })).toBeVisible();
+
+    const open = await new AxeBuilder({ page }).withTags(STANDARD).analyze();
+    expect(describeViolations(open.violations)).toBe('');
+  });
+});
+
+test.describe('a family member’s question screen meets WCAG 2.2 AA', () => {
+  test.use({ storageState: 'tests/e2e/.auth/family.json' });
+
+  test('asking, and reading what came back', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    const results = await scan(page, `/archives/${archiveId}/questions`);
+    expect(describeViolations(results.violations)).toBe('');
+  });
+});
+
 test.describe('keyboard and focus', () => {
   test.use({ storageState: 'tests/e2e/.auth/family.json' });
 

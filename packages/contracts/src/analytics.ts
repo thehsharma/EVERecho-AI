@@ -46,6 +46,12 @@ export const analyticsEventNameSchema = z.enum([
   'realtime_candidate_rejected',
   'learning_policy_updated',
   'preference_auto_saved',
+  // v0.3 — the family growth funnel. Every one of these carries counts,
+  // booleans and enums only; the schema below refuses strings.
+  'family_question_asked',
+  'family_question_decided',
+  'family_question_answer_read',
+  'family_question_candidate_approved',
 ]);
 export type AnalyticsEventName = z.infer<typeof analyticsEventNameSchema>;
 

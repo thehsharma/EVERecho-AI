@@ -71,6 +71,11 @@ const EXPLANATIONS: Record<DenyReason, string> = {
   learning_policy_expired: 'The storyteller’s learning policy has expired and needs renewing.',
   realtime_session_not_live: 'This conversation has already ended.',
   cross_archive_learning_denied: 'Learning never crosses between archives.',
+  question_not_yours: 'You can only see questions you asked.',
+  question_already_decided: 'This question has already been answered or closed.',
+  // Deliberately says nothing about who *can* see it, or that a narrower
+  // answer exists: "not for you" is the whole message.
+  answer_not_for_you: 'This answer was shared with someone else.',
 };
 
 /** Which refusal a failed learning gate produces. Exhaustive by construction. */

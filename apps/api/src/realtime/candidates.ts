@@ -154,12 +154,28 @@ export interface StoredCandidate {
  * about a date is a fact about the archive, and silently picking one would be
  * the system deciding what is true about somebody's life.
  */
+/**
+ * Where a candidate came from.
+ *
+ * Exactly one origin, always — a conversational turn or an answer the
+ * storyteller gave to a family question. The database enforces the same thing
+ * with `memory_candidate_has_one_origin`, because a candidate with no origin
+ * could reach approval with nothing to cite.
+ */
+export type CandidateOrigin =
+  | { kind: 'conversation'; sessionId: string; turnId: string }
+  | {
+      kind: 'question_answer';
+      responseId: string;
+      sourceAssetId: string;
+      transcriptSegmentId: string | null;
+    };
+
 export async function storeCandidates(
   tx: Transaction,
   input: {
     archiveId: string;
-    sessionId: string;
-    turnId: string;
+    origin: CandidateOrigin;
     candidates: readonly ExtractedCandidate[];
     obligations: LearningObligations;
     learningPolicyId: string | null;
@@ -208,15 +224,16 @@ export async function storeCandidates(
 
     const row = await tx.one<{ id: string }>(
       `INSERT INTO memory_candidate
-         (archive_id, session_id, kind, title, body, occurred_on_value, occurred_on_precision,
+         (archive_id, session_id, family_question_response_id, kind, title, body,
+          occurred_on_value, occurred_on_precision,
           topics, entity_names, place_name, data_categories, sensitivity, evidence_class,
           confidence, duplicate_of_memory_id, duplicate_of_candidate_id, contradicts_memory_ids,
           extractor_name, extractor_version, prompt_version, requires_storyteller_review)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+       VALUES ($1,$2,$22,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
        RETURNING id`,
       [
         input.archiveId,
-        input.sessionId,
+        input.origin.kind === 'conversation' ? input.origin.sessionId : null,
         candidate.kind,
         candidate.title,
         candidate.body,
@@ -237,23 +254,29 @@ export async function storeCandidates(
         EXTRACTOR_VERSION,
         EXTRACTION_PROMPT_VERSION,
         requiresReview,
+        input.origin.kind === 'question_answer' ? input.origin.responseId : null,
       ],
     );
 
-    // The evidence link. The database trigger refuses this if the turn is not
-    // final and uncancelled, so a partial transcript cannot become a source.
+    // The evidence link. For a conversation the database trigger refuses this
+    // if the turn is not final and uncancelled, so a partial transcript cannot
+    // become a source. An answer is final by definition — the storyteller
+    // pressed send — and links to the source it was promoted to.
     await tx.query(
       `INSERT INTO memory_candidate_evidence
-         (archive_id, candidate_id, turn_id, locator, quoted_text, first_hand, speaker_label)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+         (archive_id, candidate_id, turn_id, source_asset_id, transcript_segment_id,
+          locator, quoted_text, first_hand, speaker_label)
+       VALUES ($1,$2,$3,$8,$9,$4,$5,$6,$7)`,
       [
         input.archiveId,
         row.id,
-        input.turnId,
+        input.origin.kind === 'conversation' ? input.origin.turnId : null,
         JSON.stringify({ kind: 'text_range', startChar: 0, endChar: candidate.quotedText.length }),
         candidate.quotedText,
         candidate.firstHand,
         candidate.firstHand ? 'storyteller' : 'reported',
+        input.origin.kind === 'question_answer' ? input.origin.sourceAssetId : null,
+        input.origin.kind === 'question_answer' ? input.origin.transcriptSegmentId : null,
       ],
     );
 
@@ -261,7 +284,7 @@ export async function storeCandidates(
       await recordLearningDecision(tx, {
         archiveId: input.archiveId,
         candidateId: row.id,
-        sessionId: input.sessionId,
+        sessionId: input.origin.kind === 'conversation' ? input.origin.sessionId : null,
         decision: 'deduplicated',
         decidedBy: 'system',
         learningPolicyId: input.learningPolicyId,

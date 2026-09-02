@@ -184,6 +184,31 @@ export const ACTION_REQUIREMENTS: Record<Action, ActionRequirement> = {
   'learning.preference.write': req({ mutates: true }),
   'learning.preference.delete': req({ mutates: true }),
 
+  // The family growth loop (v0.3).
+  //
+  // Asking reads no content — a question is the asker's own words — but it does
+  // require a recipient grant, because somebody with no relationship to the
+  // archive has no standing to put a question in front of the storyteller.
+  // `readsContent` is true so that the recipient grant, the sensitivity ceiling
+  // and the restricted-topic list are all applied by the same code that governs
+  // everything else.
+  'familyQuestion.create': req({ minMode: 'organise', readsContent: true, mutates: true }),
+  'familyQuestion.read': req({ minMode: 'organise', readsContent: true }),
+  // Answering is the storyteller's alone. A steward or a buyer answering a
+  // question about somebody else's life would be putting words in their mouth,
+  // which is the one thing this product exists not to do.
+  'familyQuestion.respond': req({
+    minMode: 'organise',
+    activity: 'transcription',
+    storytellerOnly: true,
+    mutates: true,
+  }),
+  'familyQuestion.decline': req({ minMode: 'organise', storytellerOnly: true, mutates: true }),
+  'familyQuestion.restrict': req({ minMode: 'organise', storytellerOnly: true, mutates: true }),
+  // The asker may take back their own question. Not storyteller-only: it is
+  // their question, and withdrawing it is not a claim about anybody's life.
+  'familyQuestion.withdraw': req({ minMode: 'organise', mutates: true }),
+
   'perform.synthesise_voice': req({}),
   'perform.synthesise_likeness': req({}),
   'perform.persona_chat': req({}),
@@ -246,6 +271,11 @@ const READER_ACTIONS: readonly Action[] = [
   'learning.preference.read',
   'learning.preference.write',
   'learning.preference.delete',
+  // Asking the storyteller a question, and reading the answer they chose to
+  // give. Listed here so consent decides who may ask, not the role table.
+  'familyQuestion.create',
+  'familyQuestion.read',
+  'familyQuestion.withdraw',
 ];
 
 export const ROLE_ACTIONS: Record<Role, readonly Action[]> = {

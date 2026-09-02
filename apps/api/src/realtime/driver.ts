@@ -723,8 +723,7 @@ export class SessionDriver {
     const stored = await ctx.db.withArchiveScope(session.archive_id, (tx) =>
       storeCandidates(tx, {
         archiveId: session.archive_id,
-        sessionId: session.id,
-        turnId: input.turnId,
+        origin: { kind: 'conversation', sessionId: session.id, turnId: input.turnId },
         candidates,
         obligations: decision.obligations.learning,
         learningPolicyId: session.learning_policy_id,
