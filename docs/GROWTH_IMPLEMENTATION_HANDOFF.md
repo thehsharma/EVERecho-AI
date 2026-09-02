@@ -29,7 +29,16 @@ Verified: 438 unit and integration tests (14 new), 129 browser tests (23 new),
 48 accessibility scans with zero violations, 48/48 evaluations, `pnpm verify`
 clean.
 
-**Phase 3 next:** private capsules and the gift/reservation flow.
+**Phase 3, capsules: complete.** Recipient-scoped, embargoed, expiring,
+withdrawable, audited on refusal as well as on open, and unable to widen
+consent — a story made more private leaves the capsule on its own.
+
+Verified: 453 unit and integration tests (15 new), 141 browser tests (15 new),
+50 accessibility scans with zero violations, 48/48 evaluations, `pnpm verify`
+clean.
+
+**Next, in order:** the gift/reservation flow (Phase 3's second half), then gap
+radar and multilingual (Phase 4), then portability (Phase 5).
 
 The traceability matrix (`docs/GROWTH_TRACEABILITY_MATRIX.md`) is the live
 status. Anything marked `planned` there is not built. Anything marked `done`

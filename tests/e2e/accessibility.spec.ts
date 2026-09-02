@@ -245,6 +245,23 @@ test.describe('the review queue meets WCAG 2.2 AA', () => {
   });
 });
 
+test.describe('the capsule screens meet WCAG 2.2 AA', () => {
+  test.use({ storageState: 'tests/e2e/.auth/storyteller.json' });
+
+  test('the list, and the form with every option open', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    const list = await scan(page, `/archives/${archiveId}/capsules`);
+    expect(describeViolations(list.violations)).toBe('');
+
+    // Two checkbox groups, two date pickers and a warning that appears with
+    // them — none of it on the page until the form opens.
+    await page.getByRole('button', { name: 'Make a capsule' }).click();
+    await expect(page.getByRole('group', { name: 'Which stories?' })).toBeVisible();
+    const form = await new AxeBuilder({ page }).withTags(STANDARD).analyze();
+    expect(describeViolations(form.violations)).toBe('');
+  });
+});
+
 test.describe('keyboard and focus', () => {
   test.use({ storageState: 'tests/e2e/.auth/family.json' });
 

@@ -51,13 +51,19 @@ Updated after each vertical slice. Nothing is marked done before its tests run.
 
 ### Slice 3: Capsules, gift and reservation
 
+**Capsules: done.** 15 integration tests, 15 browser tests, 2 accessibility
+scans with zero violations. **Gift and reservation: planned.**
+
 | Requirement | Implementation | Proof | Status |
 | --- | --- | --- | --- |
-| Recipient-scoped capsule with expiry, embargo, download denial | | | planned |
-| Immediate revocation and access audit history | | | planned |
-| Authentication by default; scoped expiring tokens only when enabled | | | planned |
-| No indexing, public metadata, previews or private text in notifications | | | planned |
-| A capsule never broadens the consent of its sources | | | planned |
+| Recipient-scoped capsule with expiry, embargo, download denial | `story_capsule` + `capsule_grant`; `requireOpenCapsule` re-checks all four on every read | `capsules.test.ts` "will not open before its time", "will not open after it expires" | done |
+| Immediate revocation and access audit history | `POST …/revoke`; `capsule_access_event` records opens *and* refusals | "stops the moment it is withdrawn"; "records who opened it and who was turned away" | done |
+| Authentication by default; scoped expiring tokens only when enabled | Every route is `auth: 'required'` behind `withArchiveAccess`. **No token path exists at all** — there is no public capsule and no "anyone with the link" mode, and the schema offers no way to ask for one | "reports it as missing to somebody outside the archive" | done |
+| No indexing, public metadata, previews or private text in notifications | No public route; analytics carry counts only; the revocation reason is never returned to a recipient | "the reason the storyteller gave is not sent to the recipient" | done |
+| A capsule never broadens the consent of its sources | The reader's own sensitivity ceiling is applied to the capsule's contents on every open | "drops a story that was made more private after the capsule was built" | done |
+| Taking a copy is separate from reading | `capsule.download` gated by the `export` activity, the grant's `mayExport` and the capsule's own `allowDownload` | `EXPORTING_ACTIONS` in `authorize()`; stated in the UI at the moment of the decision | done |
+| Only a storyteller may make one | `capsule.create` is storyteller-only; the screen offers creation only when the API reports the capability | "refuses to let a family member make one"; E2E "is not offered a way to make one" | done |
+| Archive isolation | Forced RLS on all four new tables | "never returns one archive’s capsules in another’s scope" | done |
 | Buyer may reserve; cannot consent for the storyteller or gain access by paying | | | planned |
 | Private acceptance and private decline | | | planned |
 | Refund / reservation-release state; no card data stored | | | planned |

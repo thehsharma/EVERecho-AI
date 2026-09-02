@@ -223,6 +223,21 @@ export const ACTION_REQUIREMENTS: Record<Action, ActionRequirement> = {
   'contribution.reject': req({ minMode: 'organise', storytellerOnly: true, mutates: true }),
   'contribution.withdraw': req({ minMode: 'organise', mutates: true }),
 
+  // Capsules (v0.3).
+  //
+  // Making one is the storyteller's; opening one requires the recipient grant
+  // that governs everything else, because a capsule narrows what consent
+  // permits and can never widen it.
+  'capsule.create': req({ minMode: 'explore', storytellerOnly: true, mutates: true }),
+  'capsule.update': req({ minMode: 'explore', storytellerOnly: true, mutates: true }),
+  'capsule.revoke': req({ minMode: 'explore', storytellerOnly: true, mutates: true }),
+  'capsule.read': req({ minMode: 'explore', readsContent: true }),
+  'capsule.open': req({ minMode: 'explore', readsContent: true }),
+  // Taking a copy is governed by the same `export` activity and `mayExport`
+  // grant as any other export, *and* by the capsule's own download setting. A
+  // copy outlives every revocation, so both have to say yes.
+  'capsule.download': req({ minMode: 'explore', activity: 'export', readsContent: true }),
+
   'perform.synthesise_voice': req({}),
   'perform.synthesise_likeness': req({}),
   'perform.persona_chat': req({}),
@@ -293,6 +308,11 @@ const READER_ACTIONS: readonly Action[] = [
   // Every reader may see what has been proposed and what became of it: the
   // review trail is part of trusting the archive, not a private queue.
   'contribution.read',
+  // Opening a capsule somebody made for you. Whether this particular capsule
+  // is yours is decided per capsule, not by the role table.
+  'capsule.read',
+  'capsule.open',
+  'capsule.download',
 ];
 
 export const ROLE_ACTIONS: Record<Role, readonly Action[]> = {

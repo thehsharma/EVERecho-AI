@@ -85,6 +85,7 @@ function groupsFor(): Group[] {
           requires: 'learning.policy.read',
         },
         { href: '/members', label: 'People with access', requires: 'membership.read' },
+        { href: '/capsules', label: 'Capsules', requires: 'capsule.read' },
         { href: '/consent/history', label: 'Consent history', requires: 'consent.history.read' },
         { href: '/audit', label: 'Activity', requires: 'audit.read' },
         { href: '/succession', label: 'Continuity', requires: 'succession.read' },

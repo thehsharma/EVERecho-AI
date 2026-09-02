@@ -140,3 +140,49 @@ the new contribution actions would have been permitted by role and would have
 bypassed the storyteller's decision entirely. Being a family member is not the
 same as being invited to add to somebody's life story, and the storyteller
 decides which.
+
+---
+
+## G-010 — There is no capsule link, only a capsule
+
+**Decision.** No token, no "anyone with the link", no public capsule. A capsule
+is read by a named, authenticated recipient or it is not read. The schema
+offers no way to ask for anything else.
+
+**Why.** The brief permits "narrowly scoped expiring tokens only when
+explicitly enabled". Every one of the failures this feature is meant to prevent
+— a forwarded link, a replayed token, a link that outlives its revocation —
+exists only because the token exists. Nothing in the product needs one today,
+and adding the capability now would mean maintaining a defence against an
+attack we could simply not have.
+
+**Reversal trigger.** A real recipient who cannot be given an account —
+somebody elderly without email, most likely. Then a token, scoped to one
+capsule, single-use, short-lived, and audited on every redemption.
+
+---
+
+## G-011 — A refusal is written on a separate connection
+
+**Decision.** When a capsule read is refused, the access event is written
+through a fresh archive-scoped transaction, not the one about to roll back.
+
+**Why.** Found by a test. The refusal was being recorded inside the
+transaction that the refusal itself aborted, so it vanished — which would have
+made "somebody tried to open this after I withdrew it" unanswerable. That is
+the single question the access log exists to answer, and the bug would have
+left it silently unanswerable rather than visibly broken.
+
+---
+
+## G-012 — The frontend offers only what the API reports
+
+**Decision.** Every screen that renders a decision control — approve a
+proposal, make a capsule, withdraw one — gates it on the capability the API
+returned for this viewer, not on an assumption about their role.
+
+**Why.** Found twice in one build: a contributor was shown "Accept this" on
+their own suggestion, and a family member was shown "Make a capsule" for
+somebody else's archive. Neither was an authorisation hole — the server refused
+both — but a button that will be refused is a promise the product does not
+keep, and a person who meets two of them stops believing the third.

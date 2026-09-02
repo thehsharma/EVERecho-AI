@@ -79,6 +79,11 @@ const EXPLANATIONS: Record<DenyReason, string> = {
   proposal_not_yours: 'You can only change suggestions you made.',
   proposal_already_decided: 'The storyteller has already decided on this one.',
   proposal_target_missing: 'What this was about is no longer in the archive.',
+  capsule_not_yours: 'This was not shared with you.',
+  capsule_revoked: 'The storyteller has withdrawn this.',
+  capsule_embargoed: 'This is not open yet.',
+  capsule_expired: 'This is no longer available.',
+  capsule_download_not_permitted: 'This can be read here, but not downloaded.',
 };
 
 /** Which refusal a failed learning gate produces. Exhaustive by construction. */
@@ -129,6 +134,13 @@ function learningGateSatisfied(
 function deny(reasonCode: DenyReason, policyVersion: string): Decision {
   return { effect: 'DENY', reasonCode, policyVersion, explanation: EXPLANATIONS[reasonCode] };
 }
+
+/** Everything that takes a copy out of the archive. A copy outlives revocation. */
+const EXPORTING_ACTIONS: readonly Action[] = [
+  'export.create',
+  'export.download',
+  'capsule.download',
+];
 
 /** Everything that adds material to somebody else's archive. */
 const CONTRIBUTION_ACTIONS: readonly Action[] = [
@@ -386,7 +398,7 @@ export function authorize(input: AuthorizeInput): Decision {
       if (SENSITIVITY_RANK[resourceSensitivity] > SENSITIVITY_RANK[grant.maxSensitivity]) {
         return deny('sensitivity_above_grant', policyVersion);
       }
-      if ((action === 'export.download' || action === 'export.create') && !grant.mayExport) {
+      if (EXPORTING_ACTIONS.includes(action) && !grant.mayExport) {
         return deny('export_not_permitted', policyVersion);
       }
       // Contributing is a grant, not a role. A relative may be trusted to read
