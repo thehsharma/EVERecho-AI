@@ -1,0 +1,22 @@
+{
+  "name": "@everecho/adapters",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@everecho/config": "workspace:*",
+    "@everecho/contracts": "workspace:*",
+    "zod": "4.5.4",
+    "@aws-sdk/client-s3": "3.1122.0",
+    "@aws-sdk/s3-request-presigner": "3.1123.0",
+    "ioredis": "6.0.0",
+    "nodemailer": "9.1.0",
+    "stripe": "22.6.0"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "7.0.5"
+  }
+}

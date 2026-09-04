@@ -1,0 +1,127 @@
+<div class="part-divider">
+  <div class="kicker">Part II</div>
+  <h2>The manual</h2>
+  <p>
+    How to run it, what every screen does, which command to type, and what to do when something
+    breaks.
+  </p>
+</div>
+
+<h2 id="sec-9">9&nbsp;&nbsp;Getting it running</h2>
+
+<p class="lede">
+  Node&nbsp;22+, pnpm&nbsp;10+ and PostgreSQL&nbsp;16. Nothing else, and no paid API keys &mdash;
+  every provider has a working local adapter.
+</p>
+
+<h3>First run, from a clean checkout</h3>
+<pre><code>git clone &lt;this repository&gt; &amp;&amp; cd EVERecho-AI
+pnpm install
+cp .env.example .env          # the defaults work as they are
+
+createdb everecho             # or: psql -c 'CREATE DATABASE everecho'
+
+pnpm db:migrate               # applies the eight numbered migrations
+pnpm db:seed                  # builds a synthetic demonstration archive</code></pre>
+
+<p>Then start the three processes, each in its own terminal:</p>
+
+<pre><code>pnpm dev:api                  # http://localhost:4000
+pnpm dev:worker               # background processing
+pnpm dev:web                  # http://localhost:3000</code></pre>
+
+<p>
+  Open <code>http://localhost:3000/demo</code> and sign in as any of the demonstration accounts.
+  There is a shortcut: <code>pnpm setup</code> runs install, migrate and seed in one step.
+</p>
+
+<div class="callout ok">
+  <span class="label">Why there are no API keys</span>
+  <p>
+    Every external provider &mdash; language model, embeddings, speech-to-text, OCR, storage, cache,
+    email, payments &mdash; sits behind an adapter interface with a working local implementation.
+    The whole product runs, end to end, with <code>LLM_DRIVER=local</code> and nothing purchased.
+    Swapping to a hosted provider is an environment variable, not a code change.
+  </p>
+</div>
+
+<h3>The five demonstration accounts</h3>
+<p>
+  All five use the password <code>demo-passphrase-2026</code>. Every person and story in the seeded
+  archive is invented; no real personal data is bundled with this repository.
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 22%">Sign in as</th>
+      <th style="width: 34%">Email</th>
+      <th>What they see</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>The storyteller</strong></td>
+      <td><code>kamala@everecho.example</code></td>
+      <td>Everything, including drafts awaiting her review</td>
+    </tr>
+    <tr>
+      <td><strong>Who set it up</strong></td>
+      <td><code>anil@everecho.example</code></td>
+      <td>Membership and billing &mdash; <strong>no memories at all</strong></td>
+    </tr>
+    <tr>
+      <td><strong>A family member</strong></td>
+      <td><code>anjali@everecho.example</code></td>
+      <td>Approved stories, the timeline, cited answers</td>
+    </tr>
+    <tr>
+      <td><strong>A contributor</strong></td>
+      <td><code>ravi@everecho.example</code></td>
+      <td>The same, plus proposing corrections</td>
+    </tr>
+    <tr>
+      <td><strong>Support</strong></td>
+      <td><code>support@everecho.example</code></td>
+      <td>Operational metadata only, never content</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>The environment, in the parts that matter</h3>
+<div class="kv">
+  <div><span>QUEUE_DRIVER</span><span>postgres</span></div>
+  <div><span>STORAGE_DRIVER</span><span>local &nbsp;&rarr;&nbsp; s3 in production</span></div>
+  <div><span>CACHE_DRIVER</span><span>memory &nbsp;&rarr;&nbsp; redis in production</span></div>
+  <div>
+    <span>AUTH_DRIVER</span><span>local &mdash; <em>refused in production</em></span>
+  </div>
+  <div>
+    <span>LLM_DRIVER / EMBEDDINGS_DRIVER</span><span>local (deterministic, extractive)</span>
+  </div>
+  <div><span>STT_DRIVER / OCR_DRIVER</span><span>local</span></div>
+  <div><span>AI_PROVIDER_NO_TRAINING</span><span>true (cannot be set false)</span></div>
+  <div><span>AI_PROVIDER_RETENTION_DAYS</span><span>0</span></div>
+  <div><span>EMBEDDINGS_DIM</span><span>256</span></div>
+  <div><span>UPLOAD_MAX_BYTES</span><span>524 288 000 (500&nbsp;MB)</span></div>
+  <div><span>STORAGE_SIGNED_URL_TTL_SECONDS</span><span>300</span></div>
+  <div><span>SESSION_TTL_SECONDS</span><span>1 209 600 (14 days)</span></div>
+</div>
+
+<p style="margin-top: 4mm">
+  Configuration is validated by Zod at startup. A missing or malformed value stops the process with
+  a readable message rather than failing later in a request. <code>AUTH_DRIVER=local</code> is
+  explicitly refused when <code>NODE_ENV=production</code> &mdash; which means, accurately, that
+  there is currently <em>no production authentication path</em>. That is item 4 on the blocking
+  list.
+</p>
+
+<div class="callout warn">
+  <span class="label">With Docker instead</span>
+  <p>
+    <code>docker compose -f infra/docker/docker-compose.yml up</code> adds Redis, MinIO and
+    pgvector. The Compose configuration validates, but it was <strong>never executed</strong> in the
+    session that produced it, because the Docker daemon was not reachable. Treat the first run as
+    unverified: watch the migrate step.
+  </p>
+</div>

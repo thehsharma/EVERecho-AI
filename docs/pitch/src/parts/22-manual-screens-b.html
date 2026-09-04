@@ -1,0 +1,109 @@
+<div class="page-break"></div>
+<h3>11.2&nbsp;&nbsp;The archive, as a family member sees it</h3>
+<p>
+  Signed in as Anjali &mdash; Kamala's daughter, role <code>family</code> &mdash; the archive shows
+  approved material only. The navigation itself is authorisation-aware: sections she has no grant
+  for are absent rather than present-and-disabled, because a disabled control still tells her
+  something exists.
+</p>
+
+<figure>
+  {{IMG:05-archive-overview-family.png}}
+  <figcaption>
+    <strong>Figure 5 &mdash; Archive overview.</strong> What is in the archive, when it was last
+    added to, and where to start. The left-hand navigation is what a family member gets: the
+    archive, and nothing under <em>Control</em> beyond what her grant permits.
+  </figcaption>
+</figure>
+
+<figure class="tall">
+  {{IMG:06-timeline.png}}
+  <figcaption>
+    <strong>Figure 6 &mdash; Timeline.</strong> Approved memories in chronological order, with the
+    date range each was placed in and the source it came from. A memory with an uncertain date says
+    so rather than guessing a year to keep the ordering tidy.
+  </figcaption>
+</figure>
+
+<figure class="full">
+  {{IMG:07-biography.png}}
+  <figcaption>
+    <strong>Figure 7 &mdash; Biography.</strong> A short life account assembled only from approved
+    memories, in the third person throughout, with every passage traceable to its source. It is
+    explicitly a draft: the storyteller can edit it, and the provenance line at the foot records
+    which composer and which consent policy produced it.
+  </figcaption>
+</figure>
+
+<div class="page-break"></div>
+<h3>11.3&nbsp;&nbsp;Asking the archive a question</h3>
+<p>
+  This is the screen where the product's whole argument is either true or false. Two figures follow:
+  one where the archive answers, and one where it refuses. The second is the more important of the
+  two.
+</p>
+
+<figure>
+  {{IMG:08-ask-with-citation.png}}
+  <figcaption>
+    <strong>Figure 8 &mdash; An answer, with its sources.</strong> Note what is on screen: the
+    answer is labelled <em>AI-assisted</em> and
+    <em>"Written about Kamala Deshpande, not as them"</em>; each sentence carries a source count and
+    an evidence label (<em>Said directly</em>); the quoted passage is shown inline with its origin
+    &mdash; <code>session-05-money.webm (audio) at 0:40</code>; one claim is flagged
+    <em>"The recordings disagree about this"</em> rather than being resolved silently; and the
+    footer records the composer and the consent policy version under which the answer was produced.
+  </figcaption>
+</figure>
+
+<figure>
+  {{IMG:09-ask-abstains.png}}
+  <figcaption>
+    <strong>Figure 9 &mdash; The archive declines.</strong> Asked something the recordings do not
+    support, the system returns the fixed abstention sentence &mdash;
+    <em>"I don't have enough evidence in this archive to answer that reliably"</em> &mdash; with no
+    guess, no softening and no hint about what it might be withholding. In the evaluation suite this
+    behaviour is 100% consistent across every no-evidence and sensitive-topic case.
+  </figcaption>
+</figure>
+
+<div class="callout ok">
+  <span class="label">Read Figure 8 and Figure 9 together</span>
+  <p>
+    An archive that always answers is worthless, because the family cannot tell the real answers
+    from the invented ones. The value of Figure 8 is created entirely by the existence of Figure 9.
+  </p>
+</div>
+
+<div class="page-break"></div>
+<h3>11.4&nbsp;&nbsp;The storyteller's own screens</h3>
+<p>
+  Signed in as Kamala, three things appear that nobody else can reach: the review queue, the
+  permissions screen, and the controls over her own data.
+</p>
+
+<figure class="tall">
+  {{IMG:10-review-queue.png}}
+  <figcaption>
+    <strong>Figure 10 &mdash; Review stories.</strong> Nothing reaches the family until it has been
+    through here. Each candidate memory shows the passage it came from and the recording it was
+    derived from, and can be approved, edited or rejected outright. The item from
+    <code>session-04-family.webm</code> is left unapproved by the seed precisely so this boundary
+    can be demonstrated.
+  </figcaption>
+</figure>
+
+<figure class="full">
+  {{IMG:11-permissions.png}}
+  <figcaption>
+    <strong>Figure 11 &mdash; Permissions.</strong> The consent model as the storyteller experiences
+    it, in plain language: the four available modes as radio buttons ("Keep it safe, and nothing
+    else" through "Also let it answer questions and draft a biography"); the six processing
+    activities as independent checkboxes, with the note that
+    <em>each of these is a separate decision</em>; who may see it, and separately whether they may
+    download it; off-limits topics (<code>money</code> is set here); and specific recordings to
+    leave alone. At the foot, the three things that are true whatever she chooses &mdash; no voice
+    or likeness synthesis, no model training, always exportable and always deletable &mdash; and the
+    note that saving writes a new version rather than erasing the old one.
+  </figcaption>
+</figure>

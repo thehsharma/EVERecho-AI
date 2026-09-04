@@ -1,0 +1,247 @@
+<div class="page-break"></div>
+<h2 id="sec-6">
+  6&nbsp;&nbsp;Horizon 1: from &ldquo;runs on a laptop&rdquo; to &ldquo;safe to launch&rdquo;
+</h2>
+
+<div class="horizon">
+  <span class="h-n">Horizon 1</span>
+  <span>Engineering and operations. Synthetic data only, throughout.</span>
+  <span class="h-when">Weeks 2&ndash;8</span>
+</div>
+
+<h3>First, the three clocks</h3>
+
+<p>
+  The most common way a founder loses a month is by treating every task as though it runs on their
+  own clock. It does not. Sort the work by whose calendar it depends on, and start everything on
+  somebody else's calendar <strong>in week one</strong>, even though it completes last.
+</p>
+
+<div class="flow">
+  OTHER PEOPLE'S CLOCK — start day 1, finishes weeks later ├─ trademark clearance §5, decision 1 ├─
+  counsel engagement + the brief §5, decision 3 ├─ independent security review ── book it now, run
+  it week 6 └─ accessibility review with disabled users ── recruit now, run it week 7 YOUR CLOCK —
+  start week 2, you control the pace ├─ production authentication ├─ connect the eight integrations
+  that never ran ├─ encryption, scanning, backups └─ hosting, monitoring, on-call THE MARKET'S CLOCK
+  — starts only after the launch gate in §7 └─ the first ten families §8
+</div>
+
+<div class="callout danger">
+  <span class="label">The single hardest rule in this document</span>
+  <p>
+    <strong>No real person's memories enter the system until every box in §7 is ticked.</strong> Not
+    a friendly beta family, not your own grandmother, not &ldquo;just to test with something
+    real&rdquo;. The moment real material is in there, you have obligations you cannot yet meet, and
+    the first archive is exactly the one you will care most about having handled badly. Synthetic
+    data is not a limitation during Horizon&nbsp;1; it is the point of Horizon&nbsp;1.
+  </p>
+</div>
+
+<h3>Week by week</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 12%">Week</th>
+      <th style="width: 36%">What ships</th>
+      <th>Why it is in this position</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>1</strong></td>
+      <td>
+        Start every external clock. Correct the pricing-page tense. Name the accountable person.
+      </td>
+      <td>These cost you hours and buy you weeks.</td>
+    </tr>
+    <tr>
+      <td><strong>2&ndash;3</strong></td>
+      <td>
+        <strong>Production authentication.</strong> OIDC or passkeys, MFA enrolment,
+        <em>and password reset</em>.
+      </td>
+      <td>
+        Blocking item&nbsp;4. Without it the product cannot be deployed at all &mdash;
+        <code>AUTH_DRIVER=local</code> is refused in production by design. Password reset is not on
+        the blocking list but a pilot without it generates a support crisis in week two.
+        <span class="ev v">VERIFIED</span>
+      </td>
+    </tr>
+    <tr>
+      <td><strong>3</strong></td>
+      <td>
+        <strong>Real secrets.</strong> Replace every development placeholder and move them into a
+        secret manager.
+      </td>
+      <td>
+        <code>SESSION_SECRET</code> and <code>STORAGE_SIGNING_SECRET</code> currently hold strings
+        that literally read <code>dev-only-…-change-me</code>.
+        <span class="ev v">VERIFIED</span> Shipping either is a total compromise of sessions or of
+        object URLs.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>3&ndash;4</strong></td>
+      <td><strong>Run the eight integrations that have never executed.</strong></td>
+      <td>
+        Each is written and type-checked and unproven. Detailed below &mdash; this week also
+        produces your real unit costs.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>4&ndash;5</strong></td>
+      <td>
+        <strong>Encryption at rest with a customer-managed key</strong>;
+        <strong>a real malware scanner</strong>.
+      </td>
+      <td>
+        Blocking items&nbsp;3 and&nbsp;5. Today anyone with database or backup access reads
+        everything, and the local scanner catches a test file and a mismatched type &mdash; it is
+        not an antivirus. <span class="ev v">VERIFIED</span>
+      </td>
+    </tr>
+    <tr>
+      <td><strong>5</strong></td>
+      <td><strong>Backups, and a restore you actually perform.</strong></td>
+      <td>
+        Blocking item&nbsp;6. Your own document says the recovery targets are
+        <em>stated, not measured</em>. Restore into a clean environment and time it.
+        <span class="ev v">VERIFIED</span>
+      </td>
+    </tr>
+    <tr>
+      <td><strong>5&ndash;6</strong></td>
+      <td>Hosting, deploy pipeline, monitoring, alerting, on-call. Instrument OpenTelemetry.</td>
+      <td>
+        It is configured and not instrumented, so today you would find out about an outage from a
+        customer. <span class="ev v">VERIFIED</span>
+      </td>
+    </tr>
+    <tr>
+      <td><strong>6</strong></td>
+      <td><strong>Independent security review runs.</strong></td>
+      <td>Blocking item&nbsp;2. The isolation is currently tested by the person who wrote it.</td>
+    </tr>
+    <tr>
+      <td><strong>7</strong></td>
+      <td><strong>Accessibility review with disabled users.</strong></td>
+      <td>
+        Blocking item&nbsp;7. Zero automated violations is a floor. Your users skew old; some will
+        have low vision, tremor, or hearing loss. This is a core-audience issue, not a compliance
+        checkbox.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>8</strong></td>
+      <td>Fix what the two reviews found. Run the §7 gate. Legal answers land.</td>
+      <td>Reserve the week. Both reviews will find things.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="page-break"></div>
+<h3>The eight integrations, and what each one teaches you</h3>
+
+<p>
+  These are complete and were <strong>never executed</strong>, because nothing was reachable from
+  the build environment. <span class="ev v">VERIFIED</span> Run them in this order; each has a
+  specific first thing to check, and two of them produce numbers you need for pricing.
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 22%">Integration</th>
+      <th style="width: 40%">First thing to check</th>
+      <th>What it produces</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Docker Compose</td>
+      <td><code>docker compose up</code> &mdash; watch the migrate step</td>
+      <td>Everything else depends on it</td>
+    </tr>
+    <tr>
+      <td>S3 or MinIO</td>
+      <td>Upload, then a presigned download, then deletion</td>
+      <td><strong>Your storage cost per GB</strong></td>
+    </tr>
+    <tr>
+      <td>Redis</td>
+      <td>That revocation clears keys across <em>two</em> API instances</td>
+      <td>Proves consent revocation survives horizontal scaling</td>
+    </tr>
+    <tr>
+      <td>pgvector</td>
+      <td>That its results match the portable path</td>
+      <td>Retrieval quality parity</td>
+    </tr>
+    <tr>
+      <td>Hosted speech-to-text</td>
+      <td>That segment locators still point at real spans</td>
+      <td>
+        <strong>Your largest variable cost</strong> &mdash; the local adapter cannot recognise
+        speech at all
+      </td>
+    </tr>
+    <tr>
+      <td>Hosted OCR</td>
+      <td>Same &mdash; that locators survive</td>
+      <td>Document handling becomes real</td>
+    </tr>
+    <tr>
+      <td>Hosted composition</td>
+      <td>That verification still drops unsupported claims</td>
+      <td>Whether you need it at all &mdash; see below</td>
+    </tr>
+    <tr>
+      <td>SMTP</td>
+      <td>That no memory content appears in a subject line</td>
+      <td>The privacy rule most easily broken by a convenience change</td>
+    </tr>
+    <tr>
+      <td>Stripe</td>
+      <td>
+        <code>verifyWebhook</code> returns <code>null</code> &mdash; wire signature verification
+      </td>
+      <td>The ability to be paid</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout ok">
+  <span class="label">A question worth asking before you spend on hosted composition</span>
+  <p>
+    Your local composer is extractive: it can quote and stitch retrieved passages and
+    <em>structurally cannot originate a claim</em>. That is a weaker system that reads more plainly
+    &mdash; and it is also a system in which fabrication is unavailable rather than merely rare.
+    Before you switch to a hosted model, put both in front of five real people and find out whether
+    they prefer the fluent one. If they do not, you have just removed a cost line, a dependency and
+    a cross-border transfer problem in one decision. <span class="ev i">INFERENCE</span>
+  </p>
+</div>
+
+<h3>Explicitly not now</h3>
+<p>
+  These are real gaps and they are not Horizon&nbsp;1. Scope discipline is most of what makes an
+  eight-week plan finish in eight weeks.
+</p>
+<div class="kv">
+  <div><span>Contributor review queue</span><span>defer &mdash; proposals are recorded</span></div>
+  <div><span>Admin UI for incidents</span><span>defer &mdash; read-only list is enough</span></div>
+  <div>
+    <span>Embedding-model backfill script</span
+    ><span>defer &mdash; needed only when you change models</span>
+  </div>
+  <div><span>Rendered ERD</span><span>defer &mdash; the text diagram is accurate</span></div>
+  <div>
+    <span>Notification scheduling</span><span>never, by design &mdash; see §3, problem 4</span>
+  </div>
+  <div><span>Second region</span><span>Horizon 3, once you have customers in one</span></div>
+  <div>
+    <span>The asking artifact (§3)</span
+    ><span>Horizon 2 &mdash; it is a growth tool, not a launch blocker</span>
+  </div>
+</div>

@@ -1,0 +1,20 @@
+{
+  "name": "@everecho/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "seed": "tsx src/seed.ts"
+  },
+  "dependencies": {
+    "@everecho/adapters": "workspace:*",
+    "@everecho/ai": "workspace:*",
+    "@everecho/config": "workspace:*",
+    "@everecho/contracts": "workspace:*",
+    "@everecho/db": "workspace:*",
+    "@everecho/pipeline": "workspace:*",
+    "pino": "10.3.1"
+  }
+}

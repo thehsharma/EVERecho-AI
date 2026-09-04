@@ -1,0 +1,452 @@
+import type { FastifyInstance, FastifyRequest } from 'fastify';
+import {
+  REALTIME_PROTOCOL_VERSION,
+  clientEventSchema,
+  type ServerEvent,
+} from '@everecho/contracts';
+import {
+  consumeReconnectToken,
+  findArchive,
+  findMembership,
+  findSession,
+  type RealtimeSessionRow,
+} from '@everecho/db';
+import type { AppContext } from '../context';
+import { createStreamingProviders } from './engine';
+import { SessionDriver } from './driver';
+
+/**
+ * The WebSocket media plane.
+ *
+ * A thin adapter. Every decision that matters — admission, authorisation,
+ * retrieval, persistence, what may be learned — belongs to the driver and to
+ * `authorize()`. This file moves bytes and nothing else, which is why swapping
+ * it for LiveKit later is an adapter change rather than a rewrite.
+ */
+
+/** One audio frame may not exceed this. A bounded frame cannot exhaust memory. */
+const MAX_MESSAGE_BYTES = 96 * 1024;
+
+/**
+ * Sessions one person may hold open at once.
+ *
+ * Low on purpose: a real person holds one conversation. The limit exists to
+ * stop an open socket being a cheap way to consume a server.
+ */
+const MAX_CONCURRENT_SESSIONS_PER_USER = 3;
+
+/** A session with no traffic for this long is abandoned and closed. */
+const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
+
+/**
+ * How often a live connection re-reads its own session.
+ *
+ * Short, because it is the longest a silent conversation can stay open after
+ * somebody has withdrawn their consent on another device. One indexed read per
+ * live socket every five seconds is a price worth paying for that.
+ */
+const REVOCATION_SWEEP_MS = 5_000;
+
+/**
+ * Frames held while a connection is still being admitted.
+ *
+ * A legitimate client sends exactly one — `session.hello` — and audio frames
+ * are 320 ms apart, so sixteen is several seconds of speech and far more than
+ * admission can take. Bounded because an unadmitted socket must not be able to
+ * make the server hold anything on its behalf.
+ */
+const MAX_PENDING_FRAMES = 16;
+
+/**
+ * How much unsent data may sit in the socket's own buffer.
+ *
+ * A browser on a slow connection cannot drain audio as fast as the server
+ * produces it, and `send` never blocks — the bytes simply accumulate in
+ * process memory until the machine is in trouble. Beyond this, audio is
+ * dropped and text is not: captions falling behind is a worse experience than
+ * a gap in the audio, and a transcript with a hole in it is a transcript that
+ * lies. Two seconds of 16 kHz PCM16 is 64 KB, so this is a few seconds of
+ * backlog rather than a hard ceiling on a healthy connection.
+ */
+const MAX_BUFFERED_BYTES = 512 * 1024;
+
+interface LiveConnection {
+  driver: SessionDriver;
+  socket: {
+    send(data: string): void;
+    close(code?: number, reason?: string): void;
+    readonly readyState?: number;
+  };
+  userId: string;
+  sessionId: string;
+  archiveId: string;
+  lastActivity: number;
+}
+
+/**
+ * Live connections, in memory, keyed by session.
+ *
+ * Deliberately not the source of truth: session state lives in PostgreSQL, so
+ * losing this map loses connections but never data, and two API instances do
+ * not have to agree about it.
+ */
+const connections = new Map<string, LiveConnection>();
+
+export function liveConnectionCount(): number {
+  return connections.size;
+}
+
+/** Ends every live connection for an archive. Used when consent is withdrawn. */
+export async function closeArchiveConnections(archiveId: string, reason: string): Promise<number> {
+  let closed = 0;
+  for (const [key, connection] of connections) {
+    if (connection.archiveId !== archiveId) continue;
+    await connection.driver.end(reason).catch(() => undefined);
+    connection.socket.close(4003, reason);
+    connections.delete(key);
+    closed += 1;
+  }
+  return closed;
+}
+
+export async function registerRealtimeSocket(app: FastifyInstance, ctx: AppContext): Promise<void> {
+  const { default: websocket } = await import('@fastify/websocket');
+  await app.register(websocket, {
+    options: { maxPayload: MAX_MESSAGE_BYTES },
+  });
+
+  app.get<{
+    Params: { archiveId: string; sessionId: string };
+    Querystring: { reconnectToken?: string };
+  }>(
+    '/v1/archives/:archiveId/realtime-sessions/:sessionId/socket',
+    { websocket: true },
+    async (socket, request) => {
+      // Set once when audio starts being dropped, so the person is told rather
+      // than left wondering why the voice went quiet.
+      let droppedAudio = false;
+
+      const send = (event: ServerEvent) => {
+        const buffered = (socket as { bufferedAmount?: number }).bufferedAmount ?? 0;
+        if (buffered > MAX_BUFFERED_BYTES && event.type === 'assistant.audio.chunk') {
+          if (!droppedAudio) {
+            droppedAudio = true;
+            send({
+              type: 'warning',
+              seq: 0,
+              code: 'connection_too_slow_for_audio',
+              message: 'The connection is slow, so this is text for now.',
+            });
+          }
+          return;
+        }
+        if (buffered <= MAX_BUFFERED_BYTES) droppedAudio = false;
+        try {
+          socket.send(JSON.stringify(event));
+        } catch {
+          // A closed socket is not an error worth logging per frame.
+        }
+      };
+
+      const fail = (code: number, reason: string) => {
+        // Logged, because an operator needs to see refused connections: a rise
+        // in origin or admission failures is how a misconfigured deployment or
+        // an attempt to reach somebody else's conversation becomes visible.
+        // The reason code only — never the session's content.
+        request.log.warn({ code, reason, sessionId: request.params.sessionId }, 'socket refused');
+        send({ type: 'error', seq: 0, code: reason, message: reason, fatal: true });
+        socket.close(code, reason);
+      };
+
+      /**
+       * Frames are taken off the socket before anything else is decided.
+       *
+       * The handshake is already finished by the time this handler runs: the
+       * browser has seen the 101, fired `open`, and may already have sent
+       * `session.hello` while admission is still reading the database. `ws`
+       * emits those frames whether or not anything is listening, and an
+       * unheard hello is simply lost — the client then waits for a state it
+       * will never be sent, showing "getting ready" over a socket that is
+       * perfectly healthy. So the listener goes on first and the frames wait
+       * for a driver to give them to.
+       */
+      const pending: string[] = [];
+      let deliver: ((text: string) => Promise<void>) | null = null;
+      let flooded = false;
+      let socketClosed = false;
+
+      /**
+       * One frame at a time, in the order they arrived.
+       *
+       * Handling a frame touches the database, so giving each one its own
+       * floating promise would let a later frame overtake an earlier one — an
+       * interruption landing before the audio it was meant to interrupt, or a
+       * commit before the speech it commits. The conversation is a sequence;
+       * so is this.
+       */
+      let chain: Promise<void> = Promise.resolve();
+
+      const accept = (text: string) => {
+        if (deliver) {
+          const handler = deliver;
+          chain = chain.then(() => handler(text)).catch(() => undefined);
+          return;
+        }
+        if (pending.length >= MAX_PENDING_FRAMES) {
+          flooded = true;
+          return;
+        }
+        pending.push(text);
+      };
+
+      socket.on('message', (raw: Buffer | string) => {
+        accept(typeof raw === 'string' ? raw : raw.toString('utf8'));
+      });
+
+      // Noted synchronously: a socket that closes during admission must not be
+      // registered afterwards, because the close event that would remove it
+      // has already been and gone.
+      socket.on('close', () => {
+        socketClosed = true;
+      });
+
+      // Origin checking, before anything else.
+      //
+      // A WebSocket upgrade is a GET, so the CSRF hook does not cover it, and
+      // browsers send cookies on cross-origin WebSocket handshakes because
+      // WebSockets are not subject to CORS. Without this, any page on the
+      // internet could open an authenticated socket into somebody's archive
+      // and listen. This is the whole defence against that.
+      const origin = request.headers.origin;
+      if (typeof origin !== 'string' || !allowedOrigins(ctx).includes(origin)) {
+        fail(4403, 'origin_not_allowed');
+        return;
+      }
+
+      // Admission. The session cookie was already resolved by the server's
+      // onRequest hook, so this reuses the one authentication path rather than
+      // inventing a second one for sockets.
+      const user = (request as FastifyRequest).user;
+      if (!user) {
+        fail(4401, 'not_authenticated');
+        return;
+      }
+
+      const { archiveId, sessionId } = request.params;
+      const session = await loadSession(ctx, archiveId, sessionId);
+      if (!session) {
+        fail(4404, 'not_found');
+        return;
+      }
+      if (session.ended_at) {
+        fail(4409, 'realtime_session_not_live');
+        return;
+      }
+
+      // Only the person who started it, and only if they are still a member.
+      // Membership is re-read here rather than trusted from session creation.
+      const membership = await ctx.db.withArchiveScope(archiveId, (tx) =>
+        findMembership(tx, archiveId, user.id),
+      );
+      if (!membership || membership.status !== 'active' || session.started_by_user_id !== user.id) {
+        fail(4403, 'not_permitted');
+        return;
+      }
+
+      // Resuming a dropped connection consumes a single-use token, so a
+      // captured token is useless once the legitimate client has reconnected.
+      const reconnectToken = request.query.reconnectToken;
+      if (reconnectToken) {
+        const ok = await ctx.db.withArchiveScope(archiveId, (tx) =>
+          consumeReconnectToken(tx, {
+            archiveId,
+            sessionId,
+            userId: user.id,
+            token: reconnectToken,
+          }),
+        );
+        if (!ok) {
+          fail(4401, 'reconnect_token_invalid');
+          return;
+        }
+      }
+
+      // Sockets that have already closed are not live conversations. Pruned
+      // before counting, because a browser that navigates away leaves an entry
+      // behind for a moment, and counting those would refuse somebody a
+      // conversation they are entitled to.
+      for (const [key, existing] of connections) {
+        const readyState = (existing.socket as { readyState?: number }).readyState;
+        if (readyState === 2 || readyState === 3) connections.delete(key);
+      }
+
+      const openForUser = [...connections.values()].filter((c) => c.userId === user.id).length;
+      if (openForUser >= MAX_CONCURRENT_SESSIONS_PER_USER) {
+        fail(4429, 'too_many_sessions');
+        return;
+      }
+
+      const driver = new SessionDriver({
+        ctx,
+        providers: createStreamingProviders(ctx),
+        session,
+        userId: user.id,
+        emit: async (event) => send(event),
+      });
+
+      const connection: LiveConnection = {
+        driver,
+        socket,
+        userId: user.id,
+        sessionId,
+        archiveId,
+        lastActivity: Date.now(),
+      };
+
+      // A socket that closed while admission was still running never became a
+      // conversation. Registering it now would leave an entry that nothing
+      // removes, because the close event that would have removed it has
+      // already been and gone.
+      if (socketClosed) return;
+      connections.set(sessionId, connection);
+
+      const idle = setInterval(() => {
+        void (async () => {
+          // Ended somewhere else — a storyteller withdrawing consent from
+          // another device, another API instance, or the archive being
+          // deleted. Consent is re-read before every decision point, so a
+          // *talking* session already obeys immediately; this is what reaches
+          // one that is sitting silent between turns.
+          const fresh = await loadSession(ctx, archiveId, sessionId).catch(() => undefined);
+          if (fresh?.ended_at) {
+            send({
+              type: 'error',
+              seq: 0,
+              code: fresh.ended_reason ?? 'session_ended',
+              message: 'This conversation has ended.',
+              fatal: true,
+            });
+            socket.close(4003, fresh.ended_reason ?? 'session_ended');
+            return;
+          }
+          if (Date.now() - connection.lastActivity < IDLE_TIMEOUT_MS) return;
+          await driver.end('idle_timeout').catch(() => undefined);
+          socket.close(4408, 'idle_timeout');
+        })();
+      }, REVOCATION_SWEEP_MS);
+
+      /**
+       * Removes this connection, and only this one.
+       *
+       * A second connection to the same session replaces the first in the
+       * registry. Deleting by session id alone would then let the *closing*
+       * socket evict the *live* one, and revocation would no longer reach the
+       * conversation it needs to end.
+       */
+      const forget = () => {
+        clearInterval(idle);
+        if (connections.get(sessionId) === connection) connections.delete(sessionId);
+      };
+
+      socket.on('close', () => {
+        forget();
+        // Deliberately not ended here: a dropped socket is a reconnection
+        // opportunity, not a decision to end the conversation. The idle
+        // timeout closes it if nobody comes back.
+      });
+
+      socket.on('error', forget);
+
+      const handleFrame = async (text: string): Promise<void> => {
+        connection.lastActivity = Date.now();
+
+        if (text.length > MAX_MESSAGE_BYTES) {
+          send({
+            type: 'warning',
+            seq: 0,
+            code: 'payload_too_large',
+            message: 'Frame too large.',
+          });
+          return;
+        }
+
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          send({ type: 'warning', seq: 0, code: 'malformed', message: 'Could not read that.' });
+          return;
+        }
+
+        const result = clientEventSchema.safeParse(parsed);
+        if (!result.success) {
+          send({
+            type: 'warning',
+            seq: 0,
+            code: 'invalid_event',
+            // The validation message, never the payload: a rejected frame may
+            // contain speech, and an error path is not a place for it.
+            message: result.error.issues[0]?.message ?? 'Unrecognised event.',
+          });
+          return;
+        }
+
+        if (
+          result.data.type === 'session.hello' &&
+          result.data.protocolVersion !== REALTIME_PROTOCOL_VERSION
+        ) {
+          fail(4400, 'protocol_version_mismatch');
+          return;
+        }
+
+        try {
+          await driver.handle(result.data);
+        } catch (error) {
+          send({
+            type: 'error',
+            seq: 0,
+            code: 'internal_error',
+            message: 'Something went wrong in this conversation.',
+            fatal: false,
+          });
+          request.log.error({ err: error, sessionId }, 'realtime event failed');
+        }
+      };
+
+      if (flooded) {
+        fail(4429, 'too_many_pending_frames');
+        return;
+      }
+
+      // Admission is over. Everything that arrived during it is handled first,
+      // in the order it arrived, and everything after it follows the same
+      // queue. Done in one synchronous step so no frame can slip past the
+      // backlog it should have been behind.
+      deliver = handleFrame;
+      for (const text of pending.splice(0)) accept(text);
+    },
+  );
+}
+
+/**
+ * Origins permitted to open a socket.
+ *
+ * The web application and the API's own public URL, and nothing else. Kept
+ * deliberately narrow: a permissive list here is indistinguishable from having
+ * no origin check at all.
+ */
+function allowedOrigins(ctx: AppContext): string[] {
+  return [ctx.cfg.env.WEB_PUBLIC_URL, ctx.cfg.env.API_PUBLIC_URL].filter(
+    (value): value is string => typeof value === 'string' && value.length > 0,
+  );
+}
+
+async function loadSession(
+  ctx: AppContext,
+  archiveId: string,
+  sessionId: string,
+): Promise<RealtimeSessionRow | null> {
+  const archive = await ctx.db.withArchiveScope(archiveId, (tx) => findArchive(tx, archiveId));
+  if (!archive) return null;
+  return ctx.db.withArchiveScope(archiveId, (tx) => findSession(tx, archiveId, sessionId));
+}

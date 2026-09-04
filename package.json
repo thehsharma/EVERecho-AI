@@ -1,0 +1,45 @@
+{
+  "name": "everecho",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm run --parallel --filter \"./apps/**\" dev",
+    "dev:api": "pnpm --filter @everecho/api dev",
+    "dev:web": "pnpm --filter @everecho/web dev",
+    "dev:worker": "pnpm --filter @everecho/worker dev",
+    "db:migrate": "pnpm --filter @everecho/db migrate",
+    "db:reset": "pnpm --filter @everecho/db reset",
+    "db:seed": "pnpm --filter @everecho/worker seed",
+    "setup": "pnpm install && pnpm db:migrate && pnpm db:seed",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run --project unit --project integration",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "eval": "pnpm --filter @everecho/api eval",
+    "openapi": "pnpm --filter @everecho/api openapi",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm eval"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/node": "22.20.1",
+    "@vitest/coverage-v8": "4.1.11",
+    "eslint": "9.39.5",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.53.1",
+    "prettier": "3.9.6",
+    "tsx": "4.23.13",
+    "vitest": "4.1.11",
+    "@axe-core/playwright": "4.13.0",
+    "@eslint/js": "9.39.5"
+  }
+}

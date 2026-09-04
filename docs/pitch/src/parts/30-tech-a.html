@@ -1,0 +1,105 @@
+<div class="part-divider">
+  <div class="kicker">Part III</div>
+  <h2>Under the hood</h2>
+  <p>How it is built, what was measured, what is honestly missing, and what should happen next.</p>
+</div>
+
+<h2 id="sec-14">14&nbsp;&nbsp;How it is built</h2>
+
+<p class="lede">
+  A modular monolith behind a typed contract, with background work in a durable queue and a browser
+  client that never makes an access decision.
+</p>
+
+<div class="flow">
+  ┌──────────────────────────────────────────┐ browser ────────▶│ apps/web (Next.js 16,
+  server-rendered) │ │ · route protection before render │ │ · nav built from reported capabilities │
+  └───────────────┬──────────────────────────┘ │ session cookie + CSRF ▼
+  ┌──────────────────────────────────────────┐ │ apps/api (Fastify 5, 70 operations) │ │ │ │
+  withArchiveAccess() ◀── the only way to │ │ 1. open an archive-scoped transaction │ │ 2. load
+  actor + subject from the DB │ │ 3. authorize() ← pure, no I/O │ │ 4. record the decision, allow or
+  deny │ │ 5. run the handler │ └───────┬───────────────────────┬───────────┘ │ │ enqueue in │ │
+  read/write the same tx ▼ ▼ ┌───────────────┐ ┌────────────────────┐ │ processing_job│ │ PostgreSQL
+  16 │ └───────┬───────┘ │ · RLS on content │ │ │ · append-only │ ▼ │ audit trigger │
+  ┌──────────────────────┴───────────────────┐ │ apps/worker → packages/pipeline │ │ re-checks
+  consent at execution time │ └──────────────────────────────────────────┘
+</div>
+
+<h3>Three applications, seven packages</h3>
+<div class="two-col">
+  <div>
+    <h4>Applications</h4>
+    <div class="kv">
+      <div><span>apps/api</span><span>Fastify 5</span></div>
+      <div><span>apps/web</span><span>Next.js 16 / React 19</span></div>
+      <div><span>apps/worker</span><span>queue runner</span></div>
+    </div>
+  </div>
+  <div>
+    <h4>Packages</h4>
+    <div class="kv">
+      <div><span>contracts</span><span>Zod 4 schemas</span></div>
+      <div><span>consent</span><span>authorize(), policy</span></div>
+      <div><span>db</span><span>pool, migrations</span></div>
+      <div><span>ai</span><span>verify, text, compose</span></div>
+      <div><span>adapters</span><span>provider boundaries</span></div>
+      <div><span>pipeline</span><span>job handlers</span></div>
+      <div><span>config</span><span>validated env</span></div>
+    </div>
+  </div>
+</div>
+
+<h3>Decisions worth defending</h3>
+
+<h4>Packages are consumed as TypeScript source</h4>
+<p>
+  Each package exports <code>"./src/index.ts"</code> directly. There is no build step, no
+  <code>dist</code> directory, and no chance of a stale compiled artifact disagreeing with its
+  source. <code>tsc --noEmit</code> typechecks the whole graph at once, and <code>tsx</code> runs
+  it. <span class="footnote">Decision D&#8209;002.</span>
+</p>
+
+<h4>Hand-written SQL, not an ORM</h4>
+<p>
+  Eight numbered migrations, each checksummed. Row-level security policies,
+  <code>FORCE ROW LEVEL SECURITY</code>, generated <code>tsvector</code> columns, an append-only
+  audit trigger and a PL/pgSQL cosine-distance function are all things an ORM either cannot express
+  or expresses badly. The queries that enforce consent obligations are the most security-critical
+  code in the product; they should be readable as SQL.
+  <span class="footnote">Decision D&#8209;003.</span>
+</p>
+
+<h4>The job queue lives in PostgreSQL, not Redis</h4>
+<p>
+  <code>SELECT … FOR UPDATE SKIP LOCKED</code>. This matters for a specific reason: enqueueing a job
+  is transactional with the domain change that caused it. A memory cannot be created without its
+  embedding job being queued, and a rolled-back transaction cannot leave an orphaned job behind that
+  processes data the rollback was meant to prevent. Redis remains, for cache and rate limiting,
+  where losing data is acceptable. <span class="footnote">Decision D&#8209;004.</span>
+</p>
+
+<h4>Embeddings as <code>real[]</code>, with pgvector optional</h4>
+<p>
+  The portable path works on any PostgreSQL 16 with no extensions, using a PL/pgSQL cosine-distance
+  function. Where pgvector is present, an optional migration adds a synced column and an HNSW index,
+  and a <code>db_capability</code>
+  table records the detection so the query planner path is chosen at runtime rather than assumed.
+  The product does not require an extension its host may not offer.
+  <span class="footnote">Decision D&#8209;006.</span>
+</p>
+
+<h4>scrypt, from the Node standard library</h4>
+<p>
+  Password hashing uses Node's built-in scrypt rather than argon2. The reasoning is deployment
+  rather than cryptography: argon2 is a native dependency, and a native dependency that fails to
+  build is an authentication system that does not start. scrypt is memory-hard, standard-library,
+  and always present. <span class="footnote">Decision D&#8209;005.</span>
+</p>
+
+<h4>OpenAPI generated from the validating schemas</h4>
+<p>
+  <code>docs/openapi.json</code> is produced by <code>z.toJSONSchema()</code> over the same Zod
+  schemas that validate requests and responses at runtime. The document cannot describe an endpoint
+  that does not exist, or omit a field the implementation requires, because there is only one
+  definition.
+</p>
