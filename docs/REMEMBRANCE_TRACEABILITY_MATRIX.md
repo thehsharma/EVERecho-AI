@@ -7,9 +7,9 @@ marked done on the strength of a code reading.
 
 | Requirement | Implementation | Proof | Status |
 | --- | --- | --- | --- |
-| Nothing is spoken in the person's voice that they did not say | | | planned |
-| Customer-facing audio is `P0_ORIGINAL_SOURCE` only | | | planned |
-| No code path from a language model to generated speech in the person's voice | | | planned |
+| Nothing is spoken in the person's voice that they did not say | `selectClip` returns one segment id and a time range; the server hands the browser the original file and never reads audio bytes | `clips.test.ts` "cannot return two moments"; integration "hands over the original file rather than anything it made" | done |
+| Customer-facing audio is the original recording | The response carries a signed link to the stored object, unmodified | Integration "hands over the original file rather than anything it made" | done |
+| No code path from a language model to generated speech in the person's voice | None exists. Nothing in `apps/api` or `packages/ai` reads or writes audio bytes | Absence, plus `FEATURE_PERFORM_MODE` failing config validation | done |
 
 ## Slice 1 — the ante-mortem directive
 
@@ -37,12 +37,20 @@ marked done on the strength of a code reading.
 
 | Requirement | Implementation | Proof | Status |
 | --- | --- | --- | --- |
-| A question returns the actual clip, with lead-in | | | planned |
-| Every clip resolves to session, date and surrounding transcript | | | planned |
-| One contiguous span only; never assembled | | | planned |
-| No clip cut mid-sentence to fit an answer | | | planned |
-| Nothing found says so, in the assistant's own voice | | | planned |
-| The assistant voice is always distinct and labelled as the archive | | | planned |
+| A question returns the actual clip, with lead-in | `selectClip` with `LEAD_IN_MS = 10_000`, clamped at the start of the file | `clips.test.ts` "starts before the answer, so it is a moment and not a soundbite", "never begins before the start of the recording"; integration "plays the moment where she answered, with lead-in" | done |
+| One contiguous span only; never assembled | The selector returns one clip or null — not an array — and the contract carries a single object. A function that cannot return two things cannot be made to join them | `clips.test.ts` "cannot return two moments"; integration "returns one contiguous range of one recording, never two" | done |
+| No clip cut mid-sentence to fit an answer | `endMs` is the segment's own end. Nothing trims | `clips.test.ts` "ends where she stopped talking, not where the answer stopped" | done |
+| Every clip resolves to its source and surrounding transcript | `surroundingText` returns the segments either side, read rather than played; the response carries the source label and when it was added | `clips.test.ts` "gives the clip somewhere to stand", "copes at the edges of a recording" | done |
+| Never plays something merely adjacent | `MIN_QUESTION_COVERAGE = 0.5`, the stricter bar the spoken path already used. Her voice makes anything sound like an answer | `clips.test.ts` "says nothing rather than playing something merely adjacent"; integration "says it has nothing rather than playing something adjacent" | done |
+| Deterministic — the same question returns the same moment | Sorted by score then segment index | `clips.test.ts` "returns the same moment every time" | done |
+| A segment that cannot be played is never offered | Segments without timings are filtered out; typed answers and OCR are legitimate transcript and are not clips | `clips.test.ts` "will not offer a segment that cannot be played", "will not offer a segment whose timings are impossible" | done |
+| Nothing found says so, in the archive's own voice | Four distinct third-person statements, none attributable to the person | Integration "says it has nothing rather than playing something adjacent", "never attributes what the archive says to the person" | done |
+| A persona request is refused before a recording is loaded | `isProhibitedRequest` runs before retrieval, and the refusal names what does exist | Integration "refuses to speak as her, and offers what is actually there"; E2E "refuses to speak as them, and offers what is actually there" | done |
+| The archive's voice never looks like theirs | Interface text in a labelled status region; their words only ever as a quotation | E2E "never lets the archive's voice look like theirs" | done |
+| The directive is applied per clip, not once per session | `resolveRemembrance` is called for each clip with that clip's memory, source and topics | Integration "plays nothing she sealed…", "keeps her words when she refused only the recording", "plays nothing at all when she chose to close what she did not mention" | done |
+| A refusal says which refusal it was | Distinct reason codes and distinct copy for withheld, audio-only, and not-yet — hiding "she asked us not to" behind "nothing found" would misrepresent her | Integration "plays nothing she sealed, and says so rather than pretending it is missing" | done |
+| Memorial mode never reaches past ordinary consent | The grant's sensitivity ceiling filters the candidate segments, exactly as it does for a download | Integration "keeps it inside the archive" | done |
+| Accessible at WCAG 2.2 AA | At rest and with an answer present, on two viewports | `accessibility.spec.ts` "at rest, and with an answer from the archive on it" — zero violations | done |
 
 ## Slice 3 — what she left on purpose
 

@@ -54,6 +54,9 @@ function groupsFor(): Group[] {
           notFor: ['storyteller'],
         },
         { href: '/talk', label: 'Talk out loud', requires: 'realtime.session.read' },
+        // Distinct from talking to the archive, and the distinction is the
+        // product: this plays what they said, in their voice, unedited.
+        { href: '/listen', label: 'Hear their voice', requires: 'voice.listen' },
       ],
     },
     {

@@ -42,6 +42,10 @@ export const ACTION_REQUIREMENTS: Record<Action, ActionRequirement> = {
   // What may be heard after they have died. Readable by anyone with access to
   // the archive — a family member is entitled to know what was decided about
   // them — but writable only by the person it speaks for.
+  // Hearing the actual recording, as distinct from reading what was said.
+  // It needs the same mode as opening a citation because that is what it is —
+  // the original source, played rather than read.
+  'voice.listen': req({ minMode: 'explore', readsContent: true }),
   'remembrance.read': req({}),
   'remembrance.update': req({ storytellerOnly: true, mutates: true }),
   'remembrance.affirm': req({ storytellerOnly: true, mutates: true }),
@@ -285,6 +289,7 @@ const READER_ACTIONS: readonly Action[] = [
   // that something was withheld. Being refused without being told a decision
   // exists is how people conclude the software is hiding something.
   'remembrance.read',
+  'voice.listen',
   'membership.read',
   'memory.read',
   'entity.read',

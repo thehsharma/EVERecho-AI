@@ -303,6 +303,27 @@ test.describe('the directive screen meets WCAG 2.2 AA', () => {
   });
 });
 
+test.describe('the listening screen meets WCAG 2.2 AA', () => {
+  test.use({ storageState: 'tests/e2e/.auth/family.json' });
+
+  test('at rest, and with an answer from the archive on it', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    const atRest = await scan(page, `/archives/${archiveId}/listen`);
+    expect(describeViolations(atRest.violations)).toBe('');
+
+    // The state that matters: a live region carrying what the archive said,
+    // which is not on the page until somebody asks.
+    await page.getByLabel(/What would you like to hear/i).fill('What was her favourite food?');
+    await page.getByRole('button', { name: 'Find it' }).click();
+    await expect(page.locator('.notice-info[role="status"]').last()).toBeVisible({
+      timeout: 15000,
+    });
+
+    const answered = await new AxeBuilder({ page }).withTags(STANDARD).analyze();
+    expect(describeViolations(answered.violations)).toBe('');
+  });
+});
+
 test.describe('keyboard and focus', () => {
   test.use({ storageState: 'tests/e2e/.auth/family.json' });
 

@@ -84,7 +84,12 @@ const PROHIBITED_REQUEST_PATTERNS: readonly RegExp[] = [
   /\bpretend (?:to be|you are|you're)\b/i,
   /\bin (?:his|her|their|my) (?:own )?voice\b/i,
   /\b(?:clone|copy|synthesise|synthesize|recreate|generate) (?:his|her|their|my|the) (?:voice|face|likeness)\b/i,
-  /\bwhat would (?:he|she|they) (?:say|think|do) (?:if|about|now)\b/i,
+  // The conditional is what makes it a fabrication request, so it is enough on
+  // its own: "what would she say to me now" and "what would she think about
+  // this" both ask for a sentence she never said. Deliberately not matching
+  // "what *did* she say about the move", which is the legitimate question this
+  // product exists to answer.
+  /\bwhat would (?:he|she|they) (?:say|think|do|feel|want|make of)\b/i,
   /\bbe (?:my|his|her|their) (?:mum|mom|dad|grandma|grandpa)\b/i,
   /\btalk to (?:him|her|them) again\b/i,
   /\bbring (?:him|her|them) back\b/i,

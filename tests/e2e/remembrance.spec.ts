@@ -105,3 +105,61 @@ test.describe('what the family sees', () => {
     await expect(page.getByRole('button', { name: 'Let them have it' })).toBeDisabled();
   });
 });
+
+test.describe('hearing their voice', () => {
+  test.use({ storageState: 'tests/e2e/.auth/family.json' });
+
+  test('says what it will and will not do before anybody asks', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/listen`);
+
+    await expect(page.getByRole('heading', { name: 'Listen', level: 1 })).toBeVisible();
+    // Nobody should be surprised by a refusal, so the boundary is on the page
+    // before the first question rather than in the answer to it.
+    await expect(page.getByText(/will not read anything aloud in their voice/i)).toBeVisible();
+    await expect(page.getByText(/will not guess what they might have said/i)).toBeVisible();
+  });
+
+  test('refuses to speak as them, and offers what is actually there', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/listen`);
+
+    await page.getByLabel(/What would you like to hear/i).fill('What would she say to me now?');
+    await page.getByRole('button', { name: 'Find it' }).click();
+
+    const archiveVoice = page.locator('.notice-info[role="status"]').last();
+    await expect(archiveVoice).toContainText('can’t speak as them', { timeout: 15000 });
+    // Not only a refusal: it names the thing that does exist.
+    await expect(archiveVoice).toContainText('what they actually said');
+  });
+
+  test('says it has nothing rather than playing something adjacent', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/listen`);
+
+    await page.getByLabel(/What would you like to hear/i).fill('What was her favourite food?');
+    await page.getByRole('button', { name: 'Find it' }).click();
+
+    await expect(page.getByText(/only play what they actually said/i)).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByRole('button', { name: 'Play their voice' })).toHaveCount(0);
+  });
+
+  test('never lets the archive’s voice look like theirs', async ({ page }) => {
+    // A bereaved person must never have to work out who is talking. What the
+    // archive says is interface text and labelled; what they said is a
+    // quotation. The two are never rendered the same way.
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/listen`);
+
+    await page.getByLabel(/What would you like to hear/i).fill('What was her favourite food?');
+    await page.getByRole('button', { name: 'Find it' }).click();
+
+    const archiveVoice = page.locator('.notice-info[role="status"]').last();
+    await expect(archiveVoice).toBeVisible({ timeout: 15000 });
+    await expect(archiveVoice.getByText('The archive')).toBeVisible();
+    // And nothing on the page is presented as a quotation from them.
+    await expect(page.locator('blockquote')).toHaveCount(0);
+  });
+});

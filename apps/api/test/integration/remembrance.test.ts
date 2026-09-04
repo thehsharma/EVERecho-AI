@@ -350,3 +350,206 @@ describe('archive isolation', () => {
     expect(unscoped[0]?.n).toBe(0);
   });
 });
+
+describe('hearing the actual recording', () => {
+  /**
+   * The product's answer to the moment of loss. These check that it plays a
+   * real moment of a real file, that it refuses rather than approximating,
+   * and that what she decided is applied per clip.
+   */
+
+  let sourceId: string;
+  let segmentIds: string[] = [];
+
+  /** A real audio source with timed segments, as ingestion would leave it. */
+  const seedRecording = async () => {
+    return h.ctx.db.withArchiveScope(archiveId, async (tx) => {
+      const source = await tx.one<{ id: string }>(
+        `INSERT INTO source_asset
+           (archive_id, kind, status, original_filename, mime_type, byte_size, storage_key,
+            scan_result, privacy, processing_stage, processed_at, sensitivity)
+         VALUES ($1,'audio','processed','session-01-childhood.webm','audio/webm',1024,
+                 'recordings/session-01', 'clean', $2, 'ready', now(), 'normal')
+         RETURNING id`,
+        [archiveId, JSON.stringify({ excluded: false })],
+      );
+      const transcript = await tx.one<{ id: string }>(
+        `INSERT INTO transcript
+           (archive_id, source_asset_id, provider, model_version, prompt_version, language,
+            status, method, policy_version, completed_at)
+         VALUES ($1,$2,'test','v1','v1','en','ready','speech_to_text','policy-1', now())
+         RETURNING id`,
+        [archiveId, source.id],
+      );
+      const rows = await tx.query<{ id: string }>(
+        `INSERT INTO transcript_segment (archive_id, transcript_id, idx, start_ms, end_ms, text)
+         VALUES ($1,$2,0,0,6000,'I was born in Nagpur in 1948, in a house with a courtyard.'),
+                ($1,$2,1,6000,14000,
+                 'We moved to Pune in 1962 because my father took a job on the railways.'),
+                ($1,$2,2,14000,20000,'The kitchen always smelled of cardamom and frying onions.')
+         RETURNING id`,
+        [archiveId, transcript.id],
+      );
+      return { sourceId: source.id, segmentIds: rows.map((r) => r.id) };
+    });
+  };
+
+  beforeAll(async () => {
+    const seeded = await seedRecording();
+    sourceId = seeded.sourceId;
+    segmentIds = seeded.segmentIds;
+    // These tests are about the recording, not about the directive, so the
+    // archive starts with nothing decided and nothing activated.
+    await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      tx.query(`DELETE FROM remembrance_directive WHERE archive_id = $1`, [archiveId]),
+    );
+  });
+
+  const ask = (client: TestClient, question: string) =>
+    client.post<{
+      answer: {
+        clip: {
+          segmentId: string;
+          startMs: number;
+          endMs: number;
+          text: string;
+          audioUrl: string;
+        } | null;
+        spokenByArchive: string;
+        reasonCode: string | null;
+        quotedText: string | null;
+      };
+    }>(`/v1/archives/${archiveId}/voice/ask`, { question });
+
+  it('plays the moment where she answered, with lead-in', async () => {
+    const response = await ask(anjali, 'Why did the family move to Pune?');
+    expect(response.status).toBe(200);
+    expect(response.body.answer.reasonCode).toBe('played');
+    expect(response.body.answer.clip?.segmentId).toBe(segmentIds[1]);
+    expect(response.body.answer.clip?.text).toContain('railways');
+    // Starts before the answer: a clip that begins on the answer is a
+    // soundbite, and one that begins a moment earlier is somebody talking.
+    expect(response.body.answer.clip!.startMs).toBeLessThan(6000);
+    // Ends where she stopped, not where the answer stopped.
+    expect(response.body.answer.clip!.endMs).toBe(14000);
+  });
+
+  it('returns one contiguous range of one recording, never two', async () => {
+    const response = await ask(anjali, 'Pune 1962 railways cardamom Nagpur courtyard');
+    const clip = response.body.answer.clip;
+    // The contract carries a single object, so two moments have nowhere to go.
+    expect(Array.isArray(clip)).toBe(false);
+    if (clip) expect(clip.endMs).toBeGreaterThan(clip.startMs);
+  });
+
+  it('hands over the original file rather than anything it made', async () => {
+    const response = await ask(anjali, 'Why did the family move to Pune?');
+    // A link to the stored object. The server never reads or re-encodes audio,
+    // which is why no code path here could splice two moments together.
+    expect(response.body.answer.clip?.audioUrl).toContain('/v1/objects/get');
+  });
+
+  it('says it has nothing rather than playing something adjacent', async () => {
+    // Her voice makes anything sound like an answer.
+    const response = await ask(anjali, 'What was her favourite food?');
+    expect(response.body.answer.clip).toBeNull();
+    expect(response.body.answer.reasonCode).toBe('nothing_recorded');
+    expect(response.body.answer.spokenByArchive).toContain('only play what they actually said');
+  });
+
+  it('refuses to speak as her, and offers what is actually there', async () => {
+    for (const question of [
+      'Pretend to be my mother and talk to me',
+      'What would she say to me now?',
+      'Answer as her, in her own voice',
+    ]) {
+      const response = await ask(anjali, question);
+      expect(response.body.answer.clip).toBeNull();
+      expect(response.body.answer.spokenByArchive).toContain('can’t speak as them');
+      // The refusal offers the thing that exists, rather than only saying no.
+      expect(response.body.answer.spokenByArchive).toContain('what they actually said');
+    }
+  });
+
+  it('never attributes what the archive says to the person', async () => {
+    // Everything the archive says about itself is third person about them.
+    const response = await ask(anjali, 'What was her favourite food?');
+    expect(response.body.answer.spokenByArchive).not.toMatch(/\bI (?:was|am|remember|lived)\b/);
+  });
+
+  it('keeps it inside the archive', async () => {
+    const outsider = await signUp(h.app, {
+      email: 'listener@example.test',
+      displayName: 'Listener',
+    });
+    const response = await ask(outsider, 'Why did the family move to Pune?');
+    expect([403, 404]).toContain(response.status);
+  });
+
+  describe('once she has died, what she decided is applied per clip', () => {
+    const activate = async (defaultEffect: 'permit' | 'withhold') => {
+      await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+        tx.query(`DELETE FROM remembrance_directive WHERE archive_id = $1`, [archiveId]),
+      );
+      await storyteller.put(`/v1/archives/${archiveId}/remembrance`, { defaultEffect });
+    };
+
+    const seal = async (body: Record<string, unknown>) => {
+      await storyteller.post(`/v1/archives/${archiveId}/remembrance/clauses`, body);
+      await storyteller.post(`/v1/archives/${archiveId}/remembrance/affirm`, {});
+      await admin.post(`/v1/admin/archives/${archiveId}/remembrance/activate`, {
+        executedByName: 'Priya Nair',
+        evidenceKind: 'death_certificate',
+        evidenceReference: 'MH/2026/00481',
+      });
+    };
+
+    it('plays nothing she sealed, and says so rather than pretending it is missing', async () => {
+      await activate('permit');
+      await seal({ effect: 'withhold', scope: 'source', sourceAssetId: sourceId });
+
+      const response = await ask(anjali, 'Why did the family move to Pune?');
+      expect(response.body.answer.clip).toBeNull();
+      expect(response.body.answer.reasonCode).toBe('withheld_by_clause');
+      // "She asked us not to" is a fact about her. Hiding it behind "nothing
+      // found" would misrepresent somebody who cannot correct the record.
+      expect(response.body.answer.spokenByArchive).toContain('their choice');
+    });
+
+    it('keeps her words when she refused only the recording', async () => {
+      await activate('permit');
+      await seal({
+        effect: 'permit',
+        scope: 'source',
+        sourceAssetId: sourceId,
+        allowAudio: false,
+      });
+
+      const response = await ask(anjali, 'Why did the family move to Pune?');
+      expect(response.body.answer.clip).toBeNull();
+      expect(response.body.answer.reasonCode).toBe('audio_withheld');
+      // Being quoted and being heard were two decisions, and she refused one.
+      expect(response.body.answer.quotedText).toContain('railways');
+    });
+
+    it('plays nothing at all when she chose to close what she did not mention', async () => {
+      await activate('withhold');
+      await storyteller.post(`/v1/archives/${archiveId}/remembrance/affirm`, {});
+      await admin.post(`/v1/admin/archives/${archiveId}/remembrance/activate`, {
+        executedByName: 'Priya Nair',
+        evidenceKind: 'death_certificate',
+        evidenceReference: 'MH/2026/00481',
+      });
+
+      const response = await ask(anjali, 'Why did the family move to Pune?');
+      expect(response.body.answer.clip).toBeNull();
+      expect(response.body.answer.reasonCode).toBe('withheld_by_default');
+    });
+
+    it('still plays for the storyteller while nothing has been activated', async () => {
+      await activate('withhold');
+      const response = await ask(storyteller, 'Why did the family move to Pune?');
+      expect(response.body.answer.reasonCode).toBe('played');
+    });
+  });
+});

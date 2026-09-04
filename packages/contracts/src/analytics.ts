@@ -64,6 +64,8 @@ export const analyticsEventNameSchema = z.enum([
   'remembrance_directive_affirmed',
   'remembrance_clause_added',
   'remembrance_activated',
+  'voice_clip_offered',
+  'voice_clip_refused',
 ]);
 export type AnalyticsEventName = z.infer<typeof analyticsEventNameSchema>;
 

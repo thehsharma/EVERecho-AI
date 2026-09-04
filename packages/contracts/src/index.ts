@@ -22,3 +22,4 @@ export * from './capsules';
 export * from './gaps';
 export * from './actions';
 export * from './remembrance';
+export * from './voice';

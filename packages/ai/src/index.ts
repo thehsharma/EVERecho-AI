@@ -8,3 +8,4 @@ export * from './llm';
 export * from './prompts';
 export * from './streaming';
 export * from './gaps';
+export * from './clips';
