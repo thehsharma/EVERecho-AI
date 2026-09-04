@@ -21,3 +21,4 @@ export * from './contributions';
 export * from './capsules';
 export * from './gaps';
 export * from './actions';
+export * from './remembrance';

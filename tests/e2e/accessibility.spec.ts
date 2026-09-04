@@ -285,6 +285,24 @@ test.describe('the coverage radar meets WCAG 2.2 AA', () => {
   });
 });
 
+test.describe('the directive screen meets WCAG 2.2 AA', () => {
+  test.use({ storageState: 'tests/e2e/.auth/storyteller.json' });
+
+  test('the decision, and the form for a particular one', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    const atRest = await scan(page, `/archives/${archiveId}/remembrance`);
+    expect(describeViolations(atRest.violations)).toBe('');
+
+    // Two radio groups, a select, a date picker and a checkbox, none of which
+    // are on the page until somebody chooses to add something.
+    await page.getByRole('button', { name: 'Add something specific' }).click();
+    await expect(page.getByRole('group', { name: /want them to have/i })).toBeVisible();
+
+    const open = await new AxeBuilder({ page }).withTags(STANDARD).analyze();
+    expect(describeViolations(open.violations)).toBe('');
+  });
+});
+
 test.describe('keyboard and focus', () => {
   test.use({ storageState: 'tests/e2e/.auth/family.json' });
 

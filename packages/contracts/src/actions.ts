@@ -31,6 +31,9 @@ export const actionSchema = z.enum([
   'consent.history.read',
   'succession.read',
   'succession.update',
+  'remembrance.read',
+  'remembrance.update',
+  'remembrance.affirm',
 
   // Capture
   'interview.start',
@@ -92,6 +95,7 @@ export const actionSchema = z.enum([
   'billing.manage',
 
   // Administration
+  'admin.remembrance.activate',
   'admin.incident.read',
   'admin.incident.manage',
   'admin.archive.metadata.read',
@@ -173,6 +177,7 @@ export const resourceTypeSchema = z.enum([
   'membership',
   'consent_policy',
   'succession_directive',
+  'remembrance_directive',
   'interview_session',
   'source_asset',
   'transcript',

@@ -18,6 +18,7 @@ import { registerFamilyQuestionRoutes } from './family-questions';
 import { registerContributionRoutes } from './contributions';
 import { registerCapsuleRoutes } from './capsules';
 import { registerGapRoutes } from './gaps';
+import { registerRemembranceRoutes } from './remembrance';
 import { registerRealtimeRoutes } from '../realtime/routes';
 
 export async function registerRoutes(app: FastifyInstance, ctx: AppContext): Promise<void> {
@@ -40,4 +41,5 @@ export async function registerRoutes(app: FastifyInstance, ctx: AppContext): Pro
   registerContributionRoutes(app, ctx);
   registerCapsuleRoutes(app, ctx);
   registerGapRoutes(app, ctx);
+  registerRemembranceRoutes(app, ctx);
 }

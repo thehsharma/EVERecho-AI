@@ -39,6 +39,13 @@ export const ACTION_REQUIREMENTS: Record<Action, ActionRequirement> = {
   'succession.read': req({}),
   'succession.update': req({ storytellerOnly: true, mutates: true }),
 
+  // What may be heard after they have died. Readable by anyone with access to
+  // the archive — a family member is entitled to know what was decided about
+  // them — but writable only by the person it speaks for.
+  'remembrance.read': req({}),
+  'remembrance.update': req({ storytellerOnly: true, mutates: true }),
+  'remembrance.affirm': req({ storytellerOnly: true, mutates: true }),
+
   'interview.start': req({ minMode: 'preserve', storytellerOnly: true, mutates: true }),
   'interview.answer': req({ minMode: 'preserve', storytellerOnly: true, mutates: true }),
   'interview.read': req({ minMode: 'preserve', readsContent: true }),
@@ -95,6 +102,11 @@ export const ACTION_REQUIREMENTS: Record<Action, ActionRequirement> = {
   'billing.read': req({}),
   'billing.manage': req({ mutates: true }),
 
+  // Establishing that somebody has died is not a product action, which is why
+  // it carries the admin prefix: that prefix is what excludes it from every
+  // archive role, storyteller included. It requires documentary evidence and is
+  // recorded against a named human — see the remembrance_activation table.
+  'admin.remembrance.activate': req({ mutates: true }),
   'admin.incident.read': req({}),
   'admin.incident.manage': req({ mutates: true }),
   'admin.archive.metadata.read': req({}),
@@ -269,6 +281,10 @@ const STORYTELLER_ACTIONS: readonly Action[] = (
 const READER_ACTIONS: readonly Action[] = [
   'archive.read',
   'consent.read',
+  // A family member is entitled to know what was decided about them, including
+  // that something was withheld. Being refused without being told a decision
+  // exists is how people conclude the software is hiding something.
+  'remembrance.read',
   'membership.read',
   'memory.read',
   'entity.read',
@@ -349,6 +365,7 @@ export const ROLE_ACTIONS: Record<Role, readonly Action[]> = {
     'export.read',
     'deletion.read',
     'succession.read',
+    'remembrance.read',
     // Content actions appear here so that a storyteller who *chooses* to name
     // the buyer as a recipient can grant them; consent still decides.
     'memory.read',
@@ -397,6 +414,7 @@ export const ROLE_ACTIONS: Record<Role, readonly Action[]> = {
     'membership.read',
     'consent.read',
     'succession.read',
+    'remembrance.read',
     'export.read',
     'deletion.read',
     'audit.read',

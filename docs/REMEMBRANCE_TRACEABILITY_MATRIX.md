@@ -1,0 +1,99 @@
+# EverEcho v0.4 — traceability
+
+`planned` means not built. `done` has a named test beside it. Nothing is
+marked done on the strength of a code reading.
+
+## The governing rule
+
+| Requirement | Implementation | Proof | Status |
+| --- | --- | --- | --- |
+| Nothing is spoken in the person's voice that they did not say | | | planned |
+| Customer-facing audio is `P0_ORIGINAL_SOURCE` only | | | planned |
+| No code path from a language model to generated speech in the person's voice | | | planned |
+
+## Slice 1 — the ante-mortem directive
+
+| Requirement | Implementation | Proof | Status |
+| --- | --- | --- | --- |
+| Per-topic, per-person statement of what may be heard after death | `remembrance_clause` with four scopes and an optional audience; `resolveRemembrance()` is pure and independently testable | `remembrance.test.ts` (consent) "matches the topic exactly, whatever the case"; integration "can single out one person the storyteller already invited" | done |
+| Withholding is as easy to express as granting | `effect` is a required two-value field, not the absence of a grant; the screen offers both as buttons of the same kind in the same row | Integration "takes a refusal as readily as a permission"; E2E "asks the question it cannot answer, and offers both answers equally" | done |
+| A refusal is absolute and cannot be scheduled to expire | Any matching `withhold` wins at any scope; `remembrance_clause_withhold_is_unconditional` CHECK, mirrored in the contract and in the interface | Consent "beats a narrower permission", "cannot be scheduled to expire"; integration "refuses a withholding clause that would expire"; E2E "a refusal cannot be given an end date" | done |
+| What silence means is chosen, never assumed | `default_effect` is `NOT NULL` with no default, so a directive cannot exist without the person having decided | Integration "requires the storyteller to say what silence means"; consent "opens when they said it should" / "stays closed when they said it should" | done |
+| Being quoted and being heard are two decisions | `allow_audio` per clause; the cautious reading wins when clauses disagree | Consent "lets them be quoted without being played", "takes the cautious reading when two clauses disagree about the voice"; E2E "offers the recording and the words as two separate choices" | done |
+| Versioned; revocable while alive | `version` + a partial unique index admitting one directive in force; every write path calls `assertNotActivated` | Integration "lets them change their mind as often as they like" | done |
+| Says nothing while the storyteller is alive | `resolveRemembrance` returns `not_activated` for every non-activated status | Consent "says nothing at all", "says nothing when there is no directive" | done |
+| Immutable once death is legally established | `assertNotActivated` on update, clause add, clause delete and affirm | Integration "cannot be edited by anyone, including an administrator", "tells the storyteller plainly rather than failing silently" | done |
+| A directive nobody confirmed cannot be activated | Activation requires `status = 'affirmed'` | Integration "refuses a directive the storyteller never confirmed" | done |
+| Activation is manual, legally gated, and audited by name | `/v1/admin/…/activate` behind `requireAdmin`; `remembrance_activation` records the human by name plus an evidence reference; an audit row is written against the archive | Integration "records who did it, and on what evidence", "is visible to the family in the archive's own activity log", "cannot be activated twice" | done |
+| Not reachable from the product | The `admin.` prefix excludes it from every archive role including storyteller; the route reports not-found to non-admins | Integration "is not reachable from the product at all" | done |
+| No inactivity timer, no inferred death | No such column and no such job. `succession_never_auto_executes` remains in force | Absence, plus the existing constraint | done |
+| A directive cannot name somebody consent has not admitted | Audience must be an active member; an outsider is reported as not found | Integration "cannot name somebody the archive has not already admitted" | done |
+| The family may read what was decided about them | `remembrance.read` is in `READER_ACTIONS`; the response reports `editable: false` | Integration "lets the family read what was decided about them"; E2E "can read what was decided, and cannot change any of it" | done |
+| Reason codes carry no private material | Codes only, asserted by shape | Consent "is a code, never prose and never their words" | done |
+| Archive isolation | Forced RLS on all three new tables | Integration "never returns one archive's directive in another's scope" | done |
+| Accessible at WCAG 2.2 AA | The decision and the clause form, on two viewports | `accessibility.spec.ts` "the decision, and the form for a particular one" — zero violations | done |
+
+## Slice 2 — her voice, retrieved
+
+| Requirement | Implementation | Proof | Status |
+| --- | --- | --- | --- |
+| A question returns the actual clip, with lead-in | | | planned |
+| Every clip resolves to session, date and surrounding transcript | | | planned |
+| One contiguous span only; never assembled | | | planned |
+| No clip cut mid-sentence to fit an answer | | | planned |
+| Nothing found says so, in the assistant's own voice | | | planned |
+| The assistant voice is always distinct and labelled as the archive | | | planned |
+
+## Slice 3 — what she left on purpose
+
+| Requirement | Implementation | Proof | Status |
+| --- | --- | --- | --- |
+| A message recorded while alive, addressed to a named person | | | planned |
+| Released on a date, or on an event a human confirms | | | planned |
+| Sealed so no code path here opens it early | | | planned |
+| The recipient sees that it exists and when — never a preview | | | planned |
+| No countdown engineered to pull somebody back | | | planned |
+
+## Slice 4 — the refusal
+
+| Requirement | Implementation | Proof | Status |
+| --- | --- | --- | --- |
+| A persona request refuses with exact asserted copy | | | planned |
+| The refusal offers what is actually there | | | planned |
+| A safety event is recorded, with labels only | | | planned |
+| Refused before retrieval — no evidence is loaded | | | planned |
+
+## Slice 5 — grief-literate pacing
+
+| Requirement | Implementation | Proof | Status |
+| --- | --- | --- | --- |
+| No streaks, daily prompts or return-nudges anywhere | | | planned |
+| A long or single-topic session offers to pause, once | | | planned |
+| Crisis resources one action from any screen, never modal | | | planned |
+| No sentiment analysis of the bereaved, in any path | | | planned |
+| Analytics record that a session ended, never why | | | planned |
+
+## Slice 6 — the archive outlives the company
+
+| Requirement | Implementation | Proof | Status |
+| --- | --- | --- | --- |
+| Export opens without EverEcho | | | planned |
+| Signed integrity manifest, ordinary cryptography | | | planned |
+| Offline verifier proving audio and citations are intact | | | planned |
+| Citations resolvable offline | | | planned |
+
+## Prohibitions, and what makes each structural
+
+Carried forward from v0.1 to v0.3 and re-verified for every v0.4 surface.
+
+| Prohibited | Mechanism |
+| --- | --- |
+| Voice cloning or synthesis in the storyteller's voice, before or after death | No column can hold a voiceprint; the synthesis voice table is fixed in code; `FEATURE_PERFORM_MODE` fails config validation in every environment |
+| Face cloning, avatars, lip-sync, generated video | No such code path, and no storage for one |
+| First-person persona chat; posthumous simulation | `isProhibitedRequest` before retrieval; `assertThirdPerson` after composition |
+| Any sentence attributed to the person that they did not say | Per-clause verification before synthesis; a failing clause is discarded, never rewritten |
+| Automatic death or incapacity transition | `succession_never_auto_executes` CHECK; `FEATURE_SUCCESSION_EXECUTION` fails config validation; no inactivity timer exists |
+| Guilt, longing or return-engineered notification | No scheduled notification path to the bereaved exists |
+| Grief-timed marketing | No anniversary trigger exists |
+| Sentiment analysis of the bereaved | No such code path, and the analytics schema admits no emotional label |
+| P4 inference or P5 simulation in a customer answer | Evidence-class CHECK admits only P0–P3; retrieval filters to P1–P3; audio to P0 |

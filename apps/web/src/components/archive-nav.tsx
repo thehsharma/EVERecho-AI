@@ -92,6 +92,9 @@ function groupsFor(): Group[] {
         { href: '/consent/history', label: 'Consent history', requires: 'consent.history.read' },
         { href: '/audit', label: 'Activity', requires: 'audit.read' },
         { href: '/succession', label: 'Continuity', requires: 'succession.read' },
+        // Deliberately plain. "Legacy planning" and "end of life" both make it
+        // harder to click than the thing itself is.
+        { href: '/remembrance', label: 'After', requires: 'remembrance.read' },
       ],
     },
     {
