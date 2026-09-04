@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { VoiceAnswer } from '@everecho/contracts';
+import type { TellAnswer, VoiceAnswer } from '@everecho/contracts';
 import { api, ApiRequestError } from '@/lib/api';
 import { Card, Notice } from './ui';
 
@@ -27,21 +27,34 @@ export function VoicePlayer({
   archiveId: string;
   subjectName: string;
 }) {
+  const [mode, setMode] = useState<'ask' | 'tell'>('ask');
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState<VoiceAnswer | null>(null);
+  const [told, setTold] = useState<TellAnswer | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const ask = async () => {
+  const submit = async () => {
     setPending(true);
     setError(null);
+    setAnswer(null);
+    setTold(null);
     try {
-      const result = await api.send<{ answer: VoiceAnswer }>(
-        'POST',
-        `/v1/archives/${archiveId}/voice/ask`,
-        { question: question.trim() },
-      );
-      setAnswer(result.answer);
+      if (mode === 'tell') {
+        const result = await api.send<{ answer: TellAnswer }>(
+          'POST',
+          `/v1/archives/${archiveId}/voice/tell`,
+          { news: question.trim() },
+        );
+        setTold(result.answer);
+      } else {
+        const result = await api.send<{ answer: VoiceAnswer }>(
+          'POST',
+          `/v1/archives/${archiveId}/voice/ask`,
+          { question: question.trim() },
+        );
+        setAnswer(result.answer);
+      }
     } catch (caught) {
       setError(caught instanceof ApiRequestError ? caught.message : 'That did not work.');
     } finally {
@@ -54,7 +67,41 @@ export function VoicePlayer({
       {error ? <Notice tone="danger">{error}</Notice> : null}
 
       <Card>
-        <label htmlFor="voice-question">What would you like to hear them talk about?</label>
+        <fieldset>
+          <legend>What are you here for?</legend>
+          <label>
+            <input
+              type="radio"
+              name="voice-mode"
+              checked={mode === 'ask'}
+              onChange={() => {
+                setMode('ask');
+                setAnswer(null);
+                setTold(null);
+              }}
+            />{' '}
+            Hear them talk about something
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="voice-mode"
+              checked={mode === 'tell'}
+              onChange={() => {
+                setMode('tell');
+                setAnswer(null);
+                setTold(null);
+              }}
+            />{' '}
+            Tell them something that has happened
+          </label>
+        </fieldset>
+
+        <label htmlFor="voice-question">
+          {mode === 'ask'
+            ? 'What would you like to hear them talk about?'
+            : `What would you like to tell ${subjectName}?`}
+        </label>
         <textarea
           id="voice-question"
           rows={2}
@@ -63,7 +110,7 @@ export function VoicePlayer({
           onChange={(event) => setQuestion(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && question.trim()) {
-              void ask();
+              void submit();
             }
           }}
         />
@@ -72,31 +119,52 @@ export function VoicePlayer({
             type="button"
             className="btn btn-primary"
             disabled={pending || question.trim().length === 0}
-            onClick={() => void ask()}
+            onClick={() => void submit()}
           >
-            Find it
+            {mode === 'ask' ? 'Find it' : 'Tell them'}
           </button>
         </div>
         <p className="muted">
-          {/* Said before anybody asks, so nobody is surprised by a refusal. */}
-          This plays what {subjectName} actually recorded. It will not read anything aloud in their
-          voice, and it will not guess what they might have said.
+          {/* Said before anybody asks, so nobody is surprised by what comes back. */}
+          {mode === 'ask'
+            ? `This plays what ${subjectName} actually recorded. It will not read anything aloud in their voice, and it will not guess what they might have said.`
+            : `Nothing here answers you back. What it can do is find a moment where ${subjectName} talked about the same thing in their own life, and play it.`}
         </p>
       </Card>
 
-      {answer ? <Answer answer={answer} subjectName={subjectName} /> : null}
+      {answer ? <ArchiveReply answer={answer} subjectName={subjectName} /> : null}
+      {told ? <ArchiveReply answer={told} subjectName={subjectName} /> : null}
     </div>
   );
 }
 
-function Answer({ answer, subjectName }: { answer: VoiceAnswer; subjectName: string }) {
+/**
+ * Everything that comes back, however it was asked for.
+ *
+ * One component for both modes on purpose. The two started out identical and
+ * would have drifted, and the thing that would have drifted is the one that
+ * matters: the archive's own voice and theirs are never allowed to look alike.
+ * What the archive says is interface text, labelled and announced. What they
+ * said is a quotation with the recording beside it. A bereaved person should
+ * never have to work out who is talking.
+ *
+ * The temptation this shape removes is a reply. There is no branch here that
+ * could render warmth, or pride, or "she would have loved that" — every one of
+ * those is a sentence attributed to somebody who cannot say it, however kindly
+ * meant. A statement of fact, then them, unedited. Nothing in between.
+ */
+function ArchiveReply({
+  answer,
+  subjectName,
+}: {
+  answer: Pick<VoiceAnswer, 'spokenByArchive' | 'quotedText' | 'clip'>;
+  subjectName: string;
+}) {
   return (
     <div className="stack">
-      {/*
-        The archive speaking. role="status" so a screen reader announces it,
-        and visibly the interface's own voice — never styled as a quotation,
-        because a quotation is what their words look like.
-      */}
+      {/* role="status" so a screen reader announces it, and visibly the
+          interface's own voice — never styled as a quotation, because a
+          quotation is what their words look like. */}
       <div className="notice notice-info" role="status">
         <strong className="small">The archive</strong>
         <div style={{ height: '0.35rem' }} />

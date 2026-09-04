@@ -68,3 +68,27 @@ export type VoiceAnswer = z.infer<typeof voiceAnswerSchema>;
 export const askVoiceRequestSchema = z.object({
   question: z.string().min(1).max(2000),
 });
+
+/**
+ * Telling them something that has happened since.
+ *
+ * The response carries no reaction, because the archive has none to give. It
+ * carries what the news was understood to be about, and a moment from their
+ * own life on the same subject — or an honest statement that there is none.
+ */
+export const tellRequestSchema = z.object({
+  news: z.string().min(1).max(2000),
+});
+
+export const tellAnswerSchema = z.object({
+  /** The subject, as the archive understood it. A subject, never a feeling. */
+  about: z
+    .enum(['work', 'marriage', 'a child', 'moving', 'study', 'loss', 'illness', 'money', 'travel'])
+    .nullable(),
+  clip: voiceClipSchema.nullable(),
+  /** The archive speaking, in the third person, about what it found. */
+  spokenByArchive: z.string(),
+  reasonCode: z.enum(['found', 'nothing_on_this', 'audio_withheld', 'withheld']).nullable(),
+  quotedText: z.string().nullable(),
+});
+export type TellAnswer = z.infer<typeof tellAnswerSchema>;

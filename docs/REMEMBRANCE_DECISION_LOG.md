@@ -129,3 +129,47 @@ It surfaced intermittently because it depended on which memory retrieval
 happened to choose, which is exactly the kind of failure that gets dismissed as
 flaky. It was not flaky. It was real, and the evaluation was right three times
 before anybody looked.
+
+---
+
+## R-008 — Telling them something returns a fact, not a reaction
+
+**Decision.** When somebody shares news with the archive, it works out what the
+news is *about* and plays a moment from the storyteller's own life on the same
+subject. It never composes a response.
+
+**Why.** This is the single most requested thing in the category and the
+easiest to build badly. "She would have been so proud" is a sentence attributed
+to a person who cannot say it, however kindly it is meant, and the fact that
+grief makes somebody want to hear it is exactly why the product must not supply
+it.
+
+The honest version turns out to be better. You tell her you got the job; she
+tells you about her first class, fifty-three children and one blackboard, in
+1971, in her own voice. Nobody wrote that for the occasion. She just said it,
+and it happens to be the truest available answer.
+
+Two constraints make this safe rather than merely well-intentioned. The rule
+table maps news to *subjects* — work, marriage, a child — and has no column
+that could hold a sentiment, because the archive has no standing to decide
+whether somebody's news is happy. And a moment must touch at least two of the
+subject's words before it is offered: something arbitrary in her voice is worse
+than silence, because the voice makes anything sound like a reply.
+
+When there is nothing, the copy says so without implying indifference: "it
+doesn't mean it wouldn't have mattered to them — only that it isn't in what
+they recorded."
+
+---
+
+## R-009 — One component renders everything that comes back
+
+**Decision.** `ArchiveReply` renders both modes. There is no branch anywhere in
+it that could produce warmth, pride or presence.
+
+**Why.** The two started as separate components with identical bodies, which is
+a place for two renderings of the same thing to drift — and the thing that
+would have drifted is the one that matters: that the archive's voice and the
+storyteller's are never allowed to look alike. Merging them also removes the
+obvious future edit, which is somebody adding a kind sentence to the "tell"
+branch only.

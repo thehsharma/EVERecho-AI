@@ -52,6 +52,21 @@ marked done on the strength of a code reading.
 | Memorial mode never reaches past ordinary consent | The grant's sensitivity ceiling filters the candidate segments, exactly as it does for a download | Integration "keeps it inside the archive" | done |
 | Accessible at WCAG 2.2 AA | At rest and with an answer present, on two viewports | `accessibility.spec.ts` "at rest, and with an answer from the archive on it" — zero violations | done |
 
+## Slice 2b — telling them something that has happened
+
+| Requirement | Implementation | Proof | Status |
+| --- | --- | --- | --- |
+| News is answered with a real moment from their own life on the same subject | `findOccasion` + `selectOccasionClip`; "I got the job" reaches "I started teaching in 1971", which shares no words with it | `occasions.test.ts` "reaches her own first job from somebody else's new one"; integration "answers news about a job with what she said about her own" | done |
+| It never reacts to the news | No code path composes a reply. The archive states a fact about itself and stops | Integration "never reacts to the news" (no proud/congratulate/she-would/watching-over, and never first person); E2E "never reacts to the news" scans the whole page | done |
+| News maps to subjects, never to feelings | The rule table has no sentiment column; asserted against the data structure itself | `occasions.test.ts` "maps news to subjects, never to feelings" | done |
+| The subject's words widen a search; they never supply an answer | Related terms only ever select among what was actually recorded | `occasions.test.ts` "never supplies an answer of its own, only a place to look" | done |
+| More than one word in common before it says anything | `MIN_SUBJECT_MATCHES = 2`. Something arbitrary in their voice is worse than nothing, because the voice makes it sound like a reply | `occasions.test.ts` "needs more than one word in common before it says anything"; integration "recognises a subject and still finds nothing, rather than reaching" | done |
+| Nothing found is said without implying it did not matter | "It doesn't mean it wouldn't have mattered to them — only that it isn't in what they recorded" | Integration and E2E "says plainly when there is nothing, without implying it did not matter" | done |
+| Deterministic — the same news returns the same moment | Ranked by subject hits, then the news's own words, then segment index | `occasions.test.ts` "returns the same moment when told the same news twice" | done |
+| What somebody told their dead mother is not recorded | Analytics carry a boolean; the schema admits no strings | Integration "records the subject and nothing else" | done |
+| The directive governs it, like every other playback | Same `resolveRemembrance` call per clip | Integration "obeys what she decided about the moment it would have played" | done |
+| Never reaches past ordinary consent | Same `loadPlayable` helper as memorial mode — one query, so a sensitivity filter cannot be forgotten in one of two places | Integration "keeps it inside the archive" | done |
+
 ## Slice 3 — what she left on purpose
 
 | Requirement | Implementation | Proof | Status |

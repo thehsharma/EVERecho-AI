@@ -163,3 +163,59 @@ test.describe('hearing their voice', () => {
     await expect(page.locator('blockquote')).toHaveCount(0);
   });
 });
+
+test.describe('telling them something that has happened', () => {
+  test.use({ storageState: 'tests/e2e/.auth/family.json' });
+
+  test('says up front that nothing answers back', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/listen`);
+    await page.getByLabel('Tell them something that has happened').check();
+
+    // The expectation is set before the person types, not corrected afterwards.
+    await expect(page.getByText(/Nothing here answers you back/i)).toBeVisible();
+  });
+
+  test('answers news about a job with what they said about their own', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/listen`);
+    await page.getByLabel('Tell them something that has happened').check();
+
+    await page.getByLabel(/What would you like to tell/i).fill('I got the job, Aai');
+    await page.getByRole('button', { name: 'Tell them' }).click();
+
+    const archiveVoice = page.locator('.notice-info[role="status"]').last();
+    await expect(archiveVoice).toContainText('their own life', { timeout: 15000 });
+  });
+
+  test('never reacts to the news', async ({ page }) => {
+    // The whole point. No congratulation, no pride, no presence.
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/listen`);
+    await page.getByLabel('Tell them something that has happened').check();
+
+    await page.getByLabel(/What would you like to tell/i).fill('I got the job, Aai');
+    await page.getByRole('button', { name: 'Tell them' }).click();
+    await expect(page.locator('.notice-info[role="status"]').last()).toBeVisible({
+      timeout: 15000,
+    });
+
+    const text = (await page.locator('main').innerText()).toLowerCase();
+    expect(text).not.toMatch(/proud|congratulations|happy for you|she would|watching over|smiling/);
+  });
+
+  test('says plainly when there is nothing, without implying it did not matter', async ({
+    page,
+  }) => {
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/listen`);
+    await page.getByLabel('Tell them something that has happened').check();
+
+    await page.getByLabel(/What would you like to tell/i).fill('I have taken up sailing');
+    await page.getByRole('button', { name: 'Tell them' }).click();
+
+    await expect(page.getByText(/wouldn’t have mattered to them/i)).toBeVisible({
+      timeout: 15000,
+    });
+  });
+});

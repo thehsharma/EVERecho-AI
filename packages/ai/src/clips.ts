@@ -58,6 +58,28 @@ const MIN_QUESTION_COVERAGE = 0.5;
  * assembled from more than one span" is enforced, because a function that
  * cannot return two things cannot be made to join them later.
  */
+/**
+ * Turns a chosen segment into a clip.
+ *
+ * The only place a Clip is constructed, so lead-in, the untrimmed end and the
+ * single contiguous range are decided once. Choosing *which* segment is a
+ * different question and there is more than one way to ask it; how a clip is
+ * built is not up for discussion.
+ */
+export function clipFromSegment(segment: Segment): Clip | null {
+  if (segment.startMs === null || segment.endMs === null || segment.endMs <= segment.startMs) {
+    return null;
+  }
+  return {
+    segmentId: segment.id,
+    // Clamped at the start of the file. Never extended past the segment's own
+    // beginning in the other direction, because that would be trimming.
+    startMs: Math.max(0, segment.startMs - LEAD_IN_MS),
+    endMs: segment.endMs,
+    text: segment.text,
+  };
+}
+
 export function selectClip(question: string, segments: readonly Segment[]): Clip | null {
   if (contentTokens(question).length === 0) return null;
 
@@ -73,15 +95,7 @@ export function selectClip(question: string, segments: readonly Segment[]): Clip
 
   const best = scored[0];
   if (!best) return null;
-
-  return {
-    segmentId: best.segment.id,
-    // Clamped at the start of the file. Never extended past the segment's own
-    // beginning in the other direction, because that would be trimming.
-    startMs: Math.max(0, best.segment.startMs! - LEAD_IN_MS),
-    endMs: best.segment.endMs!,
-    text: best.segment.text,
-  };
+  return clipFromSegment(best.segment);
 }
 
 /**

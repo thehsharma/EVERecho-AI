@@ -553,3 +553,132 @@ describe('hearing the actual recording', () => {
     });
   });
 });
+
+describe('telling them something that has happened since', () => {
+  /**
+   * The obvious thing to build here is a reaction — congratulations in her
+   * voice, warmth she never expressed about news she never heard. These tests
+   * are mostly about the product not doing that.
+   */
+
+  beforeAll(async () => {
+    await h.ctx.db.withArchiveScope(archiveId, async (tx) => {
+      await tx.query(`DELETE FROM remembrance_directive WHERE archive_id = $1`, [archiveId]);
+      const source = await tx.one<{ id: string }>(
+        `INSERT INTO source_asset
+           (archive_id, kind, status, original_filename, mime_type, byte_size, storage_key,
+            scan_result, privacy, processing_stage, processed_at, sensitivity)
+         VALUES ($1,'audio','processed','session-03-work.webm','audio/webm',2048,
+                 'recordings/session-03', 'clean', $2, 'ready', now(), 'normal')
+         RETURNING id`,
+        [archiveId, JSON.stringify({ excluded: false })],
+      );
+      const transcript = await tx.one<{ id: string }>(
+        `INSERT INTO transcript
+           (archive_id, source_asset_id, provider, model_version, prompt_version, language,
+            status, method, policy_version, completed_at)
+         VALUES ($1,$2,'test','v1','v1','en','ready','speech_to_text','policy-1', now())
+         RETURNING id`,
+        [archiveId, source.id],
+      );
+      await tx.query(
+        `INSERT INTO transcript_segment (archive_id, transcript_id, idx, start_ms, end_ms, text)
+         VALUES ($1,$2,0,0,7000,
+                 'I started teaching in 1971, at a school near the cantonment.'),
+                ($1,$2,1,7000,15000,
+                 'The first class I ever taught had fifty-three children in it and one blackboard.'),
+                ($1,$2,2,15000,23000,
+                 'I met Vijay at a wedding in 1969 and we were married two years later.')`,
+        [archiveId, transcript.id],
+      );
+    });
+  });
+
+  const tell = (client: TestClient, news: string) =>
+    client.post<{
+      answer: {
+        about: string | null;
+        clip: { text: string } | null;
+        spokenByArchive: string;
+        reasonCode: string | null;
+        quotedText: string | null;
+      };
+    }>(`/v1/archives/${archiveId}/voice/tell`, { news });
+
+  it('answers news about a job with what she said about her own', async () => {
+    // "I got the job" and "I started teaching in 1971" share no words at all.
+    const response = await tell(anjali, 'I got the job, Aai');
+    expect(response.status).toBe(200);
+    expect(response.body.answer.about).toBe('work');
+    expect(response.body.answer.reasonCode).toBe('found');
+    expect(response.body.answer.clip?.text).toMatch(/teaching|taught|class/);
+  });
+
+  it('answers news about a wedding with her own', async () => {
+    const response = await tell(anjali, 'We are getting married in December');
+    expect(response.body.answer.about).toBe('marriage');
+    expect(response.body.answer.clip?.text).toContain('married');
+  });
+
+  it('never reacts to the news', async () => {
+    // The whole point. No congratulation, no pride, no presence — every one of
+    // those is a claim about somebody who cannot make it.
+    for (const news of [
+      'I got the job, Aai',
+      'We are getting married in December',
+      'My father died last week',
+    ]) {
+      const response = await tell(anjali, news);
+      const said = response.body.answer.spokenByArchive;
+      expect(said).not.toMatch(
+        /proud|congratul|happy for|she would|he would|they would|sorry for your|watching over|smiling/i,
+      );
+      // And it never speaks as them.
+      expect(said).not.toMatch(/\bI (?:am|was|remember|feel)\b/);
+    }
+  });
+
+  it('says plainly when there is nothing, without implying it did not matter', async () => {
+    const response = await tell(anjali, 'I have taken up sailing');
+    expect(response.body.answer.clip).toBeNull();
+    expect(response.body.answer.reasonCode).toBe('nothing_on_this');
+    // The sentence people would otherwise read as "she did not care".
+    expect(response.body.answer.spokenByArchive).toContain('wouldn’t have mattered');
+  });
+
+  it('recognises a subject and still finds nothing, rather than reaching', async () => {
+    // She never spoke about illness. Something arbitrary in her voice would be
+    // worse than nothing, because the voice makes it sound like a reply.
+    const response = await tell(anjali, 'I have been unwell and I am in hospital');
+    expect(response.body.answer.about).toBe('illness');
+    expect(response.body.answer.clip).toBeNull();
+  });
+
+  it('records the subject and nothing else', async () => {
+    // What somebody told their dead mother is not something to put in an
+    // analytics row. Enforced by the analytics schema, which admits no strings.
+    const response = await tell(anjali, 'I got the job at the hospital in Nashik');
+    expect(response.status).toBe(200);
+    expect(JSON.stringify(response.body.answer)).not.toContain('Nashik');
+  });
+
+  it('keeps it inside the archive', async () => {
+    const outsider = await signUp(h.app, { email: 'teller@example.test', displayName: 'Teller' });
+    const response = await tell(outsider, 'I got the job');
+    expect([403, 404]).toContain(response.status);
+  });
+
+  it('obeys what she decided about the moment it would have played', async () => {
+    await storyteller.put(`/v1/archives/${archiveId}/remembrance`, { defaultEffect: 'withhold' });
+    await storyteller.post(`/v1/archives/${archiveId}/remembrance/affirm`, {});
+    await admin.post(`/v1/admin/archives/${archiveId}/remembrance/activate`, {
+      executedByName: 'Priya Nair',
+      evidenceKind: 'death_certificate',
+      evidenceReference: 'MH/2026/00481',
+    });
+
+    const response = await tell(anjali, 'I got the job, Aai');
+    expect(response.body.answer.clip).toBeNull();
+    expect(response.body.answer.reasonCode).toBe('withheld');
+  });
+});
