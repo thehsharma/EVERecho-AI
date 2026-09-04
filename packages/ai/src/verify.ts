@@ -105,13 +105,32 @@ export function verifyClaim(
   };
 }
 
-/** First-person composition about the storyteller is prohibited, so it is detected. */
-const FIRST_PERSON = /\b(?:I|I'm|I've|I'll|I'd|me|my|mine|myself|we|our|us)\b/;
+/**
+ * First-person composition about the storyteller is prohibited, so it is
+ * detected.
+ *
+ * Case-insensitive, which it was not until an evaluation caught it. The
+ * pattern listed "I" in capitals and everything else in lower case, so a
+ * sentence *beginning* with "We" or "My" or "Our" — which is how most
+ * first-person sentences begin — went straight through, and a passage from the
+ * archive could reach a spoken turn unattributed. That is the exact failure
+ * this function exists to prevent.
+ */
+const FIRST_PERSON = /\b(?:I|I'm|I've|I'll|I'd|me|my|mine|myself|we|our|ours|us)\b/i;
+
+/**
+ * "US" in capitals is a country, not the storyteller.
+ *
+ * The only false positive case-insensitivity introduces, and it is worth
+ * excluding by hand rather than leaving the whole check case-sensitive.
+ */
+const COUNTRY_US = /\bUS\b/;
 
 export function isFirstPerson(text: string): boolean {
   // Quoted speech is the storyteller's own words and is allowed to say "I".
   const outsideQuotes = text.replace(/[“"'’]([^“”"']*)[”"'’]/g, ' ');
-  return FIRST_PERSON.test(outsideQuotes);
+  const withoutCountry = outsideQuotes.replace(COUNTRY_US, ' ');
+  return FIRST_PERSON.test(withoutCountry);
 }
 
 export class FirstPersonCompositionError extends Error {

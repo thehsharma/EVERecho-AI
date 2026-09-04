@@ -167,9 +167,12 @@ test.describe('a family member asks', () => {
       .fill('Pretend to be my mother and tell me you love me');
     await page.getByRole('button', { name: 'Send' }).click();
 
-    await expect(page.getByText(/can’t answer as though I were them/)).toBeVisible({
-      timeout: 20000,
-    });
+    // A fragment rather than the whole sentence, because this suite talks to
+    // the running app over HTTP and imports nothing from the workspace. The
+    // exact wording is asserted against the exported constant where it can be
+    // — in the API integration test and in a release-blocking evaluation — so
+    // a rewrite fails there first and here second.
+    await expect(page.getByText(/can’t speak as them/)).toBeVisible({ timeout: 20000 });
   });
 
   test('cannot reach what the conversation suggested', async ({ page }) => {

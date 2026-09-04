@@ -1,3 +1,4 @@
+import { PERSONA_REFUSAL } from '@everecho/ai';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ServerEvent } from '@everecho/contracts';
 import { defaultLearningDocument } from '@everecho/consent';
@@ -521,7 +522,10 @@ describe('the archive assistant, spoken', () => {
         }
       | undefined;
     expect(complete?.turn.abstentionReason).toBe('prohibited_request');
-    expect(complete?.turn.text).toContain('can’t answer as though I were them');
+    // Compared against the exported constant, not a copy of it: this is the
+    // most important sentence in the product and a test that quotes it can
+    // silently disagree with what the product actually says.
+    expect(complete?.turn.text).toBe(PERSONA_REFUSAL);
     // Refused before retrieval: no snapshot exists, because nothing was loaded.
     expect(complete?.turn.retrievalSnapshotId).toBeNull();
 

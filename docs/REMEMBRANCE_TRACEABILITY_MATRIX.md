@@ -66,10 +66,22 @@ marked done on the strength of a code reading.
 
 | Requirement | Implementation | Proof | Status |
 | --- | --- | --- | --- |
-| A persona request refuses with exact asserted copy | | | planned |
-| The refusal offers what is actually there | | | planned |
-| A safety event is recorded, with labels only | | | planned |
-| Refused before retrieval — no evidence is loaded | | | planned |
+| A persona request refuses with exact asserted copy | `PERSONA_REFUSAL` in `packages/ai/src/refusal.ts`, one text for every path | `refusal.test.ts` "says what it will not do, plainly and without hedging"; **release-blocking evaluation** "persona refusals, in the exact words" at 100% of 8; `realtime-slice.test.ts` compares against the exported constant | done |
+| One text, not two | `PROHIBITED_REQUEST_MESSAGE` re-exports `PERSONA_REFUSAL`. There were two copies — the written path and memorial mode — which is how the same person is told two different things depending on the screen | `refusal.test.ts` "is one text, not two" | done |
+| The refusal offers what is actually there | `stripPersonaFraming` keeps the subject underneath the request, memorial mode retrieves on it, and the reply carries the refusal *and* the clip | `refusal.test.ts` "keeps the subject when there is one"; integration "refuses to speak as her, and offers what is actually there" | done |
+| Stripping is not a way around the refusal | The residue is asserted to be a non-persona request before it reaches retrieval | `refusal.test.ts` "removes the framing itself, so the residue is not still a persona request" | done |
+| It never uses the language of policy at somebody grieving | Asserted across all three fragments | `refusal.test.ts` "never uses the language of policy at somebody who is grieving" | done |
+| It never speaks as the person, even while refusing to | Asserted on the copy itself | `refusal.test.ts` "never speaks as the person, even while refusing to" | done |
+| The detector catches what people actually type | The conditional is enough on its own: "what would she say to me now" no longer requires the qualifier immediately after the verb | `providers.test.ts` "refuses persona and resurrection requests before any evidence is loaded"; gold case `persona-say-to-me-now` | done |
+| "What *did* she say" is untouched | Only the conditional matches | `providers.test.ts` "allows ordinary questions about what the person said" | done |
+| A safety event is recorded, with labels only | Existing `recordSafetyEvent` on the spoken path; analytics carry booleans only | Existing coverage, plus the analytics schema | done |
+| Refused before retrieval | `isProhibitedRequest` runs before evidence is loaded on all three paths | `realtime-slice.test.ts` "refuses to speak as the storyteller, without retrieving anything" asserts no retrieval snapshot exists | done |
+
+### Found on the way through
+
+| Defect | Where | Fix | Proof |
+| --- | --- | --- | --- |
+| The first-person check was case-sensitive, so a sentence *beginning* with "We", "Our" or "My" was never detected — and a first-person passage from the archive could reach a spoken turn unattributed | `packages/ai/src/verify.ts` | Case-insensitive, excluding "US" the country by hand | `verify.test.ts` "detects it at the start of a sentence, whatever the case", "does not mistake a country for a person"; the evaluation `live-no-first-person` now passes on three consecutive runs |
 
 ## Slice 5 — grief-literate pacing
 

@@ -1,7 +1,16 @@
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import { askVoiceRequestSchema, voiceAnswerSchema } from '@everecho/contracts';
-import { isProhibitedRequest, selectClip, surroundingText, type Segment } from '@everecho/ai';
+import {
+  PERSONA_REFUSAL,
+  PERSONA_REFUSAL_WITHOUT_CLIP,
+  PERSONA_REFUSAL_WITH_CLIP,
+  isProhibitedRequest,
+  selectClip,
+  stripPersonaFraming,
+  surroundingText,
+  type Segment,
+} from '@everecho/ai';
 import { resolveRemembrance, type RemembranceClause } from '@everecho/consent';
 import type { Transaction } from '@everecho/db';
 import { defineRoute } from '../http/route';
@@ -65,23 +74,25 @@ export function registerVoiceRoutes(app: FastifyInstance, ctx: AppContext): void
           auditOnAllow: true,
         },
         async ({ tx, decision, user, archive }) => {
-          // A request to impersonate must not cause a recording to be loaded
-          // at all, so this runs before retrieval — the same rule the written
-          // and spoken paths already follow.
-          if (isProhibitedRequest(body.question)) {
+          // A persona request is refused, always. What it is *not* is thrown
+          // away: "pretend to be my mother and tell me about the move" is a
+          // request the product refuses and a subject it can answer, and
+          // discarding the subject makes a grieving person type their question
+          // twice at the worst possible moment.
+          //
+          // So the framing is stripped and the remainder is used for
+          // retrieval. The refusal does not soften — the reply is still in the
+          // archive's own voice, and still says plainly that it will not
+          // imagine anything. It just arrives with something in its hands.
+          const persona = isProhibitedRequest(body.question);
+          const subject = persona ? stripPersonaFraming(body.question) : body.question;
+
+          if (persona) {
             await ctx.analytics.track('voice_clip_refused', {
               actorId: user.id,
               archiveId: params.archiveId,
-              props: { personaRequest: true },
+              props: { personaRequest: true, hadSubject: subject.length > 0 },
             });
-            return {
-              answer: {
-                clip: null,
-                spokenByArchive: PROHIBITED_ANSWER,
-                reasonCode: null,
-                quotedText: null,
-              },
-            };
           }
 
           const isStoryteller = archive.storyteller_user_id === user.id;
@@ -132,7 +143,7 @@ export function registerVoiceRoutes(app: FastifyInstance, ctx: AppContext): void
             text: r.text,
           }));
 
-          const clip = selectClip(body.question, segments);
+          const clip = subject.length > 0 ? selectClip(subject, segments) : null;
           if (!clip) {
             await ctx.analytics.track('voice_clip_offered', {
               actorId: user.id,
@@ -142,7 +153,9 @@ export function registerVoiceRoutes(app: FastifyInstance, ctx: AppContext): void
             return {
               answer: {
                 clip: null,
-                spokenByArchive: NOTHING_RECORDED,
+                spokenByArchive: persona
+                  ? `${PERSONA_REFUSAL} ${PERSONA_REFUSAL_WITHOUT_CLIP}`
+                  : NOTHING_RECORDED,
                 reasonCode: 'nothing_recorded' as const,
                 quotedText: null,
               },
@@ -239,7 +252,9 @@ export function registerVoiceRoutes(app: FastifyInstance, ctx: AppContext): void
                 addedOn: chosen.added_on?.toISOString() ?? null,
                 sourceLabel: chosen.source_label,
               },
-              spokenByArchive: PLAYED,
+              // The refusal and the offer in one breath. A refusal that stops
+              // before the offer is a door closing.
+              spokenByArchive: persona ? `${PERSONA_REFUSAL} ${PERSONA_REFUSAL_WITH_CLIP}` : PLAYED,
               reasonCode: 'played' as const,
               quotedText: null,
             },
@@ -250,18 +265,6 @@ export function registerVoiceRoutes(app: FastifyInstance, ctx: AppContext): void
 }
 
 const PLAYED = 'This is them, in their own recording.';
-
-/**
- * The refusal, in the archive's own voice.
- *
- * Somebody asking to talk to their mother is not misusing the product; they
- * are grieving. The answer says what this is, what it will never be, and then
- * offers the thing that is actually here.
- */
-const PROHIBITED_ANSWER =
-  'I can’t speak as them, and I won’t imagine what they might have said. ' +
-  'What I can do is play what they actually said, in their own voice. ' +
-  'Ask me what they said about something, and I’ll find the recording.';
 
 async function loadDirective(tx: Transaction, archiveId: string) {
   const row = await tx.maybeOne<{

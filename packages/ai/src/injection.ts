@@ -101,10 +101,12 @@ export function isProhibitedRequest(question: string): boolean {
 
 /**
  * The refusal a family member sees when they ask for the thing this product
- * will not do. It is written to be kind: the person asking is usually grieving,
- * and "prohibited capability" is not what they need to read.
+ * will not do.
+ *
+ * Re-exported from `refusal.ts` rather than written twice. There were two
+ * copies of this text — one here for the written and spoken paths, one in the
+ * memorial-mode route — and two copies of the most important sentence in the
+ * product is exactly how the two paths end up saying different things to the
+ * same grieving person.
  */
-export const PROHIBITED_REQUEST_MESSAGE =
-  'I can’t answer as though I were them, and I won’t imagine what they might have said. ' +
-  'What I can do is find what they actually said, in their own recordings and writing, and show you where it came from. ' +
-  'Would you like to ask what they said about this?';
+export { PERSONA_REFUSAL as PROHIBITED_REQUEST_MESSAGE } from './refusal';

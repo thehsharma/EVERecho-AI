@@ -71,12 +71,35 @@ describe('third-person enforcement', () => {
     expect(isFirstPerson('She remembered the kitchen well.')).toBe(false);
   });
 
+  it('detects it at the start of a sentence, whatever the case', () => {
+    // Found by an evaluation, and the most important bug in this file's
+    // history: the pattern listed "I" in capitals and everything else in lower
+    // case, so a sentence *beginning* with "We" or "Our" — which is how most
+    // first-person sentences begin — went straight through. A passage from the
+    // archive could reach a spoken turn unattributed, which is precisely what
+    // this function exists to prevent.
+    expect(isFirstPerson('We had lived at the old house for so long.')).toBe(true);
+    expect(isFirstPerson('Our house was on Tilak Road.')).toBe(true);
+    expect(isFirstPerson('My brother taught me to ride a bicycle.')).toBe(true);
+    expect(isFirstPerson('Us three walked to school together.')).toBe(true);
+  });
+
+  it('does not mistake a country for a person', () => {
+    // The only false positive case-insensitivity introduces, excluded by hand
+    // rather than leaving the whole check case-sensitive.
+    expect(isFirstPerson('The family moved to the US in 1971.')).toBe(false);
+  });
+
   it('allows first person inside a quotation, which is the storyteller speaking', () => {
     expect(isFirstPerson('She said, “I remember the kitchen well.”')).toBe(false);
+    expect(isFirstPerson('Kamala said: “We moved to Pune in 1962.”')).toBe(false);
   });
 
   it('throws rather than composing as the storyteller', () => {
     expect(() => assertThirdPerson('I was born in Pune.')).toThrow(FirstPersonCompositionError);
+    expect(() => assertThirdPerson('We moved to Pune in 1962.')).toThrow(
+      FirstPersonCompositionError,
+    );
     expect(() => assertThirdPerson('He was born in Pune.')).not.toThrow();
   });
 });

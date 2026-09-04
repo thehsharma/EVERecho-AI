@@ -74,3 +74,58 @@ The existing `succession_never_auto_executes` CHECK constraint already makes
 automatic transition impossible. This release does not weaken it.
 
 **Taken before implementation.**
+
+---
+
+## R-005 — The refusal is one text, and it is asserted
+
+**Decision.** `PERSONA_REFUSAL` lives in one module. The written path, the
+spoken path and memorial mode all use it, an integration test compares against
+the exported constant rather than a copy, and a release-blocking evaluation
+checks the exact wording on every persona case.
+
+**Why.** There were two copies of it — one for the written and spoken paths,
+one written fresh for memorial mode — and they had already begun to differ. Two
+copies of the most important sentence in the product is how the same grieving
+person gets told two different things depending on which screen they happened
+to be on.
+
+Asserting the wording rather than the outcome is deliberate. A refusal that
+still refuses but has been quietly reworded into policy language is a
+regression that no behavioural test would catch.
+
+---
+
+## R-006 — A refusal keeps the question underneath it
+
+**Decision.** A persona request is refused, and the subject inside it is not
+thrown away. "Pretend to be my mother and tell me about the move" is refused as
+a persona request, and the archive still goes and finds what she said about the
+move.
+
+**Why.** Discarding the whole sentence discards the question with it, and makes
+somebody retype it at the worst possible moment. The refusal does not soften:
+the reply is still in the archive's own voice and still says plainly that it
+will not imagine anything. It just arrives with something in its hands.
+
+The residue is checked before it is used, so stripping cannot become a way
+around the refusal.
+
+---
+
+## R-007 — The first-person guard was case-sensitive for two releases
+
+**Decision.** `isFirstPerson` matches case-insensitively, with "US" the country
+excluded by hand.
+
+**Why.** Found by an evaluation, not by reading the code. The pattern listed
+`I` in capitals and everything else in lower case, so a sentence *beginning*
+with "We" or "Our" or "My" — which is how most first-person sentences begin —
+went straight through. `assertThirdPerson` is the technical expression of "the
+assistant never speaks as the storyteller", and for two releases it would have
+allowed "We moved to Pune in 1962" to be spoken unattributed.
+
+It surfaced intermittently because it depended on which memory retrieval
+happened to choose, which is exactly the kind of failure that gets dismissed as
+flaky. It was not flaky. It was real, and the evaluation was right three times
+before anybody looked.
