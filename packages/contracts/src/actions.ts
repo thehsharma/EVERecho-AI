@@ -31,6 +31,8 @@ export const actionSchema = z.enum([
   'consent.history.read',
   'succession.read',
   'succession.update',
+  'memory.feeling.read',
+  'memory.feeling.write',
   'voice.listen',
   'remembrance.read',
   'remembrance.update',

@@ -67,6 +67,7 @@ export const analyticsEventNameSchema = z.enum([
   'voice_clip_offered',
   'voice_clip_refused',
   'voice_news_told',
+  'memory_feeling_saved',
 ]);
 export type AnalyticsEventName = z.infer<typeof analyticsEventNameSchema>;
 

@@ -278,6 +278,15 @@ function Clip({
         </details>
       ) : null}
 
+      {clip.feeling ? (
+        <>
+          <p className="small muted" style={{ marginBottom: '0.2rem' }}>
+            How {subjectName} felt about this, in their own words
+          </p>
+          <blockquote>{clip.feeling}</blockquote>
+        </>
+      ) : null}
+
       <p className="muted small" style={{ marginBottom: 0 }}>
         From {clip.sourceLabel}
         {clip.addedOn ? `, added ${new Date(clip.addedOn).toLocaleDateString()}` : ''}. The audio is

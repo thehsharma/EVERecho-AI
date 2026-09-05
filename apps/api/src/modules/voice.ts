@@ -20,6 +20,7 @@ import {
 } from '@everecho/ai';
 import { resolveRemembrance, type RemembranceClause } from '@everecho/consent';
 import type { Transaction } from '@everecho/db';
+import { findFeeling } from './feelings';
 import { defineRoute } from '../http/route';
 import { withArchiveAccess } from '../lib/access';
 import { allowedSensitivities } from './sources';
@@ -222,6 +223,10 @@ export function registerVoiceRoutes(app: FastifyInstance, ctx: AppContext): void
                 after: around.after,
                 addedOn: chosen.added_on?.toISOString() ?? null,
                 sourceLabel: chosen.source_label,
+                // Their own words about how it felt, if they wrote any and
+                // chose to share them. Read from the row, never derived from
+                // the recording.
+                feeling: await sharedFeeling(tx, params.archiveId, chosen.memory_id, isStoryteller),
               },
               // The refusal and the offer in one breath. A refusal that stops
               // before the offer is a door closing.
@@ -360,6 +365,10 @@ export function registerVoiceRoutes(app: FastifyInstance, ctx: AppContext): void
                 after: around.after,
                 addedOn: chosen.added_on?.toISOString() ?? null,
                 sourceLabel: chosen.source_label,
+                // Their own words about how it felt, if they wrote any and
+                // chose to share them. Read from the row, never derived from
+                // the recording.
+                feeling: await sharedFeeling(tx, params.archiveId, chosen.memory_id, isStoryteller),
               },
               spokenByArchive: aboutTheirOwn(occasion.kind),
               reasonCode: 'found' as const,
@@ -389,6 +398,29 @@ const NOTHING_ON_THIS =
   'only that it isn’t in what they recorded.';
 
 const PLAYED = 'This is them, in their own recording.';
+
+/**
+ * How they felt about this memory, if they said so and shared it.
+ *
+ * Returns null far more often than not, and that is the ordinary case rather
+ * than a gap: most memories have no feeling note, and the product never fills
+ * one in.
+ */
+async function sharedFeeling(
+  tx: Transaction,
+  archiveId: string,
+  memoryId: string | null,
+  isStoryteller: boolean,
+): Promise<string | null> {
+  if (!memoryId) return null;
+  const row = await findFeeling(tx, archiveId, memoryId);
+  if (!row) return null;
+  // A note kept private is theirs alone, and reported as absent rather than as
+  // withheld: saying a feeling exists that may not be seen invites exactly the
+  // speculation the person was avoiding.
+  if (!row.shared && !isStoryteller) return null;
+  return row.body;
+}
 
 /** One row per playable moment this reader is already permitted to reach. */
 interface PlayableRow {

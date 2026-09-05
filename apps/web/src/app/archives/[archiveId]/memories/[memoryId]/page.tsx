@@ -8,10 +8,11 @@ import {
   ProvenanceTag,
 } from '@/components/ui';
 import { MemoryEditor } from '@/components/memory-editor';
+import { MemoryFeelingEditor } from '@/components/memory-feeling';
 import { ReviewButtons } from '@/components/review';
 import { ApiRequestError } from '@/lib/api';
 import { serverFetch } from '@/lib/server';
-import type { Archive, Memory } from '@everecho/contracts';
+import type { Archive, Memory, MemoryFeeling } from '@everecho/contracts';
 
 export const metadata = { title: 'A story' };
 
@@ -34,6 +35,14 @@ export default async function MemoryPage({
   }
 
   const canEdit = archive.viewerCapabilities.includes('memory.update');
+
+  // Absent for most stories, and for anybody the storyteller kept it from.
+  // A failure to read it must not take the story down with it.
+  const feeling = await serverFetch<{ feeling: MemoryFeeling | null }>(
+    `/v1/archives/${archiveId}/memories/${memoryId}/feeling`,
+  )
+    .then((r) => r.feeling)
+    .catch(() => null);
 
   return (
     <div className="stack-lg">
@@ -70,6 +79,18 @@ export default async function MemoryPage({
           </p>
         </Card>
       )}
+
+      {/* After the story and before the evidence: it is a response to what was
+          said, not a property of it. */}
+      {memory.status === 'approved' ? (
+        <MemoryFeelingEditor
+          archiveId={archiveId}
+          memoryId={memory.id}
+          feeling={feeling}
+          canWrite={archive.viewerCapabilities.includes('memory.feeling.write')}
+          subjectName={archive.subjectDisplayName}
+        />
+      ) : null}
 
       <Card>
         <h2>Where this comes from</h2>

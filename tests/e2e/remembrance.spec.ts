@@ -219,3 +219,56 @@ test.describe('telling them something that has happened', () => {
     });
   });
 });
+
+test.describe('how they felt about it', () => {
+  test.use({ storageState: 'tests/e2e/.auth/storyteller.json' });
+
+  test('offers a blank box, and never a list of moods', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/memories?status=approved`);
+    // By href rather than by name: the link is the story's own title, which is
+    // whatever the storyteller called it.
+    await page.locator(`a[href*="/memories/"]`).first().click();
+    await page.waitForURL(/\/memories\/[0-9a-f-]{36}/);
+
+    // Either label: the button says "Say how you felt" until there is one and
+    // "Change this" afterwards, and the two viewports share a database.
+    await page.getByRole('button', { name: /Say how you felt|Change this/ }).click();
+    await expect(page.getByLabel('How do you feel about this now?')).toBeVisible();
+
+    // A fixed vocabulary would be the product deciding what somebody is allowed
+    // to have felt about their own life. There are no chips here.
+    await expect(page.getByText(/Nobody will summarise it/i)).toBeVisible();
+    const text = (await page.locator('main').innerText()).toLowerCase();
+    expect(text).not.toMatch(/\bmood\b|select an emotion|how positive/);
+  });
+
+  test('offers keeping it private at the same weight as sharing', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/memories?status=approved`);
+    // By href rather than by name: the link is the story's own title, which is
+    // whatever the storyteller called it.
+    await page.locator(`a[href*="/memories/"]`).first().click();
+    await page.waitForURL(/\/memories\/[0-9a-f-]{36}/);
+    await page.getByRole('button', { name: /Say how you felt|Change this/ }).click();
+
+    await expect(page.getByRole('group', { name: 'Who is this for?' })).toBeVisible();
+    await expect(page.getByLabel('Just me')).toBeVisible();
+  });
+
+  test('keeps the words exactly as they were written', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/memories?status=approved`);
+    // By href rather than by name: the link is the story's own title, which is
+    // whatever the storyteller called it.
+    await page.locator(`a[href*="/memories/"]`).first().click();
+    await page.waitForURL(/\/memories\/[0-9a-f-]{36}/);
+    await page.getByRole('button', { name: /Say how you felt|Change this/ }).click();
+
+    const words = `Relieved, mostly, and then guilty about being relieved. ${Date.now()}`;
+    await page.getByLabel('How do you feel about this now?').fill(words);
+    await page.getByRole('button', { name: 'Save this' }).click();
+
+    await expect(page.getByText(words)).toBeVisible({ timeout: 15000 });
+  });
+});

@@ -67,6 +67,26 @@ marked done on the strength of a code reading.
 | The directive governs it, like every other playback | Same `resolveRemembrance` call per clip | Integration "obeys what she decided about the moment it would have played" | done |
 | Never reaches past ordinary consent | Same `loadPlayable` helper as memorial mode — one query, so a sensitivity filter cannot be forgotten in one of two places | Integration "keeps it inside the archive" | done |
 
+## Slice 2c — how they felt about it
+
+The archive kept what happened and never how it felt, which is most of what
+anybody wants from somebody's life story. There is exactly one way that gap may
+be filled: the person says it, about themselves.
+
+| Requirement | Implementation | Proof | Status |
+| --- | --- | --- | --- |
+| An emotion is a first-person statement, never an inference | `memory.feeling.write` is storyteller-only; there is no other write path, and no sentiment analysis exists anywhere in the codebase | Integration "lets nobody else say how they felt" (family, contributor, buyer and administrator all refused) | done |
+| The product never fills one in | A memory with no note has no feeling. The ordinary case | Integration "is never inferred — an archive with no note has no feeling" | done |
+| No fixed vocabulary of permitted emotions | Free text. No mood column, no valence score, no enum — a fixed vocabulary would be the product deciding what somebody is allowed to have felt about their own life | Integration "takes the storyteller's own words about their own memory" asserts the text is kept exactly; E2E "offers a blank box, and never a list of moods" | done |
+| Private is offered at the same weight as shared, when it is written | `shared` per note, decided in the same breath as writing it | E2E "offers keeping it private at the same weight as sharing" | done |
+| A private note is reported as absent, not as withheld | Saying a feeling exists that may not be seen invites exactly the speculation the person was avoiding | Integration "keeps a private one private, and does not announce that it exists" | done |
+| It reaches the family where they meet the memory | Rendered on the story, and beside every clip in memorial mode | Integration "lets the family read it, attributed to them" | done |
+| A feeling about a draft is refused | The draft may not survive | Integration "refuses a feeling about something still in review" | done |
+| Removable without touching the story | `DELETE`; the memory's status is asserted unchanged | Integration "can be taken back without touching the story" | done |
+| The words never reach analytics | Booleans only; the analytics schema admits no strings | Integration "records that one exists and never what it says" | done |
+| Archive isolation | Forced RLS on `memory_feeling` | Covered by the forced-RLS sweep | done |
+| Accessible at WCAG 2.2 AA | The story at rest and with the box open, on two viewports | `accessibility.spec.ts` "a story, and the feeling box open on it" — zero violations | done |
+
 ## Slice 3 — what she left on purpose
 
 | Requirement | Implementation | Proof | Status |

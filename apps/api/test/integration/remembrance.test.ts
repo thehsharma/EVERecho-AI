@@ -682,3 +682,131 @@ describe('telling them something that has happened since', () => {
     expect(response.body.answer.reasonCode).toBe('withheld');
   });
 });
+
+describe('how they felt about it', () => {
+  /**
+   * The archive has always kept what happened and never how it felt. These
+   * tests are about the one way that gap may be filled: the person says it,
+   * about themselves.
+   */
+
+  let approvedId: string;
+
+  beforeAll(async () => {
+    await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      tx.query(`DELETE FROM remembrance_directive WHERE archive_id = $1`, [archiveId]),
+    );
+    const row = await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      tx.one<{ id: string }>(
+        `INSERT INTO memory (archive_id, title, body, status, origin, sensitivity, evidence_class,
+                             approved_at)
+         VALUES ($1,'The money years','There were years when it was very tight.','approved',
+                 'interview','normal','P1_DIRECT_STATEMENT', now())
+         RETURNING id`,
+        [archiveId],
+      ),
+    );
+    approvedId = row.id;
+  });
+
+  const url = (memoryId: string) => `/v1/archives/${archiveId}/memories/${memoryId}/feeling`;
+
+  it('takes the storyteller’s own words about their own memory', async () => {
+    const saved = await storyteller.put<{ feeling: { body: string; shared: boolean } }>(
+      url(approvedId),
+      { body: 'Relieved, mostly, and then guilty about being relieved.', shared: true },
+    );
+    expect(saved.status).toBe(200);
+    // Kept exactly. Nothing summarises it, shortens it or decides what it means.
+    expect(saved.body.feeling.body).toBe('Relieved, mostly, and then guilty about being relieved.');
+  });
+
+  it('lets the family read it, attributed to them', async () => {
+    const read = await anjali.get<{ feeling: { body: string } | null }>(url(approvedId));
+    expect(read.status).toBe(200);
+    expect(read.body.feeling?.body).toContain('Relieved');
+  });
+
+  it('keeps a private one private, and does not announce that it exists', async () => {
+    await storyteller.put(url(approvedId), {
+      body: 'I have never told anybody how frightened I was that year.',
+      shared: false,
+    });
+
+    // Reported as absent rather than as withheld: saying a feeling exists that
+    // may not be seen invites exactly the speculation they were avoiding.
+    const family = await anjali.get<{ feeling: unknown }>(url(approvedId));
+    expect(family.body.feeling).toBeNull();
+
+    const mine = await storyteller.get<{ feeling: { body: string } | null }>(url(approvedId));
+    expect(mine.body.feeling?.body).toContain('frightened');
+  });
+
+  it('lets nobody else say how they felt', async () => {
+    // An emotion in this archive is a first-person statement. There is no
+    // other way one can get in.
+    for (const client of [anjali, ravi, buyer, admin]) {
+      const response = await client.put(url(approvedId), { body: 'She seemed happy about it.' });
+      expect([403, 404]).toContain(response.status);
+    }
+  });
+
+  it('refuses a feeling about something still in review', async () => {
+    const draft = await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      tx.one<{ id: string }>(
+        `INSERT INTO memory (archive_id, title, body, status, origin, sensitivity, evidence_class)
+         VALUES ($1,'A draft','Not decided yet.','candidate','interview','normal',
+                 'P3_SUPPORTED_SYNTHESIS')
+         RETURNING id`,
+        [archiveId],
+      ),
+    );
+    const response = await storyteller.put(url(draft.id), { body: 'Hard to say.' });
+    expect(response.status).toBe(409);
+    expect(response.reasonCode).toBe('memory_not_approved');
+  });
+
+  it('can be taken back without touching the story', async () => {
+    await storyteller.put(url(approvedId), { body: 'Something I would rather not keep.' });
+    const removed = await storyteller.request('DELETE', url(approvedId));
+    expect(removed.status).toBe(200);
+
+    expect((await storyteller.get<{ feeling: unknown }>(url(approvedId))).body.feeling).toBeNull();
+    const memory = await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      tx.one<{ status: string }>(`SELECT status FROM memory WHERE id = $1`, [approvedId]),
+    );
+    expect(memory.status).toBe('approved');
+  });
+
+  it('records that one exists and never what it says', async () => {
+    // This is the most private text in the archive. The analytics schema
+    // admits no strings at all, so it cannot be recorded even by mistake.
+    const response = await storyteller.put(url(approvedId), {
+      body: 'I was frightened for the children the whole of that winter.',
+      shared: false,
+    });
+    expect(response.status).toBe(200);
+    const events = await h.ctx.db.query<{ props: Record<string, unknown> }>(
+      `SELECT props FROM analytics_event WHERE name = 'memory_feeling_saved'`,
+    );
+    for (const event of events) {
+      expect(JSON.stringify(event.props)).not.toContain('frightened');
+    }
+  });
+
+  it('is never inferred — an archive with no note has no feeling', async () => {
+    // The ordinary case, and the product never fills one in.
+    const untouched = await h.ctx.db.withArchiveScope(archiveId, (tx) =>
+      tx.one<{ id: string }>(
+        `INSERT INTO memory (archive_id, title, body, status, origin, sensitivity, evidence_class,
+                             approved_at)
+         VALUES ($1,'A plain one','We walked to the river most evenings.','approved','interview',
+                 'normal','P1_DIRECT_STATEMENT', now())
+         RETURNING id`,
+        [archiveId],
+      ),
+    );
+    const response = await anjali.get<{ feeling: unknown }>(url(untouched.id));
+    expect(response.body.feeling).toBeNull();
+  });
+});

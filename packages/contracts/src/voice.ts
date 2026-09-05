@@ -32,6 +32,13 @@ export const voiceClipSchema = z.object({
    */
   addedOn: timestampSchema.nullable(),
   sourceLabel: z.string(),
+  /**
+   * How they felt about it, in their own words, if they said and shared it.
+   *
+   * Never inferred from the recording. It is here because the person wrote it
+   * about themselves, and it is null far more often than not.
+   */
+  feeling: z.string().nullable(),
 });
 export type VoiceClip = z.infer<typeof voiceClipSchema>;
 

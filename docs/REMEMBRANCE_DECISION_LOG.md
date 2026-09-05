@@ -173,3 +173,54 @@ would have drifted is the one that matters: that the archive's voice and the
 storyteller's are never allowed to look alike. Merging them also removes the
 obvious future edit, which is somebody adding a kind sentence to the "tell"
 branch only.
+
+---
+
+## R-010 — Emotion is stated, never detected
+
+**Decision.** `memory_feeling` holds what the storyteller said about their own
+feelings, written by them. There is no sentiment analysis in this codebase, no
+emotion detection from audio, and no path that writes a feeling except the
+person writing it themselves.
+
+**Why.** This was asked for repeatedly as "add the emotions", and there are two
+products behind that request. One infers from a recording that somebody sounded
+sad and writes it into their archive. The other lets the person say how they
+felt. The first is a fabrication that happens to be about feelings rather than
+facts, which does not make it a smaller one — it puts a claim about somebody's
+inner life into their mouth, and after they die there is nobody to correct it.
+
+The gap it fills is real and was the largest one in the product: the archive
+kept what happened and nothing about what it was like, which is most of what
+anybody actually wants from a life story.
+
+---
+
+## R-011 — A blank box, and no list of moods
+
+**Decision.** Free text. No enum of permitted emotions, no chips, no scale.
+
+**Why.** Every instinct says to offer chips, because a blank box is harder to
+start. But a fixed vocabulary is the product deciding what a person is allowed
+to have felt about their own life, and the answers that matter here are never
+one of six words. *"Relieved, mostly, and then guilty about being relieved"* is
+not on anybody's list of moods, and it is the kind of sentence this feature
+exists for.
+
+The screen says so where the person can read it: nobody will summarise it,
+shorten it, or decide what it means.
+
+---
+
+## R-012 — Private is said in the same breath as saying the thing
+
+**Decision.** `shared` is chosen per note, at the moment of writing, and a note
+kept private is reported to everybody else as absent rather than as withheld.
+
+**Why.** "I will tell you what happened but not what it did to me" is an
+ordinary and reasonable thing to want, and it has to be sayable at the moment
+of writing rather than in a settings screen somewhere else.
+
+Reporting it as absent rather than withheld matters more than it looks. Telling
+the family that a feeling exists which they may not see invites precisely the
+speculation the person was avoiding when they kept it to themselves.

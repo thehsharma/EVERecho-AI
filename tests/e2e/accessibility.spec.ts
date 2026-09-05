@@ -324,6 +324,30 @@ test.describe('the listening screen meets WCAG 2.2 AA', () => {
   });
 });
 
+test.describe('saying how you felt meets WCAG 2.2 AA', () => {
+  test.use({ storageState: 'tests/e2e/.auth/storyteller.json' });
+
+  test('a story, and the feeling box open on it', async ({ page }) => {
+    const archiveId = await openDemoArchive(page);
+    await page.goto(`/archives/${archiveId}/memories?status=approved`);
+    // By href rather than by name: the link is the story's own title, which is
+    // whatever the storyteller called it.
+    await page.locator(`a[href*="/memories/"]`).first().click();
+    await page.waitForURL(/\/memories\/[0-9a-f-]{36}/);
+
+    const atRest = await new AxeBuilder({ page }).withTags(STANDARD).analyze();
+    expect(describeViolations(atRest.violations)).toBe('');
+
+    // A textarea and a radio group that are not on the page until somebody
+    // decides to say something.
+    await page.getByRole('button', { name: /Say how you felt|Change this/ }).click();
+    await expect(page.getByLabel('How do you feel about this now?')).toBeVisible();
+
+    const open = await new AxeBuilder({ page }).withTags(STANDARD).analyze();
+    expect(describeViolations(open.violations)).toBe('');
+  });
+});
+
 test.describe('keyboard and focus', () => {
   test.use({ storageState: 'tests/e2e/.auth/family.json' });
 

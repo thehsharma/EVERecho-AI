@@ -20,6 +20,7 @@ import { registerCapsuleRoutes } from './capsules';
 import { registerGapRoutes } from './gaps';
 import { registerRemembranceRoutes } from './remembrance';
 import { registerVoiceRoutes } from './voice';
+import { registerFeelingRoutes } from './feelings';
 import { registerRealtimeRoutes } from '../realtime/routes';
 
 export async function registerRoutes(app: FastifyInstance, ctx: AppContext): Promise<void> {
@@ -44,4 +45,5 @@ export async function registerRoutes(app: FastifyInstance, ctx: AppContext): Pro
   registerGapRoutes(app, ctx);
   registerRemembranceRoutes(app, ctx);
   registerVoiceRoutes(app, ctx);
+  registerFeelingRoutes(app, ctx);
 }
