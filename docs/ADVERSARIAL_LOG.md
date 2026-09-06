@@ -7,7 +7,7 @@ Most products in this category would bury what is below. Publishing it is the
 point: a trust product that only reports its successes is asking to be taken on
 faith, which is the one thing it should never ask for.
 
-Four entries, all four found by a test rather than by review, three fixed and
+Six entries, every one found by a test rather than by review, five fixed and
 one still open.
 
 ---
@@ -115,14 +115,70 @@ back — `TS2739: missing #unaltered`.
 
 ---
 
-## What these four have in common
+## AL-005 — The export nobody could open
 
-Every one was found by a test, and not one by reading the code. Three of the
-four were in mechanisms that had been written carefully, reviewed, and
-documented as guarantees.
+**6 September 2026 · high · fixed in `3db24d7` · open since v0.1**
 
-Two of them looked like something else first: AL-002 looked like flakiness, and
-AL-003 looked like a fixture problem. Both instincts were wrong.
+`STORAGE_LOCAL_DIR` was resolved with `resolve('./var/storage')`, which is
+relative to `process.cwd()`. This repository runs four processes from four
+working directories. The worker therefore wrote uploads and exports into
+`apps/worker/var/storage` while the API looked for them in
+`apps/api/var/storage`, and in local development **every export 404ed on
+download and every recording in the demonstration archive was unplayable** —
+including the audio behind "hear them talk about it", which is the feature the
+release exists for.
+
+*Found by:* an end-to-end test that downloaded a real export and opened it,
+rather than asserting the route returned 200.
+
+That is the whole finding. Three releases of tests passed over this because the
+integration suite runs everything in one process with one working directory,
+which is exactly the condition under which the bug is invisible, and because
+production requires S3, where keys are absolute. A test can be thorough about
+behaviour and silent about deployment.
+
+*Fix:* relative shared directories resolve against the workspace root, found by
+walking up from the config package's own file rather than from whoever is
+running — the one path that does not change with the caller.
+
+---
+
+## AL-006 — The check that checked nothing
+
+**6 September 2026 · medium · fixed in `3db24d7`**
+
+`scripts/check-adversarial-log.ts` — the script on this page's own first
+section, the one that is supposed to stop an entry quietly becoming a story —
+searched the *whole file* for an `OPEN` marker instead of the entry's own
+`fix` field. Because AL-003 is marked OPEN, every other unfixed entry passed
+too. The check reported success while checking nothing.
+
+*Found by:* adding a second unfixed entry and noticing the check did not
+complain.
+
+*Fix:* per entry, against that entry's own field. Verified by adding an
+unmarked open entry and watching the build go red while AL-003 stayed OPEN.
+
+It belongs in this log rather than being fixed quietly. A trust mechanism that
+was not doing its job is exactly the kind of thing a product in this category
+has an incentive to correct without mentioning.
+
+---
+
+## What these six have in common
+
+Every one was found by a test, and not one by reading the code. Most were in
+mechanisms that had been written carefully, reviewed, and documented as
+guarantees — one of them was the mechanism guarding this log.
+
+Three of them looked like something else first: AL-002 looked like flakiness,
+AL-003 looked like a fixture problem, and AL-005 looked like a stale cache in
+the development environment. Every one of those instincts was wrong, and each
+was the cheap explanation reached for before looking properly.
+
+AL-005 adds a second lesson to the first. A suite can be exhaustive about
+behaviour and silent about deployment: everything ran in one process, so
+nothing had ever asked one process for a file another process wrote.
 
 The lesson the codebase took from this is in `CLAUDE.md`: **write the attack,
 not the argument.**

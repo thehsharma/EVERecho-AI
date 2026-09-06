@@ -64,6 +64,35 @@
         "packages/ai/test/provenance.types.test.ts :: cannot be produced by extending one moment to reach another",
         "packages/ai/test/provenance.types.test.ts :: cannot be produced by concatenating the text of two moments"
       ]
+    },
+    {
+      "id": "AL-005",
+      "date": "2026-09-06",
+      "input": "Download the export the worker just produced, and open it.",
+      "surface": "export download, source download, every recording in local development",
+      "held": false,
+      "severity": "high",
+      "defect": "STORAGE_LOCAL_DIR was resolved with resolve('./var/storage'), which is relative to process.cwd(). This repository runs four processes from four working directories, so the worker wrote uploads and exports into apps/worker/var/storage while the API looked for them in apps/api/var/storage. In local development every export 404ed on download and every recording in the demonstration archive was unplayable, including the audio behind 'hear them talk about it'. Present since v0.1.",
+      "foundBy": "an end-to-end test that downloaded a real export and opened it, rather than asserting the route returned 200",
+      "fix": "Relative shared directories resolve against the workspace root, found by walking up from the config package's own file rather than from whoever is running — the one path that does not change with the caller. Production was unaffected because it requires STORAGE_DRIVER=s3, where keys are absolute, which is why three releases of testing had not caught it: no test had ever asked one process for a file another process wrote.",
+      "fixedIn": "3db24d7",
+      "pinnedBy": [
+        "packages/config/test/load.test.ts :: resolves shared directories the same way from any working directory",
+        "tests/e2e/portable-export.spec.ts :: downloads, verifies itself, and browses offline"
+      ]
+    },
+    {
+      "id": "AL-006",
+      "date": "2026-09-06",
+      "input": "Rename a pinning test, leaving one unrelated entry marked OPEN.",
+      "surface": "the adversarial log's own check",
+      "held": false,
+      "severity": "medium",
+      "defect": "check-adversarial-log.ts searched the whole file for an OPEN marker rather than the entry's own fix field, so a single open entry excused every other unfixed entry in the log. The check reported success while checking nothing — the exact failure mode the log exists to prevent, in the log's own machinery.",
+      "foundBy": "adding a second unfixed entry and noticing the check did not complain",
+      "fix": "Per entry, against that entry's own fix field. Verified by adding an unmarked open entry and watching the build go red while AL-003 stayed marked OPEN.",
+      "fixedIn": "3db24d7",
+      "pinnedBy": ["scripts/check-adversarial-log.ts :: unfixed and not marked OPEN"]
     }
   ]
 }
