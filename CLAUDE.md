@@ -88,7 +88,23 @@ point — a rule with only a comment behind it is a wish.
 1. **Nothing is spoken or written that is not supported by cited evidence.**
    Verification runs per clause, before synthesis. A clause that fails is
    discarded, never rewritten: rewriting means guessing what it should have
-   said.
+   said. Nothing reaches the synthesiser as a bare string: `speak()` takes
+   `Attributed | AssistantVoice`, and `attribute()` is the only minter of the
+   first — it runs the third-person assertion itself and throws rather than
+   returning, so holding an `Attributed` *is* the evidence that it passed.
+
+1b. **Splicing does not compile.** Two true moments joined make a sentence the
+   person never said, with no fabricated word anywhere in it. `OriginalAudio`
+   is a class with a native private field, so it is nominally typed: its
+   constructor is private, `fromSegment` is the only way to obtain one, and no
+   function anywhere takes two and returns one. A widened range is a plain
+   object and fails to typecheck — `packages/ai/test/provenance.types.test.ts`
+   asserts the failure with `@ts-expect-error`, which TypeScript reports as an
+   error of its own if it ever stops being needed.
+
+   A symbol brand was tried first and was not enough: object spread preserves
+   it, so `{ ...clip, endMs: other.endMs }` still typechecked. A test caught
+   that, not a review.
 
 2. **The assistant never speaks as the storyteller.** `isProhibitedRequest`
    runs before retrieval; `attribute()` is applied server-side so the model

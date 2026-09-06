@@ -33,6 +33,55 @@ export interface Clip {
 }
 
 /**
+ * One contiguous range of one real recording, carrying its own provenance.
+ *
+ * A class with a private field, not an interface with a symbol brand. The
+ * difference is the whole point and it was found by a test rather than by
+ * reasoning: a symbol brand survives object spread at the type level, so
+ * `{ ...clip, endMs: other.endMs }` — precisely the splice this is meant to
+ * prevent — still typechecked. A native private field makes the type nominal,
+ * and a spread of one produces a plain object that is not assignable back.
+ *
+ * The constructor is private, so `fromSegment` below is the only way to obtain
+ * one, and it builds from a single segment of a single recording. There is
+ * deliberately no method anywhere that takes two and returns one: no concat,
+ * no merge, no array overload. Adding one would be a visible edit to this
+ * file, which is the point — splicing is how a true recording becomes a false
+ * statement without a single fabricated word.
+ */
+export class OriginalAudio implements Clip {
+  /** Native private field. This is what makes the type nominal. */
+  readonly #unaltered = 'P0_ORIGINAL_SOURCE';
+
+  private constructor(
+    readonly segmentId: string,
+    readonly startMs: number,
+    readonly endMs: number,
+    readonly text: string,
+  ) {}
+
+  /** The one place provenance is conferred, from one segment and nothing else. */
+  static fromSegment(segment: Segment): OriginalAudio | null {
+    if (segment.startMs === null || segment.endMs === null || segment.endMs <= segment.startMs) {
+      return null;
+    }
+    return new OriginalAudio(
+      segment.id,
+      // Clamped at the start of the file. Never extended past the segment's
+      // own beginning in the other direction, because that would be trimming.
+      Math.max(0, segment.startMs - LEAD_IN_MS),
+      segment.endMs,
+      segment.text,
+    );
+  }
+
+  /** Referenced so the field is not merely decorative to a linter. */
+  get provenance(): string {
+    return this.#unaltered;
+  }
+}
+
+/**
  * How much runs before the answer starts.
  *
  * Ten seconds, because a clip that begins on the answer is a soundbite and a
@@ -66,21 +115,11 @@ const MIN_QUESTION_COVERAGE = 0.5;
  * different question and there is more than one way to ask it; how a clip is
  * built is not up for discussion.
  */
-export function clipFromSegment(segment: Segment): Clip | null {
-  if (segment.startMs === null || segment.endMs === null || segment.endMs <= segment.startMs) {
-    return null;
-  }
-  return {
-    segmentId: segment.id,
-    // Clamped at the start of the file. Never extended past the segment's own
-    // beginning in the other direction, because that would be trimming.
-    startMs: Math.max(0, segment.startMs - LEAD_IN_MS),
-    endMs: segment.endMs,
-    text: segment.text,
-  };
+export function clipFromSegment(segment: Segment): OriginalAudio | null {
+  return OriginalAudio.fromSegment(segment);
 }
 
-export function selectClip(question: string, segments: readonly Segment[]): Clip | null {
+export function selectClip(question: string, segments: readonly Segment[]): OriginalAudio | null {
   if (contentTokens(question).length === 0) return null;
 
   const scored = segments

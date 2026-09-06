@@ -11,3 +11,4 @@ export * from './gaps';
 export * from './clips';
 export * from './refusal';
 export * from './occasions';
+export * from './speakable';

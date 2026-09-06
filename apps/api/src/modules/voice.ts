@@ -16,6 +16,7 @@ import {
   selectOccasionClip,
   stripPersonaFraming,
   surroundingText,
+  type OriginalAudio,
   type Segment,
 } from '@everecho/ai';
 import { resolveRemembrance, type RemembranceClause } from '@everecho/consent';
@@ -211,23 +212,18 @@ export function registerVoiceRoutes(app: FastifyInstance, ctx: AppContext): void
 
           return {
             answer: {
-              clip: {
-                segmentId: clip.segmentId,
-                sourceAssetId: chosen.source_asset_id,
-                audioUrl: signed.url,
-                audioExpiresAt: signed.expiresAt,
-                startMs: clip.startMs,
-                endMs: clip.endMs,
-                text: clip.text,
-                before: around.before,
-                after: around.after,
-                addedOn: chosen.added_on?.toISOString() ?? null,
-                sourceLabel: chosen.source_label,
+              // Built through `playable`, which only accepts branded audio.
+              // A spliced range would not typecheck here.
+              clip: playable(
+                clip,
+                chosen,
+                signed,
+                around,
                 // Their own words about how it felt, if they wrote any and
                 // chose to share them. Read from the row, never derived from
                 // the recording.
-                feeling: await sharedFeeling(tx, params.archiveId, chosen.memory_id, isStoryteller),
-              },
+                await sharedFeeling(tx, params.archiveId, chosen.memory_id, isStoryteller),
+              ),
               // The refusal and the offer in one breath. A refusal that stops
               // before the offer is a door closing.
               spokenByArchive: persona ? `${PERSONA_REFUSAL} ${PERSONA_REFUSAL_WITH_CLIP}` : PLAYED,
@@ -353,23 +349,18 @@ export function registerVoiceRoutes(app: FastifyInstance, ctx: AppContext): void
           return {
             answer: {
               about: occasion.kind,
-              clip: {
-                segmentId: clip.segmentId,
-                sourceAssetId: chosen.source_asset_id,
-                audioUrl: signed.url,
-                audioExpiresAt: signed.expiresAt,
-                startMs: clip.startMs,
-                endMs: clip.endMs,
-                text: clip.text,
-                before: around.before,
-                after: around.after,
-                addedOn: chosen.added_on?.toISOString() ?? null,
-                sourceLabel: chosen.source_label,
+              // Built through `playable`, which only accepts branded audio.
+              // A spliced range would not typecheck here.
+              clip: playable(
+                clip,
+                chosen,
+                signed,
+                around,
                 // Their own words about how it felt, if they wrote any and
                 // chose to share them. Read from the row, never derived from
                 // the recording.
-                feeling: await sharedFeeling(tx, params.archiveId, chosen.memory_id, isStoryteller),
-              },
+                await sharedFeeling(tx, params.archiveId, chosen.memory_id, isStoryteller),
+              ),
               spokenByArchive: aboutTheirOwn(occasion.kind),
               reasonCode: 'found' as const,
               quotedText: null,
@@ -420,6 +411,37 @@ async function sharedFeeling(
   // speculation the person was avoiding.
   if (!row.shared && !isStoryteller) return null;
   return row.body;
+}
+
+/**
+ * The clip fields of a response, buildable only from branded audio.
+ *
+ * The parameter type is the guarantee. A hand-assembled range, or one whose
+ * end was extended to reach a second moment, is a plain `Clip` and will not
+ * typecheck here — so there is no path from a spliced range to a listener's
+ * speakers that does not fail the build first.
+ */
+function playable(
+  clip: OriginalAudio,
+  chosen: PlayableRow,
+  signed: { url: string; expiresAt: string },
+  around: { before: string[]; after: string[] },
+  feeling: string | null,
+) {
+  return {
+    segmentId: clip.segmentId,
+    sourceAssetId: chosen.source_asset_id,
+    audioUrl: signed.url,
+    audioExpiresAt: signed.expiresAt,
+    startMs: clip.startMs,
+    endMs: clip.endMs,
+    text: clip.text,
+    before: around.before,
+    after: around.after,
+    addedOn: chosen.added_on?.toISOString() ?? null,
+    sourceLabel: chosen.source_label,
+    feeling,
+  };
 }
 
 /** One row per playable moment this reader is already permitted to reach. */

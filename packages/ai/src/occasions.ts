@@ -1,4 +1,4 @@
-import { clipFromSegment, type Clip, type Segment } from './clips';
+import { clipFromSegment, type OriginalAudio, type Segment } from './clips';
 import { contentTokens } from './text';
 
 /**
@@ -135,7 +135,7 @@ export function selectOccasionClip(
   news: string,
   occasion: Occasion,
   segments: readonly Segment[],
-): Clip | null {
+): OriginalAudio | null {
   const newsTokens = new Set(contentTokens(news));
   const subject = new Set(occasion.relatedTerms.flatMap((t) => contentTokens(t)));
 

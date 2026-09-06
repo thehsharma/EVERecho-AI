@@ -5,7 +5,9 @@ import {
   isFirstPerson,
   isProhibitedRequest,
   isPermittedVoice,
+  markAttributed,
   verifyClaim,
+  type Attributed,
   type EvidencePassage,
   type LlmStreamEvent,
   type StreamingLanguageModel,
@@ -420,13 +422,13 @@ async function handleStreamEvent(args: {
       // The server composes this, not the model: a model that could supply its
       // own presentation text could smuggle unverified words past step 6 into
       // something a family member hears.
-      const spokenText = attribute(event.text, deps.subjectName);
-
-      // 7. Third person, always. A clause that still reads as the storyteller
-      //    speaking after attribution is discarded rather than rewritten:
-      //    rewriting it would mean guessing what it should have said.
+      // 7. Third person, always — asserted inside `attribute`, which throws
+      //    rather than returning if the presented form still reads as the
+      //    storyteller speaking. A clause that fails is discarded rather than
+      //    rewritten: rewriting would mean guessing what it should have said.
+      let spokenText: Attributed;
       try {
-        assertThirdPerson(spokenText);
+        spokenText = attribute(event.text, deps.subjectName);
       } catch {
         await recordSafetyEvent(deps.tx, {
           archiveId: deps.session.archive_id,
@@ -511,14 +513,26 @@ async function handleStreamEvent(args: {
  * attributed, which is both what the product promises and what makes it safe
  * to say aloud.
  */
-export function attribute(text: string, subjectName: string): string {
+export function attribute(text: string, subjectName: string): Attributed {
   const trimmed = text.trim();
-  if (trimmed.length === 0) return trimmed;
   // Already attributed, or already third person: nothing to add.
-  if (trimmed.startsWith('\u201c') || trimmed.includes(`${subjectName} said`)) return trimmed;
-  if (!isFirstPerson(trimmed)) return trimmed;
-  const quoted = trimmed.replace(/[\u201c\u201d"]/g, '');
-  return `${subjectName} said: \u201c${quoted}\u201d`;
+  const presented =
+    trimmed.length === 0 ||
+    trimmed.startsWith('\u201c') ||
+    trimmed.includes(`${subjectName} said`) ||
+    !isFirstPerson(trimmed)
+      ? trimmed
+      : `${subjectName} said: \u201c${trimmed.replace(/[\u201c\u201d"]/g, '')}\u201d`;
+
+  // The brand carries the proof, rather than sitting beside it.
+  //
+  // `assertThirdPerson` used to run at the call site, which meant the check
+  // and the value could drift apart — somebody could hold a presented string
+  // that had never been checked. Now holding an `Attributed` *is* the evidence
+  // that it passed, because this is the only function that mints one and it
+  // throws instead of returning when the assertion fails.
+  assertThirdPerson(presented);
+  return markAttributed(presented);
 }
 
 /**

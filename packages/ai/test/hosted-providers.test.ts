@@ -1,6 +1,7 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import { describe, expect, it } from 'vitest';
 import {
+  assistantVoice,
   AnthropicStreamingLanguageModel,
   ClauseAccumulator,
   DEEPGRAM_VOICES,
@@ -214,7 +215,7 @@ describe('the Deepgram speech adapter', () => {
 
     const chunks: number[] = [];
     const reading = (async () => {
-      for await (const chunk of stream.speak('She moved to Pune in 1962.')) {
+      for await (const chunk of stream.speak(assistantVoice('She moved to Pune in 1962.'))) {
         chunks.push(chunk.audio.byteLength);
       }
     })();

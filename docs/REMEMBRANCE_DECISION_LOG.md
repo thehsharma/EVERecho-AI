@@ -224,3 +224,40 @@ of writing rather than in a settings screen somewhere else.
 Reporting it as absent rather than withheld matters more than it looks. Telling
 the family that a feeling exists which they may not see invites precisely the
 speculation the person was avoiding when they kept it to themselves.
+
+---
+
+## R-013 — A symbol brand was not enough; a private field is
+
+**Decision.** `OriginalAudio` is a class with a native private field and a
+private constructor, not an interface with a `unique symbol` brand.
+
+**Why.** The symbol brand was written first and looked right. A test caught
+that it was not: **object spread preserves a symbol brand at the type level**,
+so `{ ...clip, endMs: other.endMs }` — taking one moment and extending its end
+to reach another, which is exactly the splice this exists to prevent — still
+typechecked.
+
+A native private field makes the type nominal. A spread of one produces a
+plain object that is not assignable back, and the compiler says so:
+`TS2739: missing the following properties from type 'OriginalAudio':
+#unaltered`.
+
+The finding matters more than the fix. The first design was reasoned about
+carefully and was wrong, and nothing but a test that tried the actual attack
+would have shown it. Every guarantee in this file deserves the same treatment:
+write the attack, not the argument.
+
+---
+
+## R-014 — The brand carries the proof rather than sitting beside it
+
+**Decision.** `attribute()` runs `assertThirdPerson` itself and throws instead
+of returning. Holding an `Attributed` value is the evidence that the assertion
+passed.
+
+**Why.** The check used to run at the call site, one line after the value was
+produced. That works until somebody produces a presented string somewhere else,
+or reorders the two lines, and then a value exists that looks checked and is
+not. Moving the assertion inside the only minter removes the gap entirely: the
+type and the proof cannot drift apart because they are the same event.

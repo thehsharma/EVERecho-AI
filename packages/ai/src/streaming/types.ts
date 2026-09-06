@@ -1,3 +1,4 @@
+import type { SpeakableText } from '../speakable';
 import type { EvidencePassage } from '../verify';
 
 /**
@@ -165,7 +166,15 @@ export interface TtsStream {
    * text for 200 ms and is then removed is a glitch; the same sentence spoken
    * aloud is something a family member heard.
    */
-  speak(text: string): AsyncIterableIterator<TtsChunk>;
+  /**
+   * Synthesises one clause.
+   *
+   * The parameter is branded, not a bare string: text reaches a listener's
+   * speakers only by having been attributed to the storyteller or marked as
+   * the archive's own voice. Passing model output straight through does not
+   * typecheck.
+   */
+  speak(text: SpeakableText): AsyncIterableIterator<TtsChunk>;
   cancel(reason: string): Promise<void>;
   close(): Promise<void>;
 }

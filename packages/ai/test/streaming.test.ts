@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  assistantVoice,
   LocalStreamingLanguageModel,
   LocalStreamingSpeechToText,
   LocalStreamingTextToSpeech,
@@ -235,7 +236,8 @@ describe('speech synthesis', () => {
     const tts = new LocalStreamingTextToSpeech();
     const stream = await tts.open({ sessionId: 's', language: 'en', sampleRate: 16000 });
     const chunks = [];
-    for await (const chunk of stream.speak('She moved to Pune in 1962.')) chunks.push(chunk);
+    for await (const chunk of stream.speak(assistantVoice('She moved to Pune in 1962.')))
+      chunks.push(chunk);
     expect(chunks.length).toBeGreaterThan(1);
     expect(chunks[0]?.audio.byteLength).toBeGreaterThan(0);
   });
@@ -244,7 +246,9 @@ describe('speech synthesis', () => {
     const tts = new LocalStreamingTextToSpeech();
     const stream = await tts.open({ sessionId: 's', language: 'en', sampleRate: 16000 });
     const chunks = [];
-    for await (const chunk of stream.speak('A reasonably long clause that takes several chunks.')) {
+    for await (const chunk of stream.speak(
+      assistantVoice('A reasonably long clause that takes several chunks.'),
+    )) {
       chunks.push(chunk);
       await stream.cancel('user_interrupted');
     }
