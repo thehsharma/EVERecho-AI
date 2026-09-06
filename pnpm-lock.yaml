@@ -53,6 +53,9 @@ importers:
       '@everecho/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@everecho/conformance':
+        specifier: workspace:*
+        version: link:../../packages/conformance
       '@everecho/consent':
         specifier: workspace:*
         version: link:../../packages/consent
@@ -207,6 +210,8 @@ importers:
       zod:
         specifier: 4.5.4
         version: 4.5.4
+
+  packages/conformance: {}
 
   packages/consent:
     dependencies:

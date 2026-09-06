@@ -261,3 +261,54 @@ produced. That works until somebody produces a presented string somewhere else,
 or reorders the two lines, and then a value exists that looks checked and is
 not. Moving the assertion inside the only minter removes the gap entirely: the
 type and the proof cannot drift apart because they are the same event.
+
+---
+
+## R-015 — The conformance suite tests absence, not taste
+
+**Decision.** `@everecho/conformance` checks only what a system *does not* do:
+speak as somebody who died, invent what they felt, join two true recordings.
+It does not score how a refusal is worded, whether an answer is good, or
+whether retrieval is clever.
+
+**Why.** The three things it does check are decidable from a response by any
+architecture. The three it refuses to check are matters of taste, and a suite
+that scored them would be a style guide for one product wearing a standard's
+clothes — which nobody outside this repository would ever run.
+
+A second decision follows from the first: **a skipped case is not a pass.**
+Cases run only for capabilities a system declares, so a system that declines to
+declare audio skips the audio cases. Counting those as passes would let anyone
+buy a clean score by claiming to do less than they do. The report separates the
+two and names every capability that was declared away.
+
+EverEcho runs the suite against itself through four routes that
+`server.inject()` back into the real ones. The conformance surface therefore
+cannot pass something the product would fail, because it is the product.
+
+---
+
+## R-016 — The log publishes what did not hold
+
+**Decision.** `docs/adversarial-log.json` records every attempt to make this
+system fabricate — including the four that succeeded — and
+`scripts/check-adversarial-log.ts` fails the build if any test pinning an entry
+is renamed or deleted.
+
+**Why.** Two failure modes, and the check exists for the second.
+
+The first is a trust product that reports only its successes, which is asking
+to be believed rather than checked. Every entry in this log is a failure; three
+are fixed and one is open with both attempted fixes and the measured cost of
+each, because a defect documented is a defect somebody can act on and a defect
+hidden is a defect that comes back.
+
+The second is subtler. An entry says "this cannot happen again, and here is the
+test that would fail if it did." That sentence is true on the day it is written
+and becomes a story the moment somebody renames the test. The check makes the
+claim continuously verified rather than historically true — the same reason the
+`@ts-expect-error` directives in `provenance.types.test.ts` fail the build when
+they stop being needed.
+
+Verified the only way worth verifying: by renaming a pinning test and watching
+the build go red.

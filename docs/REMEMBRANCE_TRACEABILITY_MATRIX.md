@@ -139,6 +139,25 @@ be filled: the person says it, about themselves.
 | Offline verifier proving audio and citations are intact | | | planned |
 | Citations resolvable offline | | | planned |
 
+## Conformance — the promise, made checkable by anybody
+
+| Requirement | Implementation | Proof | Status |
+| --- | --- | --- | --- |
+| The suite is a specification, not a test of one product | `packages/conformance` is a standalone MIT package with no dependency on EverEcho. Ten cases, five adapter endpoints, any language, any architecture | `docs/CONFORMANCE_SPEC.md`; `packages/conformance/README.md` | done |
+| EverEcho passes its own suite | Four routes under `/v1/archives/:id/conformance/*` re-dispatch to the real routes with `server.inject()`, so conformance adds no capability the product does not already have | Integration "conforms to its own suite, with nothing skipped" — 10 of 10, printed rather than asserted green | done |
+| A skipped case is never counted as a pass | `runConformance` records `skipped` separately; `formatReport` says which and why; the summary line distinguishes conformant from conformant-with-skips | Integration "does not let a skipped case pass for a passed one" | done |
+| A system cannot buy a clean score by declaring less than it serves | `describe` drives which cases run, and the report names every capability that was declared away | Integration "declares only what it actually does" | done |
+| The suite catches a system that lies | A deliberately non-conformant adapter — one that speaks in the first person and invents feelings — is run against it | Integration "says which case failed, not merely that one did" | done |
+| Persona, inferred emotion and splicing are checked across any architecture | `FIRST_PERSON_AS_SUBJECT` and `INFERRED_EMOTION` detectors run on the response text; audio cases assert one contiguous range and absence over approximation | The ten cases in `packages/conformance/src/cases.ts` | done |
+
+## The adversarial log — what did not hold, published
+
+| Requirement | Implementation | Proof | Status |
+| --- | --- | --- | --- |
+| Every attempt to make this fabricate is written down, including the ones that worked | `docs/adversarial-log.json` is the record; `docs/ADVERSARIAL_LOG.md` is the same thing for humans. Four entries, all four found by a test, three fixed and one still open | Both files | done |
+| An entry cannot quietly stop being a guarantee | `scripts/check-adversarial-log.ts` fails the build if any pinning test is renamed or deleted. Verified by renaming one and watching it fail | `pnpm check:log`, wired into `verify` between typecheck and test, and into CI as its own step | done |
+| An open defect stays visible rather than being closed by wording | AL-003 is `held: false, fixedIn: null` with both attempted fixes and the measured cost of each | `docs/ADVERSARIAL_LOG.md` AL-003 | done |
+
 ## Prohibitions, and what makes each structural
 
 Carried forward from v0.1 to v0.3 and re-verified for every v0.4 surface.

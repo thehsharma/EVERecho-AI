@@ -56,6 +56,9 @@ jobs:
       - name: Types
         run: pnpm typecheck
 
+      - name: The adversarial log has not drifted from the suite
+        run: pnpm check:log
+
       - name: Unit and integration tests
         run: pnpm test
 
