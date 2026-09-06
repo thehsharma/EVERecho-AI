@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { RealtimeCitation, RealtimeSession } from '@everecho/contracts';
 import { LiveSession, type LiveSnapshot } from '@/lib/realtime-client';
+import { api } from '@/lib/api';
 import { Card, EvidenceClassTag, Notice, Tag } from './ui';
 
 /**
@@ -55,6 +56,7 @@ export function LiveConversation({
   const [typed, setTyped] = useState('');
   const [inspecting, setInspecting] = useState<RealtimeCitation | null>(null);
   const [captions, setCaptions] = useState(true);
+  const [pauseOffer, setPauseOffer] = useState(session.pauseOffer);
 
   const liveRef = useRef<LiveSession | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -185,12 +187,56 @@ export function LiveConversation({
     );
   }
 
+  /**
+   * The one offer to pause.
+   *
+   * Rendered inline, in the flow, where a person reaches it when they are
+   * ready to. Never a dialog: an interruption that has to be dismissed makes
+   * stopping feel like the thing being refused, and lands hardest on somebody
+   * who is not coping — which is precisely who it is for.
+   *
+   * Either answer removes it for good. "Keep going" is not a deferral.
+   */
+  const answerPause = async (answer: 'stop' | 'continue') => {
+    setPauseOffer(null);
+    try {
+      await api.send(
+        'POST',
+        `/v1/archives/${session.archiveId}/realtime-sessions/${session.id}/pause-offer`,
+        {
+          answer,
+        },
+      );
+    } catch {
+      // Nothing is shown on failure. The offer has been dismissed on screen
+      // and re-raising it would be asking twice, which is the one thing this
+      // must not do.
+    }
+    if (answer === 'stop') liveRef.current?.end('user_ended');
+  };
+
   return (
     <div className="stack-lg">
       {/* Identity, always. A person must be able to tell what they are talking to. */}
       <Notice tone="info" title="You are talking to EverEcho’s AI assistant">
         <p style={{ marginBottom: 0 }}>{session.assistantIdentity}</p>
       </Notice>
+
+      {pauseOffer ? (
+        <Notice tone="info">
+          <p>{pauseOffer.message}</p>
+          <div className="row">
+            {/* Same kind of button, same row, same weight. Neither is styled as
+                the answer the product would prefer. */}
+            <button type="button" className="btn" onClick={() => void answerPause('stop')}>
+              {pauseOffer.stopLabel}
+            </button>
+            <button type="button" className="btn" onClick={() => void answerPause('continue')}>
+              {pauseOffer.continueLabel}
+            </button>
+          </div>
+        </Notice>
+      ) : null}
 
       <Card>
         <div className="live-status" role="status" aria-live="polite">

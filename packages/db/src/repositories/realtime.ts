@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import type { RealtimeState } from '@everecho/contracts';
+import type { PauseBasis, RealtimeState, SessionEndReason } from '@everecho/contracts';
 import type { Queryable } from '../pool';
 
 export interface RealtimeSessionRow {
@@ -21,7 +21,11 @@ export interface RealtimeSessionRow {
   started_at: Date;
   last_activity_at: Date;
   ended_at: Date | null;
-  ended_reason: string | null;
+  /** Constrained by CHECK to a fixed set of operational reasons. */
+  ended_reason: SessionEndReason | null;
+  pause_offered_at: Date | null;
+  pause_offer_declined_at: Date | null;
+  pause_offer_basis: PauseBasis | null;
   deleted_at: Date | null;
 }
 
@@ -621,5 +625,65 @@ export async function recordInterruption(
       input.clausesSpoken,
       input.clausesPlanned,
     ],
+  );
+}
+
+/**
+ * Counts what the pacing decision is allowed to see.
+ *
+ * Turns and distinct topics, and nothing else. There is deliberately no way to
+ * ask this for the text of a turn, how long a pause between them was, or
+ * anything else that could be read as a mood — the query is the boundary, and
+ * widening it would be a visible change to this function rather than a quiet
+ * one at the call site.
+ */
+export async function countSessionShape(
+  tx: Queryable,
+  sessionId: string,
+): Promise<{ turnCount: number; distinctTopics: number }> {
+  const row = await tx.one<{ turns: string; topics: string }>(
+    // Two subqueries rather than one join: a lateral over the citations
+    // multiplies rows, and the turn count would then be the citation count.
+    `SELECT
+       (SELECT count(*) FROM realtime_turn
+         WHERE session_id = $1 AND is_final AND NOT cancelled AND deleted_at IS NULL) AS turns,
+       (SELECT count(DISTINCT cite->>'memoryId')
+          FROM realtime_turn t,
+               LATERAL jsonb_array_elements(t.claims) AS claim,
+               LATERAL jsonb_array_elements(claim->'citations') AS cite
+         WHERE t.session_id = $1 AND t.is_final AND NOT t.cancelled
+           AND t.deleted_at IS NULL) AS topics`,
+    [sessionId],
+  );
+  return { turnCount: Number(row.turns), distinctTopics: Number(row.topics) };
+}
+
+/** Records that the offer was made. Idempotent: a second call changes nothing. */
+export async function recordPauseOffer(
+  tx: Queryable,
+  sessionId: string,
+  basis: PauseBasis,
+): Promise<void> {
+  await tx.query(
+    `UPDATE realtime_session
+        SET pause_offered_at = now(), pause_offer_basis = $2
+      WHERE id = $1 AND pause_offered_at IS NULL`,
+    [sessionId, basis],
+  );
+}
+
+/**
+ * Records that it was declined, which is permanent for this session.
+ *
+ * No corresponding "un-decline". Somebody who wants to pause later can simply
+ * pause — the control is always there. What must not exist is a path that
+ * lets the product ask again.
+ */
+export async function declinePauseOffer(tx: Queryable, sessionId: string): Promise<void> {
+  await tx.query(
+    `UPDATE realtime_session
+        SET pause_offer_declined_at = coalesce(pause_offer_declined_at, now())
+      WHERE id = $1`,
+    [sessionId],
   );
 }

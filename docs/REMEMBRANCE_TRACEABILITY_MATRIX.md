@@ -124,11 +124,22 @@ be filled: the person says it, about themselves.
 
 | Requirement | Implementation | Proof | Status |
 | --- | --- | --- | --- |
-| No streaks, daily prompts or return-nudges anywhere | | | planned |
-| A long or single-topic session offers to pause, once | | | planned |
-| Crisis resources one action from any screen, never modal | | | planned |
-| No sentiment analysis of the bereaved, in any path | | | planned |
-| Analytics record that a session ended, never why | | | planned |
+| No streaks, daily prompts or return-nudges anywhere | None exists. No scheduled notification path to a family member exists either, so there is nothing to send one from | `contributions.test.ts` asserts no percentage, score, completeness or streak in any contributor-facing text; `gaps.ts` and the gaps contract say so structurally | done |
+| A long or single-topic session offers to pause, once | `shouldOfferPause` is pure, over four numbers and two timestamps. `pause_offered_at` makes it once; `pause_offer_declined_at` makes the answer final | `pacing.test.ts` (unit) 11 cases including "never offers twice" and "takes no for an answer, however long the session then runs"; integration "never comes back, however long the conversation then runs" | done |
+| The offer accepts the answer | Both answers set `pause_offer_declined_at`. There is no un-decline and no path that re-raises it — the frontend does not restore it even when the request fails, because retrying would be asking twice | Integration "is gone the moment it is answered"; a CHECK requires declined to imply offered so the two cannot drift | done |
+| Nothing about the person reaches the decision | `PacingInput` has nowhere to pass text, audio, voice quality or hesitation. `countSessionShape` returns two counts and cannot be asked for anything else | The type; `no-sentiment.test.ts` "bases the offer to pause on the conversation, never on the person"; a CHECK limits `pause_offer_basis` to `long_session` and `one_topic` | done |
+| The offer never reads as a diagnosis | Copy lives in `PAUSE_OFFER` beside the function, not in the frontend, so it is asserted | `pacing.test.ts` "never says how the person seems", "never counts anything at the person", "offers stopping and continuing as equals" | done |
+| Never modal | Rendered inline in the conversation flow as a `Notice`. There is no dialog, no overlay, nothing to dismiss | `live-conversation.tsx`; an interruption that must be dismissed makes stopping feel like the thing being refused | done |
+| Crisis resources one action from any screen, never modal | A footer link, "If you need help now", on every page, in the same weight as its neighbours, pointing at an anchored card that is first on the support page | `layout.tsx`, `support/page.tsx`; E2E "reaches help from any screen, without anything having read the person" | done |
+| Reaching help is never triggered by what somebody said | The link is unconditional and always present. Deciding that a person needs it would require reading their state, which does not happen. The support page says so in as many words | The absence of any trigger, plus the copy on the card | done |
+| No sentiment analysis of the bereaved, in any path | No scorer exists anywhere in `apps` or `packages`, and the check searches the source with comments stripped so documenting the prohibition is not punished | `no-sentiment.test.ts` "has no scorer anywhere in the source" — verified by adding a `moodScore` export and watching it fail | done |
+| Analytics record that a session ended, never why | `analyticsPropsSchema` admits numbers, booleans, a three-value severity and null — a mood cannot be passed. `endedReason` is a closed enum of operational reasons, mirrored by a CHECK | `no-sentiment.test.ts` "has an analytics schema that cannot carry a mood", "records that a session ended, and only operational reasons why"; integration refuses `seemed_upset` at the API **and** at the database | done |
+
+### Found on the way through
+
+| Defect | Where | Fix | Proof |
+| --- | --- | --- | --- |
+| `ended_reason` was free text supplied by the client — `z.string().max(120)` on the HTTP body and on the `session.end` socket event. A front end could have written `seemed_upset` into a column the archive keeps for the life of the archive, and it would have been emitted as an analytics reason code. Nothing prohibited it but nobody having done it | `packages/contracts/src/realtime.ts`, `apps/api/src/realtime/routes.ts`, `ws.ts`, `driver.ts` | A closed enum, in the contract, on both transports, and a CHECK constraint so a second write path added later is refused too | Integration "refuses a reason about the person, at the edge of the API" and "refuses it at the database too, so the API is not the only thing stopping it" |
 
 ## Slice 6 — the archive outlives the company
 

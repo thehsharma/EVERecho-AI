@@ -1,4 +1,9 @@
-import type { ClientEvent, RealtimeState, ServerEvent } from '@everecho/contracts';
+import type {
+  ClientEvent,
+  RealtimeState,
+  ServerEvent,
+  SessionEndReason,
+} from '@everecho/contracts';
 import {
   acceptsAudio,
   checkBudget,
@@ -771,7 +776,7 @@ export class SessionDriver {
   }
 
   /** Ends the session, cancelling anything in flight first. */
-  async end(reason: string): Promise<void> {
+  async end(reason: SessionEndReason): Promise<void> {
     if (this.closed) return;
     this.turnToken?.cancel(reason);
     if (this.sttStream) {

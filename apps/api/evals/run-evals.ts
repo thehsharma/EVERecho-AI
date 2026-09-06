@@ -305,7 +305,11 @@ try {
       clientEventId: `e-${row.id}-turn`,
       text: input.said,
     });
-    await driver.handle({ type: 'session.end', clientEventId: `e-${row.id}-end`, reason: 'eval' });
+    await driver.handle({
+      type: 'session.end',
+      clientEventId: `e-${row.id}-end`,
+      reason: 'user_ended',
+    });
     return events;
   };
 

@@ -11,6 +11,7 @@ import {
   patchCandidateRequestSchema,
   putInteractionPreferenceRequestSchema,
   realtimeSessionSchema,
+  sessionEndReasonSchema,
   realtimeTurnSchema,
   realtimeUsageSchema,
   reconnectTokenSchema,
@@ -26,6 +27,8 @@ import {
   isNarrowingDocument,
 } from '@everecho/consent';
 import {
+  countSessionShape,
+  declinePauseOffer,
   deleteInteractionPreference,
   findCandidate,
   findCurrentLearningPolicy,
@@ -38,10 +41,13 @@ import {
   mintReconnectToken,
   readUsage,
   recordLearningDecision,
+  recordPauseOffer,
   endLiveSessions,
   revokeReconnectTokens,
   upsertInteractionPreference,
 } from '@everecho/db';
+import type { RealtimeSessionRow, Transaction } from '@everecho/db';
+import { shouldOfferPause } from '@everecho/realtime';
 import { defineRoute } from '../http/route';
 import { closeArchiveConnections } from './ws';
 import { withArchiveAccess } from '../lib/access';
@@ -180,7 +186,50 @@ export function registerRealtimeRoutes(app: FastifyInstance, ctx: AppContext): v
         async ({ tx }) => {
           const row = await findSession(tx, params.archiveId, params.sessionId);
           if (!row) throw notFound();
-          return { session: toSessionView(row) };
+          return { session: toSessionView(await considerPause(tx, row)) };
+        },
+      ),
+  });
+
+  defineRoute(app, ctx, {
+    method: 'POST',
+    url: '/v1/archives/:archiveId/realtime-sessions/:sessionId/pause-offer',
+    tag: 'realtime',
+    summary: 'Answer the offer to pause',
+    description:
+      'Answers the one offer to pause a long conversation. "continue" is final: the offer ' +
+      'is never made again in this session. No reason is asked for and none can be sent.',
+    auth: 'required',
+    params: sessionParams,
+    body: z.object({ answer: z.enum(['stop', 'continue']) }),
+    response: z.object({ session: realtimeSessionSchema }),
+    handler: async ({ params, body, request }) =>
+      withArchiveAccess(
+        ctx,
+        request,
+        {
+          archiveId: params.archiveId,
+          action: 'realtime.session.connect',
+          resource: { type: 'realtime_session', id: params.sessionId },
+        },
+        async ({ tx }) => {
+          const row = await findSession(tx, params.archiveId, params.sessionId);
+          if (!row) throw notFound();
+
+          // Declined either way. Stopping is not a second chance to ask.
+          await declinePauseOffer(tx, params.sessionId);
+
+          if (body.answer === 'continue') {
+            const fresh = await findSession(tx, params.archiveId, params.sessionId);
+            return { session: toSessionView(fresh ?? row) };
+          }
+
+          const ending = await applyTransition(tx, row, 'END', { endedReason: 'user_ended' });
+          const ended = await applyTransition(tx, ending.session, 'ENDED', {
+            endedReason: 'user_ended',
+          });
+          await revokeReconnectTokens(tx, params.archiveId, params.sessionId);
+          return { session: toSessionView(ended.session) };
         },
       ),
   });
@@ -228,7 +277,10 @@ export function registerRealtimeRoutes(app: FastifyInstance, ctx: AppContext): v
       'and what is waiting for review. Nothing is approved by ending a session.',
     auth: 'required',
     params: sessionParams,
-    body: z.object({ reason: z.string().max(120).optional() }).optional(),
+    // A closed set, not free text. It was `z.string().max(120)` until v0.4,
+    // which meant a front end could write "seemed_upset" into a column the
+    // archive keeps for life. Nothing prohibited it but nobody having done it.
+    body: z.object({ reason: sessionEndReasonSchema.optional() }).optional(),
     response: z.object({
       session: realtimeSessionSchema,
       summary: learningSummarySchema.nullable(),
@@ -800,4 +852,44 @@ export function registerRealtimeRoutes(app: FastifyInstance, ctx: AppContext): v
       return { deleted };
     },
   });
+}
+
+/**
+ * Makes the one offer to pause, if it is due.
+ *
+ * Evaluated on read rather than after a turn, which looks like the wrong place
+ * until you consider who needs it. Somebody who has stopped talking but not
+ * stopped the session produces no more turns, and that is exactly the state
+ * the long-session offer exists for. Waiting for a turn would mean the offer
+ * never reaches the person most likely to want it.
+ *
+ * Everything it can see is in `countSessionShape` and the session's own clock.
+ * Nothing about the person reaches this decision, and there is no argument
+ * here that could carry it.
+ */
+async function considerPause(
+  tx: Transaction,
+  row: RealtimeSessionRow,
+): Promise<RealtimeSessionRow> {
+  if (
+    row.ended_at !== null ||
+    row.pause_offer_declined_at !== null ||
+    row.pause_offered_at !== null
+  ) {
+    return row;
+  }
+
+  const shape = await countSessionShape(tx, row.id);
+  const decision = shouldOfferPause({
+    startedAt: row.started_at,
+    now: new Date(),
+    turnCount: shape.turnCount,
+    distinctTopics: shape.distinctTopics,
+    pauseOfferedAt: row.pause_offered_at,
+    pauseOfferDeclinedAt: row.pause_offer_declined_at,
+  });
+  if (!decision.offer) return row;
+
+  await recordPauseOffer(tx, row.id, decision.basis);
+  return { ...row, pause_offered_at: new Date(), pause_offer_basis: decision.basis };
 }

@@ -394,3 +394,76 @@ this bug is invisible.
 
 Anchoring to the config file's own location rather than to the caller is the
 whole fix: it is the one path that does not change with whoever is running.
+
+---
+
+## R-020 — The offer to pause is made once, and the answer is final
+
+**Decision.** A conversation that has run long, or stayed on one thing for many
+turns, is offered a pause exactly once. Either answer ends the offer for that
+session. There is no un-decline and no path that raises it again.
+
+**Why.** The useful version of this feature and the harmful version look almost
+identical from the code, and differ entirely in whether the answer is
+respected. "Would you like to stop?", asked once, is a kindness. Asked twice it
+is a judgement about somebody's grief, delivered by software, to a person who
+already said no.
+
+So "once" is three mechanisms rather than an intention: the column, the CHECK
+that declined implies offered, and a frontend that does not restore the offer
+even when the request to record the answer fails. Retrying there would be the
+same bug wearing an apology.
+
+Two other choices follow. The offer is inline, never a dialog: an interruption
+that has to be dismissed makes stopping feel like the thing being refused, and
+lands hardest on the person it exists for. And stopping and continuing are the
+same kind of button, in the same row, in the same weight — a "keep going"
+styled as the obvious answer would make the whole thing a formality, which is
+worse than not offering.
+
+---
+
+## R-021 — The decision has nowhere to put a feeling
+
+**Decision.** `shouldOfferPause` takes two timestamps and two counts. There is
+no parameter for text, audio, voice quality, hesitation, or anything else that
+could be read as a mood, and `countSessionShape` cannot be asked for one.
+
+**Why.** Writing "no sentiment analysis" in a document is easy and survives
+until the first commit that only wanted to be helpful. The interesting question
+is not whether anybody intends to add it; it is what the smallest possible
+change would be if somebody did. Here it is adding a field to a named input
+type — conspicuous in a diff, and impossible to do accidentally at a call site.
+
+The prohibition is narrower than it sounds and worth stating precisely. This
+archive holds a great deal of emotion: stated by the person, about themselves,
+in their own words, which is most of what anybody wants from a life story. What
+cannot exist is the product deciding how somebody feels and acting on it.
+
+The same reasoning gave the crisis link its shape. It is on every page,
+unconditionally, in the same weight as its neighbours, and never appears
+because of anything anybody said — surfacing it in response to somebody's words
+would mean reading their state to decide, which is the thing being prohibited.
+The support page says so on the card itself, because a person who noticed the
+link appear would reasonably wonder what had been read about them.
+
+---
+
+## R-022 — A session may end for an operational reason, and only those
+
+**Decision.** `ended_reason` is a closed enum on both transports and a CHECK
+constraint in the database. Every value names something that happened to the
+session: a button, a timer, a permission change, a provider failure.
+
+**Why.** It was `z.string().max(120)`, supplied by the client, on the HTTP body
+and on the socket event alike. A front end could have written `seemed_upset`
+into a column the archive keeps for as long as the archive exists, and the
+server would have stored it and emitted it as an analytics reason code. Nothing
+prohibited that except nobody having done it yet, which is not a mechanism.
+
+Adding the enum immediately found two reasons the codebase already used and the
+first draft had missed — `consent_narrowed` and `learning_policy_narrowed` —
+which is the ordinary reward for making a vocabulary explicit. Both were kept
+rather than flattened into `consent_changed`: they describe genuinely different
+events, and an operator reading a session's history should be able to tell
+which one happened.

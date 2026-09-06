@@ -1,3 +1,4 @@
+import type { SessionEndReason } from '@everecho/contracts';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
   REALTIME_PROTOCOL_VERSION,
@@ -97,7 +98,10 @@ export function liveConnectionCount(): number {
 }
 
 /** Ends every live connection for an archive. Used when consent is withdrawn. */
-export async function closeArchiveConnections(archiveId: string, reason: string): Promise<number> {
+export async function closeArchiveConnections(
+  archiveId: string,
+  reason: SessionEndReason,
+): Promise<number> {
   let closed = 0;
   for (const [key, connection] of connections) {
     if (connection.archiveId !== archiveId) continue;

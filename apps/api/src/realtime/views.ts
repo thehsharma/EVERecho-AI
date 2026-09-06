@@ -16,6 +16,7 @@ import type {
   RealtimeTurnRow,
 } from '@everecho/db';
 import { toLearningPolicy } from '@everecho/db';
+import { PAUSE_OFFER, PAUSE_OFFER_ACTIONS } from '@everecho/realtime';
 import { ASSISTANT_IDENTITY } from './orchestrator';
 
 export interface RealtimeCitation {
@@ -71,6 +72,20 @@ export function toSessionView(row: RealtimeSessionRow): RealtimeSession {
     startedAt: row.started_at.toISOString(),
     endedAt: row.ended_at?.toISOString() ?? null,
     endedReason: row.ended_reason,
+    // Present only while it is live. Once declined it is gone for good, which
+    // is what makes "offered once" true rather than merely intended.
+    pauseOffer:
+      row.pause_offered_at !== null &&
+      row.pause_offer_declined_at === null &&
+      row.pause_offer_basis !== null &&
+      row.ended_at === null
+        ? {
+            basis: row.pause_offer_basis,
+            message: PAUSE_OFFER[row.pause_offer_basis],
+            stopLabel: PAUSE_OFFER_ACTIONS.stop,
+            continueLabel: PAUSE_OFFER_ACTIONS.continue,
+          }
+        : null,
   };
 }
 

@@ -1,8 +1,20 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 
-export function Card({ children, ...rest }: { children: ReactNode; className?: string }) {
-  return <section className={`card ${rest.className ?? ''}`}>{children}</section>;
+export function Card({
+  children,
+  ...rest
+}: {
+  children: ReactNode;
+  className?: string;
+  /** For linking straight to one card from another page. */
+  id?: string;
+}) {
+  return (
+    <section id={rest.id} className={`card ${rest.className ?? ''}`}>
+      {children}
+    </section>
+  );
 }
 
 export function Notice({

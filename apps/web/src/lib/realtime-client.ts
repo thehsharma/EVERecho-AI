@@ -6,6 +6,7 @@ import type {
   RealtimeClaim,
   RealtimeState,
   ServerEvent,
+  SessionEndReason,
 } from '@everecho/contracts';
 import { API_URL } from './api';
 
@@ -457,7 +458,7 @@ export class LiveSession {
     this.send({ type: 'session.resume', clientEventId: this.nextEventId() });
   }
 
-  end(reason = 'user_ended'): void {
+  end(reason: SessionEndReason = 'user_ended'): void {
     this.closedByUser = true;
     this.stopListening();
     this.stopPlayback();

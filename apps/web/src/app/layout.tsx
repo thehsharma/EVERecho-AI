@@ -62,7 +62,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <p className="small" style={{ marginBottom: 0 }}>
                 {meta.productName} preserves what a living person actually said. It does not
                 recreate anyone’s voice, likeness or personality, and it will not answer as them.{' '}
-                <Link href="/trust">How consent works</Link> · <Link href="/support">Support</Link>
+                <Link href="/trust">How consent works</Link> · <Link href="/support">Support</Link>{' '}
+                ·{' '}
+                {/*
+                  On every screen, in the same place, in the same weight as its
+                  neighbours. Never a pop-up, never highlighted, never triggered
+                  by anything somebody typed — deciding that a person needs this
+                  would mean reading their state, which this product does not do.
+                  It is simply always there, for whoever wants it.
+                */}
+                <Link href="/support#help-now">If you need help now</Link>
               </p>
             </div>
           </footer>

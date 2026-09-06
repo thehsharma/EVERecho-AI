@@ -51,6 +51,37 @@ export const createRealtimeSessionRequestSchema = z.object({
   sourceIds: z.array(idSchema).max(50).optional(),
 });
 
+/**
+ * Why a session ended. A closed set, and every value describes something that
+ * happened to the session rather than to a person.
+ *
+ * It was free text supplied by the client until v0.4, so a front end could
+ * have written "seemed_upset" here and the server would have stored it for the
+ * life of the archive and emitted it as an analytics reason code. Nothing
+ * prohibited that except nobody having done it. The enum is mirrored by a
+ * CHECK constraint, so the database refuses it too.
+ */
+export const sessionEndReasonSchema = z.enum([
+  'user_ended',
+  'idle_timeout',
+  'consent_changed',
+  'consent_narrowed',
+  'learning_policy_narrowed',
+  'archive_deleted',
+  'budget_exhausted',
+  'provider_failed',
+  'error',
+]);
+export type SessionEndReason = z.infer<typeof sessionEndReasonSchema>;
+
+/**
+ * Why a pause was offered. Both values are properties of the conversation —
+ * how long it ran, how many topics it touched. Neither is a claim about how
+ * anybody feels, and there is no third value that could be.
+ */
+export const pauseBasisSchema = z.enum(['long_session', 'one_topic']);
+export type PauseBasis = z.infer<typeof pauseBasisSchema>;
+
 export const realtimeSessionSchema = z.object({
   id: idSchema,
   archiveId: idSchema,
@@ -77,7 +108,19 @@ export const realtimeSessionSchema = z.object({
   ttsVoiceId: z.string(),
   startedAt: timestampSchema,
   endedAt: timestampSchema.nullable(),
-  endedReason: z.string().nullable(),
+  endedReason: sessionEndReasonSchema.nullable(),
+  /**
+   * The offer to pause, when there is one. Absent means there is nothing to
+   * show — including after it has been declined, which is permanent.
+   */
+  pauseOffer: z
+    .object({
+      basis: pauseBasisSchema,
+      message: z.string(),
+      stopLabel: z.string(),
+      continueLabel: z.string(),
+    })
+    .nullable(),
 });
 export type RealtimeSession = z.infer<typeof realtimeSessionSchema>;
 
@@ -195,7 +238,9 @@ export const clientEventSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('session.end'),
     clientEventId: z.string().min(1).max(64),
-    reason: z.string().max(120).optional(),
+    // Closed, like the HTTP body. A socket is not a back door around the rule
+    // that the archive never records why a person stopped.
+    reason: sessionEndReasonSchema.optional(),
   }),
   z.object({
     type: z.literal('client.ack'),
