@@ -18,8 +18,11 @@ format is a plain .zip rather than anything of ours.
 ## What is in an export
 
 ```
+index.html                         The whole archive, browsable in any browser, offline
+verify.mjs                         Re-checks every checksum and citation, no dependencies
 README.txt                         Plain language: what this is, how it is laid out
 manifest.json                      Every file with a SHA-256 checksum and byte size
+manifest.sig                       Ed25519 signature over that manifest, when signed
 metadata/archive.json              Name, subject, dates, what produced this
 metadata/memories.json             Every story card with its status and dates
 metadata/claims-and-evidence.json  Every claim, and the exact source passage behind it
@@ -29,6 +32,38 @@ metadata/consent-history.json      Every consent version, hashed
 metadata/sources.json              File metadata (storage keys deliberately removed)
 originals/{sourceId}/{filename}    Every file exactly as it was uploaded
 ```
+
+### Opening it, and checking it
+
+Double-click `index.html`. It shows every story and, under each one, the exact
+place in the recording it came from, with a button that plays that span of the
+original file. It embeds its own data rather than fetching it, because a
+browser opening a local file refuses to read the JSON beside it, and it loads
+nothing from anywhere — no fonts, no scripts, no analytics.
+
+To check the archive is intact:
+
+```
+node verify.mjs
+```
+
+It re-computes every checksum, refuses a file that was added after the export
+was made, verifies the signature, and confirms that every citation still points
+at a source and a place inside it that are present. It uses nothing but what
+ships with Node, because the one artefact that has to keep working after we are
+gone cannot depend on a package registry still being there.
+
+**What the signature proves.** It covers every file, because the manifest lists
+a checksum for each and the signature is over the manifest. It proves the export
+came from us only if the fingerprint it prints matches one we published
+somewhere you did not get from that folder — anybody who alters an archive can
+re-sign it with a key of their own. The verifier says this out loud rather than
+letting the word "signed" do more work than it can bear.
+
+If no signing key was configured, the export says so plainly in every place it
+could be asked: the manifest, the README, the export screen and the verifier's
+output. The checksums still prove nothing was altered; they do not prove who
+made it.
 
 JSON and the original media. No proprietary container, no database dump, nothing
 that needs EverEcho to read. Two photographs both called `scan.jpg` cannot

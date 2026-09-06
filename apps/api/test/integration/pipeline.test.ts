@@ -1,5 +1,10 @@
+import { execFileSync } from 'node:child_process';
+import { generateKeyPairSync } from 'node:crypto';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { drainQueue, type PipelineContext } from '@everecho/pipeline';
+import { drainQueue, readZip, type PipelineContext } from '@everecho/pipeline';
 import {
   CORRECT_TEACH_BACK,
   TestClient,
@@ -25,11 +30,20 @@ const TRANSCRIPT = [
   'I studied at Fergusson College and I was good at mathematics.',
 ].join(' ');
 
+/**
+ * A throwaway signing key. Production configures a real one; the point of
+ * having one here is that the signed path is the one that gets exercised
+ * end to end, rather than only the fallback.
+ */
+const SIGNING_KEY = generateKeyPairSync('ed25519')
+  .privateKey.export({ type: 'pkcs8', format: 'pem' })
+  .toString();
+
 /** Runs the same handlers the worker runs, in this process. */
 const runWorker = () => drainQueue(h.ctx as unknown as PipelineContext, { workerId: 'test' });
 
 beforeAll(async () => {
-  h = await startHarness();
+  h = await startHarness({ EXPORT_SIGNING_PRIVATE_KEY: SIGNING_KEY });
   buyer = await signUp(h.app, { email: 'anil@example.test', displayName: 'Anil Sharma' });
   storyteller = await signUp(h.app, { email: 'kamala@example.test', displayName: 'Kamala Sharma' });
   family = await signUp(h.app, { email: 'priya@example.test', displayName: 'Priya Sharma' });
@@ -429,6 +443,86 @@ describe('export and deletion', () => {
     expect(body.subarray(0, 4)).toEqual(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
     expect(body.includes(Buffer.from('manifest.json'))).toBe(true);
     expect(body.includes(Buffer.from('README.txt'))).toBe(true);
+  });
+
+  /**
+   * The whole point of the export, exercised the way a family would: unzip it,
+   * run the verifier that came inside it, and read what it says.
+   *
+   * Running the shipped `verify.mjs` as a separate process on plain Node is
+   * deliberate. Importing it would prove the logic works under vitest with the
+   * repository's toolchain available, which is not the claim. The claim is that
+   * it works on a laptop with nothing installed, years from now.
+   */
+  it('unzips to something that verifies itself with nothing installed', async () => {
+    const list = await storyteller.get<{ exports: { id: string; downloadUrl: string }[] }>(
+      `/v1/archives/${archiveId}/exports`,
+    );
+    const url = new URL(list.body.exports.find((e) => e.id === exportId)!.downloadUrl);
+    const response = await h.app.inject({ method: 'GET', url: `${url.pathname}${url.search}` });
+
+    const files = readZip(response.rawPayload);
+    expect([...files.keys()]).toEqual(
+      expect.arrayContaining(['index.html', 'verify.mjs', 'manifest.json', 'manifest.sig']),
+    );
+
+    const dir = mkdtempSync(join(tmpdir(), 'everecho-export-'));
+    try {
+      for (const [path, data] of files) {
+        mkdirSync(dirname(join(dir, path)), { recursive: true });
+        writeFileSync(join(dir, path), data);
+      }
+
+      const out = execFileSync('node', ['verify.mjs'], { cwd: dir, encoding: 'utf8' });
+      expect(out).toContain('Intact.');
+      expect(out).toMatch(/Signed by key ([0-9A-F]{4}-){7}[0-9A-F]{4}/);
+
+      // The claim this product lives on: a memory is worth something only if
+      // you can still get back to the recording it came from. Zero of zero
+      // would pass the arithmetic and mean nothing.
+      const [, resolved, total] = out.match(/(\d+) of (\d+) citations resolve/)!;
+      expect(Number(total)).toBeGreaterThan(0);
+      expect(resolved).toBe(total);
+      expect(out).toContain('to the original recording');
+
+      // And the same folder, one byte different, must not pass.
+      const audio = [...files.keys()].find((p) => p.startsWith('originals/'))!;
+      const bytes = Buffer.from(files.get(audio)!);
+      bytes[0] = bytes[0]! ^ 0xff;
+      writeFileSync(join(dir, audio), bytes);
+      expect(() => execFileSync('node', ['verify.mjs'], { cwd: dir, encoding: 'utf8' })).toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('opens in a browser with no server, and speaks as nobody', async () => {
+    const list = await storyteller.get<{ exports: { id: string; downloadUrl: string }[] }>(
+      `/v1/archives/${archiveId}/exports`,
+    );
+    const url = new URL(list.body.exports.find((e) => e.id === exportId)!.downloadUrl);
+    const response = await h.app.inject({ method: 'GET', url: `${url.pathname}${url.search}` });
+    const html = readZip(response.rawPayload).get('index.html')!.toString('utf8');
+
+    // Its own data, because a file:// page cannot fetch the json beside it.
+    expect(html).toContain('Kamala Sharma');
+    expect(html).not.toMatch(/<(script|link|img)[^>]+(src|href)=["']https?:/);
+
+    // A real citation, resolvable without EverEcho.
+    const embedded = JSON.parse(
+      html.slice(
+        html.indexOf('id="data">') + 10,
+        html.indexOf('</script>', html.indexOf('id="data">')),
+      ),
+    );
+    const evidence = embedded.memories.flatMap((m: { claims: { evidence: unknown[] }[] }) =>
+      m.claims.flatMap((c) => c.evidence),
+    );
+    expect(evidence.length).toBeGreaterThan(0);
+    for (const item of evidence as { sourceId: string; locator: { segmentId?: string } }[]) {
+      expect(embedded.sources[item.sourceId]).toBeTruthy();
+      if (item.locator?.segmentId) expect(embedded.segments[item.locator.segmentId]).toBeTruthy();
+    }
   });
 
   it('refuses deletion without the typed confirmation', async () => {

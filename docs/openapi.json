@@ -14693,7 +14693,7 @@
           "lifecycle"
         ],
         "summary": "Export everything, in open formats",
-        "description": "Produces a .zip containing every original file, the memories and claims with their evidence, the permission history, and a manifest with a checksum for each file. It opens without EverEcho and without any software a family would have to install.",
+        "description": "Produces a .zip containing every original file, the memories and claims with their evidence, the permission history, and a signed manifest with a checksum for each file. It carries an index.html that browses the archive and resolves every citation offline, and a verify.mjs that re-checks it — so it opens without EverEcho and without any software a family would have to install.",
         "security": [
           {
             "sessionCookie": []
@@ -14898,6 +14898,17 @@
                                   "type": "integer",
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991
+                                },
+                                "signed": {
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "keyFingerprint": {
+                                  "default": null,
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
                                 }
                               },
                               "required": [
@@ -14907,7 +14918,9 @@
                                 "transcriptCount",
                                 "permissionCount",
                                 "conversationCount",
-                                "suggestionCount"
+                                "suggestionCount",
+                                "signed",
+                                "keyFingerprint"
                               ],
                               "additionalProperties": false
                             },
@@ -15172,6 +15185,17 @@
                                     "type": "integer",
                                     "minimum": -9007199254740991,
                                     "maximum": 9007199254740991
+                                  },
+                                  "signed": {
+                                    "default": false,
+                                    "type": "boolean"
+                                  },
+                                  "keyFingerprint": {
+                                    "default": null,
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -15181,7 +15205,9 @@
                                   "transcriptCount",
                                   "permissionCount",
                                   "conversationCount",
-                                  "suggestionCount"
+                                  "suggestionCount",
+                                  "signed",
+                                  "keyFingerprint"
                                 ],
                                 "additionalProperties": false
                               },

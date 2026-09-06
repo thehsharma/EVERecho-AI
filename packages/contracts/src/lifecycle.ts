@@ -28,6 +28,10 @@ export const exportJobSchema = z.object({
       permissionCount: z.number().int(),
       conversationCount: z.number().int(),
       suggestionCount: z.number().int(),
+      /** False when no signing key is configured. Said plainly rather than omitted. */
+      signed: z.boolean().default(false),
+      /** Compare this against the fingerprint published outside the export. */
+      keyFingerprint: z.string().nullable().default(null),
     })
     .nullable(),
   error: z.string().nullable(),

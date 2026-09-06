@@ -23,7 +23,7 @@ interface ExportRow {
   storage_key: string | null;
   checksum_sha256: string | null;
   byte_size: number | null;
-  manifest: Record<string, number> | null;
+  manifest: Record<string, number | boolean | string | null> | null;
   error: string | null;
   created_at: Date;
   completed_at: Date | null;
@@ -38,8 +38,10 @@ export function registerLifecycleRoutes(app: FastifyInstance, ctx: AppContext): 
     summary: 'Export everything, in open formats',
     description:
       'Produces a .zip containing every original file, the memories and claims with their ' +
-      'evidence, the permission history, and a manifest with a checksum for each file. It opens ' +
-      'without EverEcho and without any software a family would have to install.',
+      'evidence, the permission history, and a signed manifest with a checksum for each file. ' +
+      'It carries an index.html that browses the archive and resolves every citation offline, ' +
+      'and a verify.mjs that re-checks it — so it opens without EverEcho and without any ' +
+      'software a family would have to install.',
     auth: 'required',
     params: archiveParams,
     body: createExportRequestSchema,
@@ -257,6 +259,10 @@ function toDeletion(row: DeletionRow) {
 }
 
 async function toExport(ctx: AppContext, row: ExportRow) {
+  // The manifest column is jsonb written by successive releases, so every
+  // field in it is optional in practice however required it looks here.
+  const count = (value: unknown) => (typeof value === 'number' ? value : 0);
+
   // Download links are minted on read and expire quickly; none is ever stored.
   const download =
     row.status === 'ready' && row.storage_key
@@ -277,16 +283,22 @@ async function toExport(ctx: AppContext, row: ExportRow) {
     byteSize: row.byte_size,
     manifest: row.manifest
       ? {
-          sourceCount: row.manifest.sourceCount ?? 0,
-          memoryCount: row.manifest.memoryCount ?? 0,
-          claimCount: row.manifest.claimCount ?? 0,
-          transcriptCount: row.manifest.transcriptCount ?? 0,
-          permissionCount: row.manifest.permissionCount ?? 0,
+          sourceCount: count(row.manifest.sourceCount),
+          memoryCount: count(row.manifest.memoryCount),
+          claimCount: count(row.manifest.claimCount),
+          transcriptCount: count(row.manifest.transcriptCount),
+          permissionCount: count(row.manifest.permissionCount),
           // Defaulted rather than required: an export produced before
           // conversations existed has a manifest without these, and a
           // person's old export should still open.
-          conversationCount: row.manifest.conversationCount ?? 0,
-          suggestionCount: row.manifest.suggestionCount ?? 0,
+          conversationCount: count(row.manifest.conversationCount),
+          suggestionCount: count(row.manifest.suggestionCount),
+          // An export made before signing existed is unsigned, and says so.
+          // Reporting it as signed-unknown would be worse than reporting it
+          // as unsigned, because the family would go looking for a key.
+          signed: row.manifest.signed === true,
+          keyFingerprint:
+            typeof row.manifest.keyFingerprint === 'string' ? row.manifest.keyFingerprint : null,
         }
       : null,
     error: row.error,

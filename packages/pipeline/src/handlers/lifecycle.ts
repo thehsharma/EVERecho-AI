@@ -1,17 +1,29 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { storageKeyFor } from '@everecho/adapters';
 import type { Transaction } from '@everecho/db';
 import { createZip, type ZipEntry } from '../zip';
+import { buildIndexHtml, type IndexData } from '../export/index-html';
+import { signManifest } from '../export/signature';
 import type { PipelineContext } from '../context';
 import type { JobArgs } from './ingest';
 
 /**
- * Builds a complete, self-describing export.
+ * Builds a complete, self-describing export that outlives the company.
  *
  * Every original file, every transcript, every memory and claim with its
  * evidence, the permission history, and a manifest with a checksum for each
  * file. A README explains the layout in plain language, because the person
  * opening this may be doing so years from now with no idea what EverEcho was.
+ *
+ * Three things make it portable rather than merely downloadable. `index.html`
+ * opens the archive in a browser with no server, no build and no network, and
+ * resolves every citation back to the place in the recording it came from.
+ * `verify.mjs` re-checks every checksum and every citation using nothing but
+ * Node, so the family can prove the archive is intact without asking anybody.
+ * And the manifest is signed, when a key is configured, so its origin can be
+ * checked as well as its integrity — with the verifier stating plainly the
+ * limit of what a key travelling inside the folder can prove.
  */
 export async function runExport({ ctx, tx, payload }: JobArgs): Promise<void> {
   const exportId = String(payload.exportJobId);
@@ -80,8 +92,8 @@ export async function runExport({ ctx, tx, payload }: JobArgs): Promise<void> {
   const transcripts = await tx.query<Record<string, unknown>>(
     `SELECT t.id, t.source_asset_id, t.provider, t.model_version, t.method, t.policy_version,
             coalesce(json_agg(json_build_object(
-              'idx', s.idx, 'startMs', s.start_ms, 'endMs', s.end_ms, 'page', s.page_no,
-              'text', s.text, 'correctedText', s.corrected_text
+              'id', s.id, 'idx', s.idx, 'startMs', s.start_ms, 'endMs', s.end_ms,
+              'page', s.page_no, 'text', s.text, 'correctedText', s.corrected_text
             ) ORDER BY s.idx) FILTER (WHERE s.id IS NOT NULL), '[]') AS segments
      FROM transcript t LEFT JOIN transcript_segment s ON s.transcript_id = t.id
      WHERE t.archive_id = $1 GROUP BY t.id`,
@@ -166,7 +178,11 @@ export async function runExport({ ctx, tx, payload }: JobArgs): Promise<void> {
     subject: archive.subject_display_name,
     createdAt: archive.created_at.toISOString(),
     exportedAt: new Date().toISOString(),
-    producedBy: `${ctx.branding.productName} v0.1`,
+    producedBy: ctx.branding.productName,
+    // The version a reader years from now actually needs is the format's, and it
+    // lives in manifest.json. A product version here had already drifted from
+    // the one in the README by two releases.
+    format: 'everecho-export/2',
   });
   addJson('metadata/memories.json', memories);
   addJson('metadata/claims-and-evidence.json', claims);
@@ -186,6 +202,10 @@ export async function runExport({ ctx, tx, payload }: JobArgs): Promise<void> {
   addJson('conversations/learning-history.json', learningPolicies);
   addJson('conversations/your-preferences.json', preferences);
 
+  // Where each original ended up, so the browsable index can point a citation
+  // at a file rather than at an id.
+  const originalPaths = new Map<string, string>();
+
   if (job.options.includeOriginals !== false) {
     for (const source of sources) {
       const key = String(source.storage_key ?? '');
@@ -194,23 +214,70 @@ export async function runExport({ ctx, tx, payload }: JobArgs): Promise<void> {
       if (!bytes) continue;
       // Filenames are preserved under an id-prefixed folder so two photographs
       // called "scan.jpg" cannot overwrite each other.
-      add(`originals/${String(source.id)}/${String(source.original_filename)}`, bytes);
+      const path = `originals/${String(source.id)}/${String(source.original_filename)}`;
+      originalPaths.set(String(source.id), path);
+      add(path, bytes);
     }
   }
 
+  add(
+    'index.html',
+    Buffer.from(
+      buildIndexHtml(
+        indexData({
+          archive,
+          producedBy: ctx.branding.productName,
+          memories,
+          claims,
+          sources,
+          transcripts,
+          originalPaths,
+        }),
+      ),
+      'utf8',
+    ),
+  );
+
+  // Read from disk rather than inlined as a template literal: the verifier is a
+  // real file that lints, parses and can be run directly against a folder, and
+  // a copy pasted into a string would drift from the one anybody tested.
+  add('verify.mjs', readFileSync(new URL('../export/verify.mjs', import.meta.url)));
+
   add('README.txt', Buffer.from(readme(ctx, archive.subject_display_name), 'utf8'));
-  addJson('manifest.json', {
-    format: 'everecho-export/1',
-    exportedAt: new Date().toISOString(),
-    counts: {
-      sources: sources.length,
-      memories: memories.length,
-      claims: claims.length,
-      transcripts: transcripts.length,
-      permissions: members.length,
-    },
-    files: fileChecksums,
-  });
+
+  // Last, because it is a checksum of everything above it.
+  const manifestBytes = Buffer.from(
+    JSON.stringify(
+      {
+        format: 'everecho-export/2',
+        subject: archive.subject_display_name,
+        exportedAt: new Date().toISOString(),
+        counts: {
+          sources: sources.length,
+          memories: memories.length,
+          claims: claims.length,
+          transcripts: transcripts.length,
+          permissions: members.length,
+        },
+        files: fileChecksums,
+      },
+      null,
+      2,
+    ),
+    'utf8',
+  );
+  entries.push({ path: 'manifest.json', data: manifestBytes });
+
+  // Over the manifest's exact bytes, and therefore over every file it lists.
+  // Null when no key is configured, and then the export says it is unsigned
+  // rather than leaving the family to assume otherwise.
+  const signature = signManifest(manifestBytes, ctx.cfg.env.EXPORT_SIGNING_PRIVATE_KEY);
+  if (signature) {
+    entries.push({
+      path: 'manifest.sig',
+      data: Buffer.from(JSON.stringify(signature, null, 2), 'utf8'),
+    });
+  }
 
   const zip = createZip(entries);
   const key = storageKeyFor({ archiveId: job.archive_id, sourceId: job.id, kind: 'export' });
@@ -233,9 +300,97 @@ export async function runExport({ ctx, tx, payload }: JobArgs): Promise<void> {
         permissionCount: members.length,
         conversationCount: conversations.length,
         suggestionCount: candidates.length,
+        signed: signature !== null,
+        keyFingerprint: signature?.fingerprint ?? null,
       }),
     ],
   );
+}
+
+/**
+ * Reshapes the query rows into what a browser with no database needs.
+ *
+ * The one thing worth noticing is `segments`: a citation names a segment id,
+ * so a transcript exported without segment ids is a transcript the citations
+ * cannot reach. That was the actual defect this slice found — the export had
+ * been dropping them since v0.1, which made every citation in it unresolvable
+ * while the manifest still reported everything present and correct.
+ */
+function indexData(input: {
+  archive: { name: string; subject_display_name: string };
+  producedBy: string;
+  memories: Record<string, unknown>[];
+  claims: Record<string, unknown>[];
+  sources: Record<string, unknown>[];
+  transcripts: Record<string, unknown>[];
+  originalPaths: Map<string, string>;
+}): IndexData {
+  const claimsByMemory = new Map<string, IndexData['memories'][number]['claims']>();
+  for (const claim of input.claims) {
+    const memoryId = String(claim.memory_id ?? '');
+    if (!memoryId) continue;
+    const list = claimsByMemory.get(memoryId) ?? [];
+    list.push({
+      id: String(claim.id),
+      text: String(claim.text),
+      evidence: (Array.isArray(claim.evidence) ? claim.evidence : []).map((raw) => {
+        const e = raw as Record<string, unknown>;
+        return {
+          sourceId: e.sourceId ? String(e.sourceId) : null,
+          quotedText: e.quotedText ? String(e.quotedText) : null,
+          locator: (e.locator as Record<string, unknown> | null) ?? null,
+        };
+      }),
+    });
+    claimsByMemory.set(memoryId, list);
+  }
+
+  const sources: IndexData['sources'] = {};
+  for (const source of input.sources) {
+    const id = String(source.id);
+    sources[id] = {
+      filename: String(source.original_filename ?? id),
+      mime: String(source.mime_type ?? ''),
+      kind: String(source.kind ?? ''),
+      path: input.originalPaths.get(id) ?? null,
+    };
+  }
+
+  const segments: IndexData['segments'] = {};
+  for (const transcript of input.transcripts) {
+    const sourceId = String(transcript.source_asset_id ?? '');
+    for (const raw of Array.isArray(transcript.segments) ? transcript.segments : []) {
+      const segment = raw as Record<string, unknown>;
+      if (!segment.id) continue;
+      segments[String(segment.id)] = {
+        sourceId,
+        idx: Number(segment.idx ?? 0),
+        startMs: segment.startMs === null ? null : Number(segment.startMs),
+        endMs: segment.endMs === null ? null : Number(segment.endMs),
+        // The correction wins where there is one: it is what the storyteller
+        // said the recording actually says.
+        text: String(segment.correctedText ?? segment.text ?? ''),
+      };
+    }
+  }
+
+  return {
+    subject: input.archive.subject_display_name,
+    archiveName: input.archive.name,
+    exportedAt: new Date().toISOString(),
+    producedBy: input.producedBy,
+    originalsIncluded: input.originalPaths.size > 0,
+    memories: input.memories.map((memory) => ({
+      id: String(memory.id),
+      title: String(memory.title ?? 'Untitled'),
+      body: String(memory.body ?? ''),
+      occurredOn: memory.occurred_on ? String(memory.occurred_on) : null,
+      topics: Array.isArray(memory.topics) ? memory.topics.map(String) : [],
+      claims: claimsByMemory.get(String(memory.id)) ?? [],
+    })),
+    sources,
+    segments,
+  };
 }
 
 function readme(ctx: PipelineContext, subject: string): string {
@@ -245,6 +400,14 @@ function readme(ctx: PipelineContext, subject: string): string {
     '',
     'This is a complete copy of the archive, in open formats that need no special software.',
     '',
+    'Start here',
+    '  index.html   Open this in any browser. It shows the memories and, for each one,',
+    '               the exact place in the recording it came from, with a button that',
+    '               plays it. It needs no internet connection and no software.',
+    '  verify.mjs   Run "node verify.mjs" in this folder to check that nothing has been',
+    '               altered since the export was made, and that every citation still',
+    '               points at something that is here.',
+    '',
     'What is in here',
     '  originals/   Every file exactly as it was uploaded, unchanged.',
     '  metadata/    The memories, the claims made from them, and the exact place in the',
@@ -253,8 +416,10 @@ function readme(ctx: PipelineContext, subject: string): string {
     '               corrections that were made; everything it suggested keeping and what',
     '               was decided about each one; every version of the settings that said',
     '               what talking could be used for; and your own interface preferences.',
-    '  manifest.json  A list of every file with a SHA-256 checksum, so you can verify',
-    '               nothing has been altered since this export was made.',
+    '  manifest.json  A list of every file with a SHA-256 checksum.',
+    '  manifest.sig   A signature over that list, if this export was signed. The',
+    '               fingerprint it prints proves this came from EverEcho only if it',
+    '               matches one published somewhere you did not get from this folder.',
     '',
     'About the AI-assisted parts',
     '  Story cards and any biography text were assembled from what the storyteller',
@@ -267,7 +432,7 @@ function readme(ctx: PipelineContext, subject: string): string {
     `  voice that is not ${subject}'s, and no recording of anyone's voice was ever used to`,
     '  make one.',
     '',
-    `Produced by ${ctx.branding.productName} v0.2. Questions: ${ctx.branding.supportEmail}`,
+    `Produced by ${ctx.branding.productName}. Questions: ${ctx.branding.supportEmail}`,
     '',
   ].join('\n');
 }

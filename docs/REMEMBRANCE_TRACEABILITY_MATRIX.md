@@ -134,10 +134,25 @@ be filled: the person says it, about themselves.
 
 | Requirement | Implementation | Proof | Status |
 | --- | --- | --- | --- |
-| Export opens without EverEcho | | | planned |
-| Signed integrity manifest, ordinary cryptography | | | planned |
-| Offline verifier proving audio and citations are intact | | | planned |
-| Citations resolvable offline | | | planned |
+| Export opens without EverEcho | `index.html` carries its own data — a `file://` page cannot fetch the JSON beside it — and loads no script, style, font or image from anywhere | E2E "downloads, verifies itself, and browses offline" opens the real export off the filesystem in a real browser with the context offline; unit "carries its own data, because a file:// page cannot fetch the json beside it", "needs no network at all" | done |
+| Signed integrity manifest, ordinary cryptography | Ed25519 from `node:crypto` over the exact bytes of `manifest.json`, which lists a SHA-256 for every file — so the signature covers the archive transitively. `manifest.sig` carries the public key and its fingerprint | `portable-export.test.ts` "produces a signature the manifest verifies against", "does not verify against a manifest that changed by one byte", "refuses a key of the wrong kind, rather than signing with it" | done |
+| The signature's limits are stated, not implied | A key travelling inside the folder proves internal consistency only. The verifier prints the fingerprint and says in as many words that it proves origin only if compared with one published elsewhere; the export screen says the same | `portable-export.test.ts` "verifies a signature, and states the limit of what it proves"; "says an unsigned export is unsigned rather than staying quiet about it" | done |
+| Unsigned is said, never omitted | `signManifest` returns null with no key; the job manifest records `signed: false`; the export screen says no key is configured | `portable-export.test.ts` "says the export is unsigned rather than inventing a key"; contract `signed`/`keyFingerprint` | done |
+| Offline verifier proving audio and citations are intact | `verify.mjs`, zero dependencies, plain Node. Checks every checksum, that nothing was added, the signature, and that every citation resolves | 9 verifier tests including a truncation, a same-length substitution, an added file, a removed file, and a re-signed manifest; the integration test runs the shipped script as a separate process against a real export | done |
+| A same-length substitution is caught | The checksum, not the size, does the work | `portable-export.test.ts` "catches a file altered after the export was made" alters exactly as many bytes as it replaces | done |
+| Citations resolvable offline | Segment ids are exported, so a citation naming a segment can reach it; `index.html` resolves each to its span and seeks the original file to it | Integration "opens in a browser with no server, and speaks as nobody" walks every citation and asserts the source and segment are present; verifier reports "n of n citations resolve" | done |
+| Audio in the export is still one contiguous span | The player seeks to the start and stops at the end. One `<audio>` element per citation, never shared, so a click cannot run into the next | `portable-export.test.ts` "plays a range of the original file rather than a cut of it" | done |
+| It speaks as nobody, offline too | There is no field in the page that is not interface text or a verbatim quotation, and no branch that could render a reaction | E2E asserts the page carries its own statement and contains no "would be proud" construction | done |
+| A memory containing markup cannot break out of the page | `<` is escaped in the embedded JSON, which is valid JSON and cannot close the block | `portable-export.test.ts` "cannot be closed early by a memory containing a script tag" parses exactly what a browser would | done |
+| The zip is readable, not merely writable | `readZip` beside `createZip`; the hand-rolled writer had never had its output read back in three releases | `portable-export.test.ts` "reads back exactly what was written, bytes and all", "survives an empty file, which is where offset arithmetic usually breaks" | done |
+
+### Found on the way through
+
+| Defect | Where | Fix | Proof |
+| --- | --- | --- | --- |
+| `STORAGE_LOCAL_DIR` was resolved against `process.cwd()`, and this repository runs four processes from four directories. The worker wrote uploads and exports where the API could not find them, so in local development **every export 404ed and every recording was unplayable** — since v0.1. Production was unaffected because it requires S3, which is why nothing had caught it | `packages/config/src/load.ts` | Relative shared directories resolve against the workspace root, found by walking up from the config package's own file rather than from whoever is running | `load.test.ts` "resolves shared directories the same way from any working directory"; verified by reverting the fix and watching it fail |
+| The adversarial-log check searched the whole file for an `OPEN` marker, so one open entry excused every other. The check passed while checking nothing | `scripts/check-adversarial-log.ts` | Per entry, on that entry's own `fix` field | Verified by adding a second unmarked open entry and watching the build go red |
+| The export's `producedBy` said v0.1 and its README said v0.2 | `packages/pipeline/src/handlers/lifecycle.ts` | Neither. The version a reader needs years from now is the format's, and it lives in `manifest.json` | The format is asserted in the verifier's own output |
 
 ## Conformance — the promise, made checkable by anybody
 

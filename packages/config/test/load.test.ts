@@ -1,3 +1,5 @@
+import { dirname, isAbsolute, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ConfigError, loadConfig } from '../src/load';
 import { branding, features } from '../src/branding';
@@ -14,6 +16,27 @@ describe('loadConfig', () => {
     expect(cfg.env.STORAGE_DRIVER).toBe('local');
     expect(cfg.env.LLM_DRIVER).toBe('local');
     expect(cfg.uploadAllowedMime).toContain('image/jpeg');
+  });
+
+  it('resolves shared directories the same way from any working directory', () => {
+    // The bug this pins: `resolve('./var/storage')` is relative to the process,
+    // and this repository runs four processes from four directories. The worker
+    // wrote exports where the API could not find them, so in local development
+    // every recording was unplayable and every export 404ed.
+    const original = process.cwd();
+    try {
+      process.chdir(dirname(fileURLToPath(import.meta.url)));
+      const fromHere = loadConfig(base);
+      process.chdir(original);
+      const fromRoot = loadConfig(base);
+
+      expect(fromHere.env.STORAGE_LOCAL_DIR).toBe(fromRoot.env.STORAGE_LOCAL_DIR);
+      expect(fromHere.env.EMAIL_OUTBOX_DIR).toBe(fromRoot.env.EMAIL_OUTBOX_DIR);
+      expect(isAbsolute(fromHere.env.STORAGE_LOCAL_DIR)).toBe(true);
+      expect(fromHere.env.STORAGE_LOCAL_DIR).not.toContain(`${sep}packages${sep}`);
+    } finally {
+      process.chdir(original);
+    }
   });
 
   it('refuses to enable perform mode in any environment', () => {

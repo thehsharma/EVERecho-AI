@@ -16,6 +16,7 @@ import { existsSync } from 'node:fs';
 interface Entry {
   id: string;
   held: boolean;
+  fix: string;
   fixedIn: string | null;
   pinnedBy: string[];
 }
@@ -50,12 +51,13 @@ for (const entry of log.entries) {
     }
   }
 
-  // A fixed defect names the commit that fixed it; an open one says so.
-  if (entry.fixedIn === null && entry.held === false) {
-    const source = await readFile('docs/adversarial-log.json', 'utf8');
-    if (!source.includes('"fix": "OPEN')) {
-      problems.push(`${entry.id}: unfixed and not marked OPEN`);
-    }
+  // A fixed defect names the commit that fixed it; an open one says so, in its
+  // own entry. This searched the whole file for an OPEN marker until v0.5,
+  // which meant one open entry excused every other — the check passed while
+  // checking nothing. Found by adding a second open entry and watching it not
+  // complain.
+  if (entry.fixedIn === null && entry.held === false && !entry.fix.startsWith('OPEN')) {
+    problems.push(`${entry.id}: unfixed and not marked OPEN`);
   }
 }
 

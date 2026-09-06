@@ -81,3 +81,47 @@ export function createZip(entries: readonly ZipEntry[]): Buffer {
 
   return Buffer.concat([...chunks, centralBuffer, end]);
 }
+
+/**
+ * Reads back what `createZip` wrote.
+ *
+ * The writer above is the most fragile thing in the export path — a hand-rolled
+ * binary format with byte offsets in it — and for three releases nothing had
+ * ever read its output back. A reader beside it means the round trip is tested
+ * rather than assumed, and it is what lets an integration test open a real
+ * export and run the verifier over its actual contents.
+ *
+ * Entries are stored uncompressed, so this is a walk of the central directory
+ * and a slice. It handles what this writer produces and deliberately nothing
+ * else: no compression, no zip64, no encryption.
+ */
+export function readZip(buffer: Buffer): Map<string, Buffer> {
+  const end = buffer.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+  if (end < 0) throw new Error('not a zip: no end-of-central-directory record');
+
+  const count = buffer.readUInt16LE(end + 10);
+  let offset = buffer.readUInt32LE(end + 16);
+  const files = new Map<string, Buffer>();
+
+  for (let i = 0; i < count; i += 1) {
+    if (buffer.readUInt32LE(offset) !== 0x02014b50) throw new Error('corrupt central directory');
+    const size = buffer.readUInt32LE(offset + 20);
+    const nameLength = buffer.readUInt16LE(offset + 28);
+    const extraLength = buffer.readUInt16LE(offset + 30);
+    const commentLength = buffer.readUInt16LE(offset + 32);
+    const localOffset = buffer.readUInt32LE(offset + 42);
+    const name = buffer.subarray(offset + 46, offset + 46 + nameLength).toString('utf8');
+
+    // The local header's name and extra lengths, not the central one's: the two
+    // are allowed to differ, and using the wrong pair reads from the wrong byte.
+    const start =
+      localOffset +
+      30 +
+      buffer.readUInt16LE(localOffset + 26) +
+      buffer.readUInt16LE(localOffset + 28);
+    files.set(name, buffer.subarray(start, start + size));
+
+    offset += 46 + nameLength + extraLength + commentLength;
+  }
+  return files;
+}

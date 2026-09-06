@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { envSchema, type Env } from './schema';
 
 /**
@@ -38,6 +39,34 @@ function loadDotEnv(startDir = process.cwd()): void {
     dir = parent;
   }
 }
+
+/**
+ * Where a relative path in the configuration is relative *to*.
+ *
+ * `resolve('./var/storage')` resolves against `process.cwd()`, and the four
+ * processes in this repository have four different working directories. That
+ * meant the worker wrote uploads and exports to `apps/worker/var/storage`
+ * while the API looked for them in `apps/api/var/storage`, so in local
+ * development every recording was unplayable and every export was
+ * undownloadable — for three releases, because nothing had ever asked one
+ * process for a file another process wrote.
+ *
+ * Anchored to this file rather than to the caller: it is the one location that
+ * does not change with whoever is running.
+ */
+function workspaceRoot(): string {
+  let dir = dirname(fileURLToPath(import.meta.url));
+  for (let depth = 0; depth < 8; depth += 1) {
+    if (existsSync(join(dir, 'pnpm-workspace.yaml'))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return process.cwd();
+}
+
+/** Paths shared between processes, and therefore never process-relative. */
+const SHARED_DIRECTORIES = ['STORAGE_LOCAL_DIR', 'EMAIL_OUTBOX_DIR'] as const;
 
 export interface AppConfig {
   env: Env;
@@ -83,6 +112,12 @@ export function loadConfig(source?: Record<string, string | undefined>): AppConf
     );
   }
   const env = parsed.data;
+
+  // Made absolute before anything reads them, so every process agrees on where
+  // a file is regardless of which directory it was started from.
+  const root = workspaceRoot();
+  for (const key of SHARED_DIRECTORIES) env[key] = resolve(root, env[key]);
+
   const issues: string[] = [];
 
   if (env.NODE_ENV === 'production') {
@@ -101,6 +136,11 @@ export function loadConfig(source?: Record<string, string | undefined>): AppConf
     if (env.STORAGE_DRIVER === 'local') {
       issues.push(
         'STORAGE_DRIVER=local is not durable; configure STORAGE_DRIVER=s3 for production',
+      );
+    }
+    if (!env.EXPORT_SIGNING_PRIVATE_KEY) {
+      issues.push(
+        'EXPORT_SIGNING_PRIVATE_KEY is required in production: an export nobody can check the origin of is not portable, it is merely downloadable',
       );
     }
     if (!env.AI_PROVIDER_NO_TRAINING) {

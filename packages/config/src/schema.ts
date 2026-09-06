@@ -192,6 +192,18 @@ export const envSchema = z.object({
   FEATURE_BILLING: bool.default(true),
   FEATURE_ADMIN_TOOLS: bool.default(true),
 
+  // ---- Export signing -----------------------------------------------------
+  /**
+   * Ed25519 private key, PKCS#8 PEM, used to sign export manifests.
+   *
+   * Optional on purpose. There is no key locally, and an unsigned export says
+   * so — in the manifest, in the README and in the verifier's own output —
+   * rather than implying a signature nobody made. Required in production,
+   * because an export the family cannot check the origin of is a promise that
+   * cannot be kept after the company is gone.
+   */
+  EXPORT_SIGNING_PRIVATE_KEY: z.string().optional(),
+
   // ---- Safety -------------------------------------------------------------
   SAFETY_EMERGENCY_INFO_REGION: z.string().default('IN'),
   SAFETY_ESCALATION_EMAIL: z.email().default('safety@everecho.example'),

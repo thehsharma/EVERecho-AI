@@ -312,3 +312,85 @@ they stop being needed.
 
 Verified the only way worth verifying: by renaming a pinning test and watching
 the build go red.
+
+---
+
+## R-017 — The export is portable, not merely downloadable
+
+**Decision.** Every export carries an `index.html` that browses the archive
+with no server and no network, and a `verify.mjs` that re-checks it with
+nothing installed. Both are produced by the export itself, not documented as
+something the family could build.
+
+**Why.** "Open formats" was true and insufficient. A folder of JSON is portable
+to a developer and inert to a widow. The test of portability is whether
+somebody can double-click something and hear their mother's voice, so that is
+what is built and that is what the end-to-end test does: it downloads a real
+export, deletes the product from the picture, and opens the result off the
+filesystem in a real browser with the network switched off.
+
+Two consequences follow from `file://` and are worth knowing before wondering
+why the code looks odd. The data is embedded in the page rather than fetched,
+because a browser opening a local file refuses to read the JSON sitting next to
+it — fetching would have been tidier and would have failed on the only machine
+that matters. And the verifier is run as a separate process on plain Node in
+the test rather than imported, because importing it would prove it works under
+this repository's toolchain, which is not the claim.
+
+The export also keeps the guarantee the archive is built on: the player seeks
+to the start of one span and stops at its end, one audio element per citation,
+never shared. An export that relaxed the rule about contiguous audio would
+relax it permanently, in the copy nobody can update.
+
+---
+
+## R-018 — A signature that travels with the files says what it cannot prove
+
+**Decision.** The manifest is signed with Ed25519 when a key is configured, and
+the verifier prints the key fingerprint together with a plain statement that it
+proves origin **only** if that fingerprint matches one published somewhere the
+reader did not get from the folder.
+
+**Why.** The signature is genuinely useful: it covers every file transitively,
+because the manifest lists a SHA-256 for each. What it cannot do is prove
+origin on its own, because anybody who alters the archive can re-sign it with
+their own key and swap the public half — and a family who read the word
+"signed" and stopped there would have been misled by a true statement.
+
+So the fingerprint is printed prominently rather than buried in the JSON, and
+the sentence naming the limit is asserted by a test, so it cannot be trimmed as
+clutter later.
+
+The same reasoning made signing optional rather than required. There is no key
+locally, and refusing to produce an export without one would mean a family
+could not get their archive out because of a deployment setting — the wrong
+trade in a product whose whole point is that leaving is easy. An unsigned
+export therefore says it is unsigned, in the manifest, in the README, on the
+export screen and in the verifier's output. Production is the exception:
+configuration validation now refuses to boot without a key, because an export
+nobody can check the origin of is not portable, it is merely downloadable.
+
+---
+
+## R-019 — Four processes, four working directories, one archive
+
+**Decision.** Relative directory settings are resolved against the workspace
+root, found by walking up from the config package's own file.
+
+**Why.** `resolve('./var/storage')` is relative to `process.cwd()`. The API,
+the worker, the web app and the test runner all start from different
+directories, so they disagreed about where a file was: the worker wrote
+uploads and exports into `apps/worker/var/storage` and the API looked for them
+in `apps/api/var/storage`. In local development every export 404ed on download
+and every recording in the demonstration archive was unplayable — including
+the audio behind "hear them talk about it", which is the feature this release
+exists for.
+
+It had been true since v0.1. Nothing caught it because production requires S3,
+where keys are absolute, and because no test had ever asked one process for a
+file another process wrote. The integration suite runs everything in one
+process with one working directory, which is exactly the condition under which
+this bug is invisible.
+
+Anchoring to the config file's own location rather than to the caller is the
+whole fix: it is the one path that does not change with whoever is running.
