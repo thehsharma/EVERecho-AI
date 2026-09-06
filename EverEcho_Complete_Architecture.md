@@ -1,6 +1,6 @@
 # EverEcho — complete architecture export
 
-Generated from `claude/everecho-v0-1-build-awtih5` at commit `4164b42`.
+Generated from `claude/everecho-v0-1-build-awtih5` at commit `48d2c14`.
 
 **408 files**, 2,593,515 bytes of source, schema, tests, configuration and documentation.
 
@@ -17,7 +17,7 @@ Stated explicitly so nothing looks accidentally missing.
 | `.git/` | — | Version control internals |
 | `.env` | — | Local secrets. **Not tracked in git**, and never was. `.env.example` *is* included below: it documents every variable the application reads, with safe development defaults, and production refuses to start on those defaults |
 | Binary files | 4 | PDFs. Cannot be represented as text; listed in the tree and named below |
-| Generated files | 2 | Reproducible from source; see the note below |
+| Generated files | 3 | Reproducible from source; see the note below |
 
 **Binary files present in the repository but omitted from this export:**
 
@@ -33,6 +33,8 @@ Stated explicitly so nothing looks accidentally missing.
   1.29 MB of derived JSON would bury the source it is derived from.
 - `pnpm-lock.yaml` (128 KB) — dependency resolution. Regenerate with `pnpm install`.
   Reproduced exactly from `package.json` files, all of which are included.
+- `EverEcho_Complete_Architecture.md` — this file. Including it in itself would be
+  circular, and would double the size on every regeneration.
 
 ## How to read this export
 
@@ -573,6 +575,7 @@ EVERecho-AI/
 |-- .prettierrc.json
 |-- CLAUDE.md
 |-- eslint.config.js
+|-- EverEcho_Complete_Architecture.md [generated — omitted]
 |-- package.json
 |-- playwright.config.ts
 |-- pnpm-lock.yaml [generated — omitted]
