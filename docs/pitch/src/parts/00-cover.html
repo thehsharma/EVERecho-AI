@@ -1,0 +1,101 @@
+<div class="cover">
+  <div class="mark">EverEcho</div>
+  <h1>A consent-first archive<br />for a living person</h1>
+  <div class="rule"></div>
+  <div class="sub">
+    The complete pitch, manual and technical record for EverEcho&nbsp;v0.1 &mdash; a working,
+    tested, running application built from an empty repository.
+  </div>
+  <div class="promise">
+    EverEcho does not clone a voice, generate a face, speak as anyone, or continue after they die.
+    It will not invent a memory to fill a gap. These are not roadmap items held back by policy
+    &mdash; they are refused by configuration, by the consent engine, by database constraints and by
+    the code that composes answers, each with a test.
+  </div>
+  <div class="spacer"></div>
+  <div class="meta">
+    <div><strong>Version</strong>v0.1 &mdash; internal pilot candidate</div>
+    <div><strong>Branch</strong>claude/everecho-v0-1-build-awtih5</div>
+    <div><strong>Status</strong>Runs. Tested. Not yet for real memories.</div>
+    <div><strong>Date</strong>1 September 2026</div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+<h2>Contents</h2>
+<div class="toc">
+  <div class="grp">Part I &mdash; The pitch</div>
+  <a class="row" href="#sec-1"
+    ><span>1&nbsp;&nbsp;&nbsp;The problem nobody solves in time</span><span data-pg="1">4</span></a
+  >
+  <a class="row" href="#sec-2"
+    ><span>2&nbsp;&nbsp;&nbsp;What EverEcho is</span><span data-pg="2">5</span></a
+  >
+  <a class="row" href="#sec-3"
+    ><span>3&nbsp;&nbsp;&nbsp;What EverEcho is not</span><span data-pg="3">6</span></a
+  >
+  <a class="row" href="#sec-4"
+    ><span>4&nbsp;&nbsp;&nbsp;Why the boundary is the product</span><span data-pg="4">7</span></a
+  >
+  <a class="row" href="#sec-5"
+    ><span>5&nbsp;&nbsp;&nbsp;The six people who use it</span><span data-pg="5">8</span></a
+  >
+  <a class="row" href="#sec-6"
+    ><span>6&nbsp;&nbsp;&nbsp;Consent as an architecture, not a checkbox</span
+    ><span data-pg="6">9</span></a
+  >
+  <a class="row" href="#sec-7"
+    ><span>7&nbsp;&nbsp;&nbsp;Provenance: every answer shows its work</span
+    ><span data-pg="7">11</span></a
+  >
+  <a class="row" href="#sec-8"
+    ><span>8&nbsp;&nbsp;&nbsp;The evidence, stated honestly</span><span data-pg="8">13</span></a
+  >
+
+  <div class="grp">Part II &mdash; The manual</div>
+  <a class="row" href="#sec-9"
+    ><span>9&nbsp;&nbsp;&nbsp;Getting it running</span><span data-pg="9">15</span></a
+  >
+  <a class="row" href="#sec-10"
+    ><span>10&nbsp;&nbsp;The demonstration archive</span><span data-pg="10">17</span></a
+  >
+  <a class="row" href="#sec-11"
+    ><span>11&nbsp;&nbsp;Screen by screen</span><span data-pg="11">18</span></a
+  >
+  <a class="row" href="#sec-12"
+    ><span>12&nbsp;&nbsp;Command reference</span><span data-pg="12">41</span></a
+  >
+  <a class="row" href="#sec-13"
+    ><span>13&nbsp;&nbsp;When something goes wrong</span><span data-pg="13">43</span></a
+  >
+
+  <div class="grp">Part III &mdash; Under the hood</div>
+  <a class="row" href="#sec-14"
+    ><span>14&nbsp;&nbsp;How it is built</span><span data-pg="14">45</span></a
+  >
+  <a class="row" href="#sec-15"
+    ><span>15&nbsp;&nbsp;The data model</span><span data-pg="15">47</span></a
+  >
+  <a class="row" href="#sec-16"
+    ><span>16&nbsp;&nbsp;Security and privacy engineering</span><span data-pg="16">49</span></a
+  >
+  <a class="row" href="#sec-17"
+    ><span>17&nbsp;&nbsp;What was measured</span><span data-pg="17">51</span></a
+  >
+  <a class="row" href="#sec-18"
+    ><span>18&nbsp;&nbsp;Production readiness verdict</span><span data-pg="18">53</span></a
+  >
+  <a class="row" href="#sec-19"
+    ><span>19&nbsp;&nbsp;The next five actions</span><span data-pg="19">55</span></a
+  >
+  <a class="row" href="#sec-20"
+    ><span>20&nbsp;&nbsp;Where everything lives</span><span data-pg="20">56</span></a
+  >
+</div>
+
+<p class="footnote" style="margin-top: 8mm">
+  Each entry links to its section. Every figure in this document is a screenshot of the application
+  actually running on a local machine against a real PostgreSQL&nbsp;16 database &mdash; no mockups
+  appear anywhere in these pages, and no figure on any page was projected, estimated or otherwise
+  produced by anything but running the code.
+</p>

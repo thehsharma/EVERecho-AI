@@ -1,0 +1,24 @@
+{
+  "name": "@everecho/conformance",
+  "version": "0.1.0",
+  "description": "A runnable definition of what it means for a memorial or archive system not to fabricate the dead.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "everecho-conformance": "./src/cli.ts"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "keywords": [
+    "provenance",
+    "memorial",
+    "archive",
+    "conformance",
+    "ai-safety"
+  ]
+}

@@ -1,0 +1,127 @@
+<div class="part-divider">
+  <div class="kicker">Part I</div>
+  <h2>The pitch</h2>
+  <p>
+    What this is, who it is for, and the single decision that everything else in the product follows
+    from.
+  </p>
+</div>
+
+<h2 id="sec-1">1&nbsp;&nbsp;The problem nobody solves in time</h2>
+
+<p class="lede">
+  Almost every family intends to record their parents' and grandparents' stories. Almost none of
+  them do it before it is too late.
+</p>
+
+<p>
+  The intention is universal and the follow-through is rare, for reasons that are practical rather
+  than emotional. Sitting down with a camera feels like an occasion, and occasions get postponed.
+  When somebody does record, the result is four hours of unedited video on a hard drive that nobody
+  watches, in which nothing is findable. And the interviewer never knows what to ask, so the same
+  five questions produce the same five anecdotes, while the things the family will actually want
+  &mdash; why a decision was made, what a house smelled like, who was in the room &mdash; go
+  unasked.
+</p>
+
+<p>
+  Then the person dies, and what remains is a shoebox of photographs nobody can label and a set of
+  half-remembered stories that begin to drift. Within a generation, the drift is total. The
+  grandchildren inherit a name and a face and almost nothing else.
+</p>
+
+<p>
+  The technology industry's answer to this has been, with grim consistency, to propose simulating
+  the dead person. Voice clones. Video avatars. Chatbots that speak in the first person as
+  somebody's late mother. This is a product built from the family's grief rather than from the
+  person's life, and it makes a promise it cannot keep: that the thing you are talking to knows
+  anything. It does not. It is producing plausible sentences, and the sentences it invents are
+  indistinguishable, to the person who is grieving, from the ones that are real.
+</p>
+
+<div class="callout danger">
+  <span class="label">The failure mode that matters</span>
+  <p>
+    A grieving family asks a simulated parent a question the archive has no answer to, and receives
+    a fluent, confident, entirely fabricated response. They believe it. They repeat it. It becomes
+    family history. The system has not merely failed &mdash; it has corrupted the record it was
+    built to preserve.
+  </p>
+</div>
+
+<p>
+  EverEcho starts from the opposite end. Record the person while they are alive, with their active
+  participation and their explicit permission, at the granularity of individual stories. Structure
+  what they said so it can be found. And when anyone asks the archive a question, answer only from
+  what was actually recorded, show the source for every sentence, and say plainly when there is
+  nothing to say.
+</p>
+
+<div class="page-break"></div>
+<h2 id="sec-2">2&nbsp;&nbsp;What EverEcho is</h2>
+
+<p class="lede">
+  A private family archive built from a living person's own recordings, in which every AI-assisted
+  answer is traceable to a specific thing that person actually said.
+</p>
+
+<p>Four things happen, in order.</p>
+
+<h3>The person tells their stories</h3>
+<p>
+  Guided interview sessions ask questions that go somewhere &mdash; not "tell me about your
+  childhood" but the follow-up that gets to the detail. Recordings are uploaded, scanned,
+  transcribed, and turned into a set of individual <strong>memories</strong>: a title, a passage, a
+  date range where one is known, the people and places mentioned, and a link back to the exact span
+  of transcript it came from.
+</p>
+
+<h3>The person reviews everything</h3>
+<p>
+  Nothing is visible to the family until the storyteller has seen it and approved it. A memory can
+  be edited, its date corrected, its participants adjusted, or it can be rejected outright and never
+  appear. The review queue is the storyteller's own screen, and only theirs.
+</p>
+
+<h3>The family reads, browses and asks</h3>
+<p>
+  Approved memories become a timeline, a set of people and places, and a short biography assembled
+  from what was said. Anyone with permission can also ask the archive a question in ordinary
+  language &mdash; "What did she say about leaving Delhi?" &mdash; and get an answer composed only
+  from cited passages, each one clickable back to the transcript and, from there, to the recording.
+</p>
+
+<h3>The person keeps control of all of it, permanently</h3>
+<p>
+  Permission is not granted once at signup. It is a living document: which categories of material
+  may be shared, with whom, for what purpose, until when. It can be narrowed or revoked at any time,
+  and revocation takes effect everywhere &mdash; including on work already queued in the background,
+  which re-checks consent before it writes anything. Deletion is real deletion, executed in
+  resumable steps, and it produces a receipt.
+</p>
+
+<div class="metric-row">
+  <div class="metric">
+    <div class="n">50</div>
+    <div class="l">database tables</div>
+  </div>
+  <div class="metric">
+    <div class="n">70</div>
+    <div class="l">versioned API operations</div>
+  </div>
+  <div class="metric">
+    <div class="n">33</div>
+    <div class="l">application screens</div>
+  </div>
+  <div class="metric">
+    <div class="n">279</div>
+    <div class="l">automated tests passing</div>
+  </div>
+</div>
+
+<p class="footnote">
+  Counted from the repository: <code>50</code> <code>CREATE TABLE</code> statements across eight
+  migrations, <code>70</code> operations across <code>62</code> paths in the generated OpenAPI
+  document, <code>33</code> Next.js page routes, and
+  <code>193&nbsp;+&nbsp;54&nbsp;+&nbsp;32</code> passing unit, browser and evaluation tests.
+</p>

@@ -1,0 +1,210 @@
+<div class="page-break"></div>
+<h2 id="sec-5">5&nbsp;&nbsp;The six people who use it</h2>
+
+<p class="lede">
+  Authority is not a ladder. The buyer paid for the archive and has less authority over its contents
+  than anyone. No ordering between these roles is implied anywhere in the codebase.
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 20%">Role</th>
+      <th style="width: 44%">What they can do</th>
+      <th>What they can never do</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <strong>Storyteller</strong><br /><span class="footnote"
+          >The living person whose memories these are</span
+        >
+      </td>
+      <td>
+        Everything. Record, review, approve, edit, reject, set and change consent, see drafts,
+        revoke access, delete the archive.
+      </td>
+      <td>&mdash; final authority throughout</td>
+    </tr>
+    <tr>
+      <td><strong>Buyer</strong><br /><span class="footnote">Set it up, pays for it</span></td>
+      <td>
+        Manage membership and billing. Invite people. See that the archive exists and is healthy.
+      </td>
+      <td>
+        <strong>Read a single memory</strong>, unless separately granted as family. Consent on the
+        storyteller's behalf. Approve anything.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Family</strong><br /><span class="footnote">A daughter, a grandson</span></td>
+      <td>
+        Read approved memories within their grant. Browse the timeline. Ask cited questions. Request
+        an export if consent permits it.
+      </td>
+      <td>
+        See drafts or rejected material. See anything above the sensitivity ceiling on their grant.
+        Edit anything.
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Contributor</strong><br /><span class="footnote">A sibling who was also there</span>
+      </td>
+      <td>Everything family can, plus proposing corrections and additional context.</td>
+      <td>
+        <strong>Silently overwrite anything.</strong> A proposal is a record awaiting the
+        storyteller, never an edit.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Steward</strong><br /><span class="footnote">Named for continuity</span></td>
+      <td>Narrowly delegated continuity tasks under a recorded succession directive.</td>
+      <td>
+        Act as executor or owner. Be activated by a timer, an absence, or any automatic signal.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Support admin</strong><br /><span class="footnote">Internal</span></td>
+      <td>
+        Operational metadata: job states, error codes, storage counts. Break-glass access that is
+        purpose-limited, time-bound and audited.
+      </td>
+      <td>
+        <strong>Read memory content.</strong> The scope is <code>admin_scope_metadata_only</code>;
+        content actions deny before any query is built.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <span class="label">One decision point</span>
+  <p>
+    Every one of these boundaries is expressed in a single pure function &mdash;
+    <code>authorize(actor, action, resource, subject, context)</code> &mdash; that performs no I/O
+    and returns either <code>ALLOW</code> with obligations or <code>DENY</code> with a reason code.
+    There is no second place in the codebase where a permission is decided, and no route can reach
+    data without passing through it.
+  </p>
+</div>
+
+<div class="page-break"></div>
+<h2 id="sec-6">6&nbsp;&nbsp;Consent as an architecture, not a checkbox</h2>
+
+<p class="lede">
+  Consent here is a versioned, canonically serialised, hashed policy document. It is compiled, not
+  read. It has a ceiling and it has grants, and they are independent.
+</p>
+
+<h3>Five modes; the fifth is refused</h3>
+<table>
+  <thead>
+    <tr>
+      <th style="width: 22%">Mode</th>
+      <th>What it permits</th>
+      <th style="width: 18%">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>preserve</code></td>
+      <td>
+        Encrypted archive only. No processing of any kind &mdash; no transcription, no indexing,
+        nothing derived.
+      </td>
+      <td><span class="badge done">available</span></td>
+    </tr>
+    <tr>
+      <td><code>organise</code></td>
+      <td>Transcription, OCR, indexing, and reviewed structure.</td>
+      <td><span class="badge done">available</span></td>
+    </tr>
+    <tr>
+      <td><code>explore</code></td>
+      <td>Search, timeline and retrieval across the archive.</td>
+      <td><span class="badge done">available</span></td>
+    </tr>
+    <tr>
+      <td><code>compose</code></td>
+      <td>Source-grounded biography and third-person cited answers.</td>
+      <td><span class="badge done">available</span></td>
+    </tr>
+    <tr>
+      <td><code>perform</code></td>
+      <td>Synthetic voice, avatar, persona.</td>
+      <td><span class="badge no">prohibited</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  <code>perform</code> exists in the type system precisely so that every <code>switch</code> in the
+  codebase must acknowledge and refuse it. Deleting the value would let a future branch silently
+  forget to handle it; keeping it means the compiler enforces the refusal. The policy compiler
+  rejects any document that requests it, with a named reason rather than a generic validation error.
+</p>
+
+<h3>The mode is a ceiling, not a bundle</h3>
+<p>
+  Selecting <code>compose</code> does not grant transcription, embedding, export and generation.
+  Each of nine <strong>processing activities</strong> &mdash; <code>storage</code>,
+  <code>transcription</code>, <code>ocr</code>, <code>embedding</code>, <code>generation</code>,
+  <code>provider_processing</code>, <code>provider_retention</code>, <code>export</code>,
+  <code>contribution</code> &mdash; is granted independently. The mode sets the highest thing that
+  may be granted; the grants say what actually is. An early version of this build collapsed the two,
+  and the consent tests caught it as a bug.
+</p>
+
+<div class="flow">
+  consent document (JSON) │ ├─▶ prohibitedShapeIssues() ── refuses voice/likeness/training ─▶ named
+  refusal ├─▶ zod schema parse ── shape and enum validity ├─▶ canonicalise() ── stable key order,
+  stable encoding ├─▶ sha256(canonical) ── the policy hash, stored with the record └─▶
+  compileConsentPolicy() ── the object authorize() actually reads
+</div>
+
+<h3>What consent controls, precisely</h3>
+<div class="two-col">
+  <div>
+    <h4>Ceilings and gates</h4>
+    <ul>
+      <li>Mode ceiling</li>
+      <li>Activity grants (nine, independent)</li>
+      <li>Provider processing and retention, gated separately from local processing</li>
+      <li>
+        Data categories, including the special ones: health, financial, religious, political, sexual
+        orientation, biometric
+      </li>
+    </ul>
+  </div>
+  <div>
+    <h4>Scope and time</h4>
+    <ul>
+      <li>Excluded sources &mdash; "not that recording, ever"</li>
+      <li>Embargoes &mdash; "not until 2035"</li>
+      <li>Restricted topics &mdash; "never about my first marriage"</li>
+      <li>Sensitivity ceiling per recipient grant</li>
+      <li>Recipient grants with expiry windows</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout ok">
+  <span class="label">Revocation is not eventual</span>
+  <p>
+    When consent is narrowed, the change takes effect on the next authorisation check &mdash; which
+    is every request. Background jobs already queued re-check consent inside their own transaction
+    before writing anything, so a job that was legitimate when enqueued and is not legitimate when
+    it runs will not produce a row. This was a deliberate decision (<code>D&#8209;009</code>) with a
+    test that fails if a handler skips the check.
+  </p>
+</div>
+
+<h3>Teach-back: consent you can demonstrate understanding of</h3>
+<p>
+  Before a consent policy is recorded, the storyteller is asked to answer, in their own words, what
+  they have just agreed to. The response is stored alongside the policy hash. This is not a quiz
+  that gates the flow &mdash; it is evidence, kept with the record, that the consent was informed.
+  Legal review of the wording is item 1 on the blocking list in Part III.
+</p>

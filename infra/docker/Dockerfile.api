@@ -1,0 +1,38 @@
+# API and worker share an image: same dependencies, different entry point.
+FROM node:22-bookworm-slim AS base
+ENV PNPM_HOME=/pnpm
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+WORKDIR /app
+
+FROM base AS deps
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/api/package.json apps/api/
+COPY apps/worker/package.json apps/worker/
+COPY apps/web/package.json apps/web/
+COPY packages/adapters/package.json packages/adapters/
+COPY packages/ai/package.json packages/ai/
+COPY packages/config/package.json packages/config/
+COPY packages/consent/package.json packages/consent/
+COPY packages/contracts/package.json packages/contracts/
+COPY packages/db/package.json packages/db/
+COPY packages/pipeline/package.json packages/pipeline/
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
+FROM base AS runtime
+ENV NODE_ENV=production
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps ./apps
+COPY --from=deps /app/packages ./packages
+COPY . .
+
+# Never run as root, and never own the code you execute.
+RUN useradd --system --create-home --uid 10001 everecho \
+    && mkdir -p /app/var && chown -R everecho:everecho /app/var
+USER everecho
+
+EXPOSE 4000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD node -e "fetch('http://localhost:4000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+CMD ["pnpm", "--filter", "@everecho/api", "start"]
