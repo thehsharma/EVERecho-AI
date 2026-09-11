@@ -24,3 +24,4 @@ export * from './actions';
 export * from './remembrance';
 export * from './voice';
 export * from './feelings';
+export * from './memorial';

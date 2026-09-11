@@ -23,9 +23,11 @@ import { registerVoiceRoutes } from './voice';
 import { registerFeelingRoutes } from './feelings';
 import { registerConformanceRoutes } from './conformance';
 import { registerRealtimeRoutes } from '../realtime/routes';
+import { registerMemorialRoutes } from './memorial';
 
 export async function registerRoutes(app: FastifyInstance, ctx: AppContext): Promise<void> {
   registerHealthRoutes(app, ctx);
+  registerMemorialRoutes(app, ctx);
   registerAuthRoutes(app, ctx);
   registerArchiveRoutes(app, ctx);
   registerInvitationRoutes(app, ctx);

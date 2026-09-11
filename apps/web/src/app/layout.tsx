@@ -36,6 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 {me ? (
                   <>
                     <Link href="/archives">Your archives</Link>
+                    <Link href="/memorial">Memorial studio</Link>
                     <Link href="/account">Account</Link>
                   </>
                 ) : (
@@ -60,10 +61,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 review by qualified counsel).
               </p>
               <p className="small" style={{ marginBottom: 0 }}>
-                {meta.productName} preserves what a living person actually said. It does not
-                recreate anyone’s voice, likeness or personality, and it will not answer as them.{' '}
-                <Link href="/trust">How consent works</Link> · <Link href="/support">Support</Link>{' '}
-                ·{' '}
+                {meta.productName} preserves what a living person actually said. It does not alter
+                original recordings. The experimental Memorial studio labels its generated dialogue
+                and recreated voices as AI simulations. <Link href="/trust">How consent works</Link>{' '}
+                · <Link href="/support">Support</Link> ·{' '}
                 {/*
                   On every screen, in the same place, in the same weight as its
                   neighbours. Never a pop-up, never highlighted, never triggered

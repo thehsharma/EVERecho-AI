@@ -1,5 +1,11 @@
 # EverEcho v0.1
 
+**Local experiment:** [Memorial studio](docs/MEMORIAL_STUDIO.md) adds an explicitly
+labeled AI memorial simulation at `/memorial`, with supplied personality notes,
+imagined dialogue and authorized voice recreation. The archive behavior described
+below remains distinct. The studio's local preview works without credentials;
+hosted conversation and voice recreation require separately configured providers.
+
 > **EverEcho is a working codename pending trademark clearance.** The product
 > name lives in configuration (`PRODUCT_NAME`); renaming it is a settings
 > change, not a find-and-replace.

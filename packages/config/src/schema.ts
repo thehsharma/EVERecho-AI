@@ -100,6 +100,10 @@ export const envSchema = z.object({
   ANTHROPIC_MODEL: z.string().default('claude-opus-5'),
   ANTHROPIC_MAX_TOKENS: int(1024, 128000).default(16000),
   LLM_API_KEY: z.string().optional(),
+  // Separate credentials: enabling an archive provider never enables memorial uploads.
+  MEMORIAL_LLM_API_KEY: z.string().optional(),
+  MEMORIAL_LLM_MODEL: z.string().default('claude-sonnet-4-6'),
+  MEMORIAL_ELEVENLABS_API_KEY: z.string().optional(),
   LLM_BASE_URL: z.string().optional(),
   EMBEDDINGS_DRIVER: z.enum(['local', 'openai', 'voyage']).default('local'),
   EMBEDDINGS_MODEL: z.string().default('local-hashed-v1'),

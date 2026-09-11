@@ -1,5 +1,14 @@
 # EverEcho
 
+## Memorial studio exception (requested by the repository owner)
+
+The separate local `/memorial` experiment now permits disclosed AI memorial
+simulation and authorized voice recreation from explicitly supplied material.
+See `docs/MEMORIAL_STUDIO.md`. The archive's existing consent, retrieval, feelings,
+and original-audio rules below continue to apply to archive features. Do not
+save imagined dialogue as archive evidence or silently send archive data to
+the memorial providers. The experimental routes are disabled in production.
+
 A consented family memory archive. People record their own life story, review
 everything before it is kept, and decide exactly who may see what. A family
 member can ask questions and get answers that cite the recording or document
