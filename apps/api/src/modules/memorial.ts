@@ -1,3 +1,4 @@
+import { emotionalDelivery, emotionalGuidance } from '../lib/memorial-emotion';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
@@ -279,6 +280,8 @@ export function registerMemorialRoutes(app: FastifyInstance, ctx: AppContext): v
     response: memorialReplySchema,
     handler: async ({ body, user }) => {
       assertLocal();
+      const emotion = emotionalDelivery(body.profile, body.message);
+      const delivery = { tone: emotion.tone, adaptive: emotion.adaptive, rate: emotion.rate };
       // Verify before incurring any provider work. No archive data is fetched by this mode.
       const voiceId = body.voiceToken
         ? verifyMemorialVoice(body.voiceToken, user!.id, env.SESSION_SECRET)
@@ -299,6 +302,7 @@ export function registerMemorialRoutes(app: FastifyInstance, ctx: AppContext): v
         return {
           text: localMemorialPreview(body.profile, body.message),
           mode: 'local-preview' as const,
+          delivery,
           audio: null,
           voiceError: null,
         };
@@ -314,7 +318,10 @@ export function registerMemorialRoutes(app: FastifyInstance, ctx: AppContext): v
         body: JSON.stringify({
           model: env.MEMORIAL_LLM_MODEL,
           max_tokens: 350,
-          system: memorialPrompt(body.profile),
+          system:
+            memorialPrompt({ ...body.profile, tone: emotion.tone }) +
+            '\n' +
+            emotionalGuidance(emotion),
           messages: [...body.history, { role: 'user', content: body.message }],
         }),
       });
@@ -345,9 +352,9 @@ export function registerMemorialRoutes(app: FastifyInstance, ctx: AppContext): v
                 text,
                 model_id: 'eleven_multilingual_v2',
                 voice_settings: {
-                  stability: body.profile.tone === 'cheerful' ? 0.4 : 0.65,
+                  stability: emotion.stability,
                   similarity_boost: 0.75,
-                  style: body.profile.tone === 'reflective' ? 0.2 : 0.1,
+                  style: emotion.style,
                   use_speaker_boost: true,
                 },
               }),
@@ -358,7 +365,7 @@ export function registerMemorialRoutes(app: FastifyInstance, ctx: AppContext): v
           voiceError = 'Voice generation failed. Your text reply is still available.';
         }
       }
-      return { text, mode: 'ai-simulation' as const, audio, voiceError };
+      return { text, mode: 'ai-simulation' as const, audio, voiceError, delivery };
     },
   });
 }

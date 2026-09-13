@@ -70,3 +70,16 @@ An account can save up to 20 profiles. MEMORIAL_DAILY_TURN_LIMIT defaults to 50 
 MEMORIAL_FAMILY_DAILY_TURN_LIMIT defaults to 200 for an active, unexpired Razorpay subscription.
 Reservation is atomic before provider work. Failed requests count because provider work may have occurred.
 Local previews do not use the allowance. These are usage caps, not exact cost or voice-minute accounting.
+
+## Adaptive emotional delivery
+
+The profile's optional adaptiveDelivery preference defaults to enabled and is saved
+with the profile. Simple English/Hindi text cues in the latest message select gentle,
+cheerful, or reflective delivery; unclear messages keep the selected tone. The user
+can disable adaptation. This is a heuristic, not voice-based emotion detection, and
+can misread context. The UI reports the chosen delivery, never a diagnosis or mood label.
+
+The dialogue prompt encourages acknowledgment without forced positivity or fabricated
+biography. The selected delivery controls ElevenLabs stability/style and device speech
+rate. Local preview exposes the same delivery hint but does not generate intelligent
+dialogue. Actual vocal quality still requires a funded provider and listening tests.

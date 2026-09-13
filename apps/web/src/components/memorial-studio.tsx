@@ -35,6 +35,7 @@ const blankProfile: MemorialProfile = {
   memories: '',
   phrases: '',
   tone: 'warm',
+  adaptiveDelivery: true,
 };
 
 async function encodeFile(file: File): Promise<string> {
@@ -59,6 +60,7 @@ export function MemorialStudio() {
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
+  const [deliveryNote, setDeliveryNote] = useState('');
   const [phase, setPhase] = useState('Ready when you are');
   const [error, setError] = useState('');
   const [active, setActive] = useState(false);
@@ -193,7 +195,8 @@ export function MemorialStudio() {
       const utterance = new SpeechSynthesisUtterance(reply.text);
       utterance.lang = profile.language === 'hi' ? 'hi-IN' : 'en-IN';
       utterance.rate =
-        profile.tone === 'reflective' ? 0.85 : profile.tone === 'cheerful' ? 1.05 : 0.94;
+        reply.delivery?.rate ??
+        (profile.tone === 'reflective' ? 0.85 : profile.tone === 'cheerful' ? 1.05 : 0.94);
       utterance.onend = done;
       utterance.onerror = done;
       window.speechSynthesis.speak(utterance);
@@ -253,6 +256,13 @@ export function MemorialStudio() {
       inFlight.current = false;
       setBusy(false);
       if (body.voiceError) setError(body.voiceError);
+      setDeliveryNote(
+        body.delivery
+          ? 'Delivery: ' +
+              body.delivery.tone +
+              (body.delivery.adaptive ? ' · adapted to this message' : ' · your selected style')
+          : '',
+      );
       speak(body, turn);
     } catch (caught) {
       if (!alive.current || sequence.current !== turn) return;
@@ -310,6 +320,7 @@ export function MemorialStudio() {
   const field = <K extends keyof MemorialProfile>(key: K, value: MemorialProfile[K]) => {
     history.current = [];
     setMessages([]);
+    setDeliveryNote('');
     setProfile((previous) => ({ ...previous, [key]: value }));
   };
 
@@ -422,6 +433,18 @@ export function MemorialStudio() {
             <p className="small muted">
               Delivery is a creative choice, not an inference about how they really felt.
             </p>
+            <label className="memorial-check">
+              <input
+                type="checkbox"
+                checked={profile.adaptiveDelivery !== false}
+                onChange={(event) => field('adaptiveDelivery', event.target.checked)}
+              />
+              <span>Adapt delivery to my message</span>
+            </label>
+            <p className="small muted">
+              Uses simple English/Hindi text cues to choose a gentler, warmer or more reflective
+              delivery. It can get the tone wrong. Turn this off to always use your selected style.
+            </p>
           </fieldset>
           <details className="memorial-voice-setup">
             <summary>02 / Recreate an authorized voice</summary>
@@ -502,6 +525,11 @@ export function MemorialStudio() {
                 : 'Who would you like to remember?'}
             </h2>
             <p role="status">{phase}</p>
+            {deliveryNote && (
+              <p className="small" role="status">
+                {deliveryNote}
+              </p>
+            )}
             <span className="memorial-pill">
               {status?.conversationReady && allowCloud
                 ? 'AI conversation'
@@ -657,6 +685,7 @@ export function MemorialStudio() {
         disabled={active || busy || voiceBusy}
         onLoad={(next) => {
           stop();
+          setDeliveryNote('');
           setProfile(next);
           history.current = [];
           setMessages([]);

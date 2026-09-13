@@ -220,3 +220,39 @@ describe('memorial simulation boundaries', () => {
     expect(response.body).not.toContain('private provider content');
   });
 });
+
+it('applies the same gentle delivery to dialogue, provider speech and device playback', async () => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(
+      new Response(JSON.stringify({ voice_id: 'voice123', requires_verification: false })),
+    )
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ content: [{ type: 'text', text: 'We can take this slowly.' }] }),
+      ),
+    )
+    .mockResolvedValueOnce(new Response(new Uint8Array([1, 2, 3])));
+  vi.stubGlobal('fetch', fetch);
+  const { app } = appFor({ cloud: true });
+  const created = await app.inject({ method: 'POST', url: '/v1/memorial/voice', payload: sample });
+  const reply = await app.inject({
+    method: 'POST',
+    url: '/v1/memorial/respond',
+    payload: {
+      ...turn,
+      message: 'I feel sad today',
+      allowCloud: true,
+      voiceToken: created.json().voiceToken,
+    },
+  });
+  expect(reply.statusCode).toBe(200);
+  expect(reply.json()).toMatchObject({
+    delivery: { tone: 'gentle', adaptive: true, rate: 0.88 },
+    audio: 'AQID',
+  });
+  const llm = JSON.parse(fetch.mock.calls[1]![1].body);
+  expect(llm.system).toContain('Do not rush to advice or force optimism');
+  const speech = JSON.parse(fetch.mock.calls[2]![1].body);
+  expect(speech.voice_settings).toMatchObject({ stability: 0.72, style: 0.1 });
+});
