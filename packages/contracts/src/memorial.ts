@@ -10,6 +10,12 @@ export const memorialProfileSchema = z.object({
   tone: z.enum(['gentle', 'warm', 'reflective', 'cheerful']),
 });
 export type MemorialProfile = z.infer<typeof memorialProfileSchema>;
+export const savedMemorialSchema = z.object({
+  id: z.uuid(),
+  profile: memorialProfileSchema,
+  updatedAt: z.string(),
+});
+export type SavedMemorial = z.infer<typeof savedMemorialSchema>;
 export const memorialMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
   content: z.string().trim().min(1).max(1500),

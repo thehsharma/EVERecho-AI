@@ -58,6 +58,14 @@ function appFor(options: { user?: string | null; cloud?: boolean; production?: b
   });
   registerMemorialRoutes(app, {
     cfg: { ...cfg, isProduction: options.production ?? false },
+    db: {
+      transaction: async (fn: (tx: unknown) => Promise<unknown>) =>
+        fn({
+          query: async () => [],
+          one: async () => ({ paid: false }),
+          maybeOne: async () => ({ turns: 1 }),
+        }),
+    },
   } as AppContext);
   return { app, secret: cfg.env.SESSION_SECRET };
 }

@@ -10,6 +10,7 @@ import {
 import type { AppContext } from '../context';
 import { defineRoute } from '../http/route';
 import { ApiError, forbidden } from '../errors';
+import { reserveMemorialTurn, withMemorialOwner } from './memorial-profiles';
 
 const audioSampleSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -105,6 +106,91 @@ export function registerMemorialRoutes(app: FastifyInstance, ctx: AppContext): v
   };
   defineRoute(app, ctx, {
     method: 'GET',
+    url: '/v1/memorial/voices',
+    tag: 'memorial',
+    summary: 'Your previously created voices',
+    auth: 'required',
+    response: z.object({
+      voices: z.array(z.object({ voice_id: z.string(), name: z.string(), verified: z.boolean() })),
+    }),
+    handler: async ({ user }) => {
+      assertLocal();
+      return withMemorialOwner(ctx, user!.id, async (tx) => ({
+        voices: await tx.query<{ voice_id: string; name: string; verified: boolean }>(
+          'SELECT voice_id,name,verified FROM memorial_voice WHERE user_id=$1 AND revoked=false ORDER BY created_at DESC',
+          [user!.id],
+        ),
+      }));
+    },
+  });
+  defineRoute(app, ctx, {
+    method: 'POST',
+    url: '/v1/memorial/voices/:id/connect',
+    tag: 'memorial',
+    summary: 'Reconnect an owned voice after provider verification',
+    auth: 'required',
+    params: z.object({ id: z.string().regex(/^[a-zA-Z0-9_-]+$/) }),
+    body: z.object({ authorized: z.literal(true) }),
+    response: z.object({ voiceToken: z.string() }),
+    rateLimit: { max: 10, windowMs: 60000 },
+    handler: async ({ params, user }) => {
+      assertLocal();
+      const voice = await withMemorialOwner(ctx, user!.id, (tx) =>
+        tx.maybeOne<{ verified: boolean }>(
+          'SELECT verified FROM memorial_voice WHERE voice_id=$1 AND user_id=$2 AND revoked=false',
+          [params.id, user!.id],
+        ),
+      );
+      if (!voice) throw forbidden('That voice is not available to this account.');
+      if (!env.MEMORIAL_ELEVENLABS_API_KEY)
+        throw new ApiError('conflict', 'Voice provider is not configured.');
+      const response = await providerFetch(
+        'https://api.elevenlabs.io/v1/voices/' + encodeURIComponent(params.id),
+        { headers: { 'xi-api-key': env.MEMORIAL_ELEVENLABS_API_KEY } },
+      );
+      const details = z
+        .object({
+          voice_verification: z
+            .object({ requires_verification: z.boolean(), is_verified: z.boolean() })
+            .nullish(),
+        })
+        .parse(await response.json());
+      const verification = details.voice_verification;
+      if (
+        (verification?.requires_verification && !verification.is_verified) ||
+        (!voice.verified && !verification?.is_verified)
+      )
+        throw forbidden('Complete voice verification in ElevenLabs before reconnecting.');
+      await withMemorialOwner(ctx, user!.id, (tx) =>
+        tx.query(
+          'UPDATE memorial_voice SET verified=true WHERE voice_id=$1 AND user_id=$2 AND revoked=false',
+          [params.id, user!.id],
+        ),
+      );
+      return { voiceToken: signVoice(user!.id, params.id, env.SESSION_SECRET) };
+    },
+  });
+  defineRoute(app, ctx, {
+    method: 'DELETE',
+    url: '/v1/memorial/voices/:id',
+    tag: 'memorial',
+    summary: 'Revoke a voice inside EverEcho',
+    auth: 'required',
+    params: z.object({ id: z.string().regex(/^[a-zA-Z0-9_-]+$/) }),
+    response: z.object({ revoked: z.literal(true) }),
+    handler: async ({ params, user }) => {
+      assertLocal();
+      await withMemorialOwner(ctx, user!.id, (tx) =>
+        tx.query('UPDATE memorial_voice SET revoked=true WHERE voice_id=$1 AND user_id=$2', [
+          params.id,
+          user!.id,
+        ]),
+      );
+      return { revoked: true as const };
+    },
+  });
+  defineRoute(app, ctx, {
+    method: 'GET',
     url: '/v1/memorial/status',
     tag: 'memorial',
     summary: 'Memorial provider readiness',
@@ -165,6 +251,14 @@ export function registerMemorialRoutes(app: FastifyInstance, ctx: AppContext): v
           requires_verification: z.boolean(),
         })
         .parse(await response.json());
+      await withMemorialOwner(ctx, user!.id, (tx) =>
+        tx.query('INSERT INTO memorial_voice(voice_id,user_id,name,verified) VALUES($1,$2,$3,$4)', [
+          result.voice_id,
+          user!.id,
+          body.name,
+          !result.requires_verification,
+        ]),
+      );
       return {
         voiceId: result.voice_id,
         requiresVerification: result.requires_verification,
@@ -189,6 +283,18 @@ export function registerMemorialRoutes(app: FastifyInstance, ctx: AppContext): v
       const voiceId = body.voiceToken
         ? verifyMemorialVoice(body.voiceToken, user!.id, env.SESSION_SECRET)
         : null;
+      if (voiceId) {
+        const voice = await withMemorialOwner(ctx, user!.id, (tx) =>
+          tx.maybeOne(
+            'SELECT voice_id FROM memorial_voice WHERE voice_id=$1 AND user_id=$2 AND verified=true AND revoked=false',
+            [voiceId, user!.id],
+          ),
+        );
+        if (!voice)
+          throw forbidden(
+            'This voice has been revoked or is not verified. Reconnect an authorized voice.',
+          );
+      }
       if (!body.allowCloud || !env.MEMORIAL_LLM_API_KEY) {
         return {
           text: localMemorialPreview(body.profile, body.message),
@@ -197,6 +303,7 @@ export function registerMemorialRoutes(app: FastifyInstance, ctx: AppContext): v
           voiceError: null,
         };
       }
+      await reserveMemorialTurn(ctx, user!.id);
       const response = await providerFetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {

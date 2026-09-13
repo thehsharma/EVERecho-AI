@@ -1,3 +1,4 @@
+import { registerFamilySubscriptions } from './family-subscriptions';
 import type { FastifyInstance } from 'fastify';
 import type { AppContext } from '../context';
 import { registerHealthRoutes } from './health';
@@ -24,10 +25,13 @@ import { registerFeelingRoutes } from './feelings';
 import { registerConformanceRoutes } from './conformance';
 import { registerRealtimeRoutes } from '../realtime/routes';
 import { registerMemorialRoutes } from './memorial';
+import { registerMemorialProfileRoutes } from './memorial-profiles';
 
 export async function registerRoutes(app: FastifyInstance, ctx: AppContext): Promise<void> {
   registerHealthRoutes(app, ctx);
   registerMemorialRoutes(app, ctx);
+  registerFamilySubscriptions(app, ctx);
+  registerMemorialProfileRoutes(app, ctx);
   registerAuthRoutes(app, ctx);
   registerArchiveRoutes(app, ctx);
   registerInvitationRoutes(app, ctx);

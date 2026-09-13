@@ -277,3 +277,30 @@
     animation: none;
   }
 }
+
+.memorial-library {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #ddd3db;
+  border-radius: 1rem;
+  background: #fff;
+}
+.memorial-library fieldset {
+  border: 0;
+  padding: 0;
+}
+.memorial-studio input:not([type='checkbox']):not([type='file']),
+.memorial-studio textarea,
+.memorial-studio select {
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px solid #bbb0bc;
+  border-radius: 0.4rem;
+  font: inherit;
+  background: #fff;
+  color: #29232c;
+}
+.memorial-library .memorial-actions {
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}

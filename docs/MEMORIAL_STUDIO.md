@@ -3,8 +3,8 @@
 Open `/memorial` after signing in. This is a separate, explicitly disclosed AI
 simulation, introduced at the repository owner's request. It does not change
 the archive's consent engine, original recordings, sourced feelings, or retrieval.
-The supplied notes and dialogue are held in the current browser tab, not saved
-as archive facts. Reloading clears them.
+Profiles can be saved privately to the signed-in account, exported as JSON, or deleted.
+Unsaved edits and conversation stay in the current tab. Nothing becomes archive evidence.
 
 ## What works without credentials
 
@@ -38,9 +38,11 @@ content is never automatically sent.
 Choose an authorized single-speaker MP3/WAV/M4A/WebM recording under 1 MB and
 confirm authorization and provider upload. Selecting a file alone does not upload
 it. The provider retains the created voice; manage/delete it in ElevenLabs.
-A signed, account-bound voice token lasts 24 hours in this tab. A voice requiring
-provider verification is not enabled. This initial version has no reconnect flow
-for a previously created voice; do not repeatedly create duplicates after refresh.
+Created voice IDs are saved to the account. Reconnect an existing voice from the studio
+after refresh; the server checks ownership and provider verification before issuing a
+24-hour token. Revocation disables future EverEcho requests, including old tokens.
+An already submitted request may finish. Revoke does not delete the provider copy;
+manage or delete that separately in ElevenLabs. Profiles and voices are separate records.
 
 ## Limits and validation
 
@@ -53,11 +55,18 @@ there is no claim that software recreates a person's consciousness or real feeli
 Hosted generation/voice quality cannot be verified without configured providers,
 authorized samples and user testing. Prompt grounding is not a factual-verification
 guarantee. Do not treat generated dialogue as evidence about the deceased person.
-Production requires a consent/revocation model, persistent voice ownership and
-deletion lifecycle, provider retention review, cost controls and voice verification
-reconnection before release.
+Production still requires hosted voice transport, provider retention review, operational monitoring,
+and an end-to-end billing and voice pilot before release.
 
 Unit coverage exercises authentication, disclosure/authorization requirements,
 no-cloud behavior, absent providers, production gating, voice ownership and
 verification, and sanitized provider failures. Tests mock providers and do not
 validate the quality or latency of real hosted services.
+
+## Saved profiles and limits
+
+Run database migrations through 0022. Profile, voice, and usage tables enforce account-scoped row-level security.
+An account can save up to 20 profiles. MEMORIAL_DAILY_TURN_LIMIT defaults to 50 hosted requests per UTC day;
+MEMORIAL_FAMILY_DAILY_TURN_LIMIT defaults to 200 for an active, unexpired Razorpay subscription.
+Reservation is atomic before provider work. Failed requests count because provider work may have occurred.
+Local previews do not use the allowance. These are usage caps, not exact cost or voice-minute accounting.

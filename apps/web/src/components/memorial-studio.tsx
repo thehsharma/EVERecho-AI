@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MemorialProfile, MemorialReply, MemorialStatus } from '@everecho/contracts';
 import { api, API_URL, csrfToken } from '@/lib/api';
+import { MemorialLibrary } from './memorial-library';
+import { MemorialVoices } from './memorial-voices';
 
 interface Recognition {
   lang: string;
@@ -338,8 +340,8 @@ export function MemorialStudio() {
           <span className="memorial-eyebrow">01 / THEIR STORY</span>
           <h2 id="profile-title">Begin with what you know</h2>
           <p className="small muted">
-            Notes and chat stay in this tab and clear when you reload. Original archive data is
-            never imported automatically.
+            Save notes with the profile controls below to keep them across visits. Unsaved edits and
+            chat clear when you reload. Archive data is never imported automatically.
           </p>
           <fieldset disabled={active || busy || voiceBusy}>
             <label htmlFor="memorial-name">Their name</label>
@@ -474,6 +476,18 @@ export function MemorialStudio() {
                 Voice provider is not configured. No recording will be uploaded.
               </p>
             )}
+            <MemorialVoices
+              disabled={active || busy || voiceBusy}
+              refresh={voiceToken}
+              onConnect={(token, name) => {
+                setVoiceToken(token);
+                setVoiceNote('Recreated AI voice connected: ' + name);
+              }}
+              onRevoke={() => {
+                setVoiceToken(null);
+                setVoiceNote('No recreated voice connected');
+              }}
+            />
           </details>
         </section>
         <section className="memorial-conversation" aria-labelledby="conversation-title">
@@ -637,6 +651,21 @@ export function MemorialStudio() {
           </div>
         </section>
       </div>
+      <MemorialLibrary
+        profile={profile}
+        acknowledged={acknowledged}
+        disabled={active || busy || voiceBusy}
+        onLoad={(next) => {
+          stop();
+          setProfile(next);
+          history.current = [];
+          setMessages([]);
+          setDraft('');
+          setVoiceToken(null);
+          setVoiceNote('No recreated voice connected');
+          setSample(null);
+        }}
+      />
     </div>
   );
 }

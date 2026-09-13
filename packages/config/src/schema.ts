@@ -104,6 +104,7 @@ export const envSchema = z.object({
   MEMORIAL_LLM_API_KEY: z.string().optional(),
   MEMORIAL_LLM_MODEL: z.string().default('claude-sonnet-4-6'),
   MEMORIAL_ELEVENLABS_API_KEY: z.string().optional(),
+  MEMORIAL_DAILY_TURN_LIMIT: z.coerce.number().int().min(1).max(1000).default(50),
   LLM_BASE_URL: z.string().optional(),
   EMBEDDINGS_DRIVER: z.enum(['local', 'openai', 'voyage']).default('local'),
   EMBEDDINGS_MODEL: z.string().default('local-hashed-v1'),
@@ -171,6 +172,12 @@ export const envSchema = z.object({
   BILLING_RESERVATION_AMOUNT_MINOR: int(0, 100_000_000).default(199_900),
   BILLING_WEBHOOK_SECRET: z.string().default('dev-only-billing-webhook-secret'),
   BILLING_API_KEY: z.string().optional(),
+  MEMORIAL_FAMILY_DAILY_TURN_LIMIT: z.coerce.number().int().min(1).max(5000).default(200),
+  RAZORPAY_KEY_ID: z.string().optional(),
+  RAZORPAY_KEY_SECRET: z.string().optional(),
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
+  RAZORPAY_FAMILY_PLAN_ID: z.string().optional(),
+  RAZORPAY_SUBSCRIPTION_CYCLES: z.coerce.number().int().min(1).max(120).default(12),
 
   // ---- Malware scanning ---------------------------------------------------
   SCAN_DRIVER: z.enum(['local', 'clamav']).default('local'),

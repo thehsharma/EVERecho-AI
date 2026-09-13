@@ -35,6 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 {meta.features.billing ? <Link href="/pricing">Pilot</Link> : null}
                 {me ? (
                   <>
+                    <Link href="/start">Get started</Link>
                     <Link href="/archives">Your archives</Link>
                     <Link href="/memorial">Memorial studio</Link>
                     <Link href="/account">Account</Link>
