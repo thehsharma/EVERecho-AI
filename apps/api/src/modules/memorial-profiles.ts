@@ -1,3 +1,4 @@
+import { allowanceOwner } from './memorial-household';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import type { Transaction } from '@everecho/db';
@@ -35,6 +36,7 @@ async function dailyLimit(ctx: AppContext, tx: Transaction, userId: string) {
 }
 
 export async function reserveMemorialTurn(ctx: AppContext, userId: string) {
+  userId = await allowanceOwner(ctx, userId);
   return withMemorialOwner(ctx, userId, async (tx) => {
     const row = await tx.maybeOne(
       `INSERT INTO memorial_usage(user_id, turns) VALUES ($1,1)
@@ -142,14 +144,15 @@ export function registerMemorialProfileRoutes(app: FastifyInstance, ctx: AppCont
     response: z.object({ used: z.number(), limit: z.number(), resetsAt: z.string() }),
     handler: async ({ user }) => {
       local();
-      return withMemorialOwner(ctx, user!.id, async (tx) => {
+      const payerId = await allowanceOwner(ctx, user!.id);
+      return withMemorialOwner(ctx, payerId, async (tx) => {
         const row = await tx.one<{ used: number; resets_at: Date }>(
           `SELECT COALESCE((SELECT turns FROM memorial_usage WHERE user_id=$1 AND day=CURRENT_DATE),0) AS used, (CURRENT_DATE+1)::timestamptz AS resets_at`,
-          [user!.id],
+          [payerId],
         );
         return {
           used: row.used,
-          limit: await dailyLimit(ctx, tx, user!.id),
+          limit: await dailyLimit(ctx, tx, payerId),
           resetsAt: row.resets_at.toISOString(),
         };
       });

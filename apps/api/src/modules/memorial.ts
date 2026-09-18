@@ -1,4 +1,7 @@
-import { emotionalDelivery, emotionalGuidance } from '../lib/memorial-emotion';
+import { randomUUID } from 'node:crypto';
+import type { MemorialReply } from '@everecho/contracts';
+import { recordMemorialOutcome } from './memorial-quality';
+import { emotionalDelivery, emotionalGuidance, conversationPurpose } from '../lib/memorial-emotion';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
@@ -88,7 +91,10 @@ export function verifyMemorialVoice(token: string, userId: string, secret: strin
 
 async function providerFetch(url: string, init: RequestInit): Promise<Response> {
   try {
-    const response = await fetch(url, { ...init, signal: AbortSignal.timeout(35_000) });
+    const response = await fetch(url, {
+      ...init,
+      signal: AbortSignal.any([AbortSignal.timeout(35_000), ...(init.signal ? [init.signal] : [])]),
+    });
     if (!response.ok) throw new Error();
     return response;
   } catch {
@@ -278,10 +284,24 @@ export function registerMemorialRoutes(app: FastifyInstance, ctx: AppContext): v
     rateLimit: { max: 12, windowMs: 60_000 },
     body: memorialTurnSchema,
     response: memorialReplySchema,
-    handler: async ({ body, user }) => {
+    handler: async ({ body, user, reply }) => {
       assertLocal();
+      const started = Date.now();
+      const turnId = randomUUID();
       const emotion = emotionalDelivery(body.profile, body.message);
       const delivery = { tone: emotion.tone, adaptive: emotion.adaptive, rate: emotion.rate };
+      const finish = async (result: MemorialReply) => {
+        await recordMemorialOutcome(ctx, user!.id, turnId, {
+          mode: result.mode,
+          tone: emotion.tone,
+          durationMs: Date.now() - started,
+          speechCharacters: body.allowCloud && body.voiceToken ? result.text.length : 0,
+          audioBytes: result.audio ? Buffer.from(result.audio, 'base64').length : 0,
+          succeeded: true,
+          voiceFailed: Boolean(result.voiceError),
+        });
+        return { ...result, turnId };
+      };
       // Verify before incurring any provider work. No archive data is fetched by this mode.
       const voiceId = body.voiceToken
         ? verifyMemorialVoice(body.voiceToken, user!.id, env.SESSION_SECRET)
@@ -299,73 +319,94 @@ export function registerMemorialRoutes(app: FastifyInstance, ctx: AppContext): v
           );
       }
       if (!body.allowCloud || !env.MEMORIAL_LLM_API_KEY) {
-        return {
+        return finish({
           text: localMemorialPreview(body.profile, body.message),
           mode: 'local-preview' as const,
           delivery,
           audio: null,
           voiceError: null,
-        };
+        });
       }
       await reserveMemorialTurn(ctx, user!.id);
-      const response = await providerFetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': env.MEMORIAL_LLM_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: env.MEMORIAL_LLM_MODEL,
-          max_tokens: 350,
-          system:
-            memorialPrompt({ ...body.profile, tone: emotion.tone }) +
-            '\n' +
-            emotionalGuidance(emotion),
-          messages: [...body.history, { role: 'user', content: body.message }],
-        }),
-      });
-      const result = z
-        .object({ content: z.array(z.object({ type: z.string(), text: z.string().optional() })) })
-        .parse(await response.json());
-      const text = result.content
-        .filter((part) => part.type === 'text')
-        .map((part) => part.text ?? '')
-        .join('\n')
-        .trim()
-        .slice(0, 1400);
-      if (!text)
-        throw new ApiError('internal_error', 'The conversation provider returned no reply.');
-      let audio: string | null = null;
-      let voiceError: string | null = null;
-      if (voiceId && env.MEMORIAL_ELEVENLABS_API_KEY) {
-        try {
-          const speech = await providerFetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`,
-            {
-              method: 'POST',
-              headers: {
-                'xi-api-key': env.MEMORIAL_ELEVENLABS_API_KEY,
-                'content-type': 'application/json',
-              },
-              body: JSON.stringify({
-                text,
-                model_id: 'eleven_multilingual_v2',
-                voice_settings: {
-                  stability: emotion.stability,
-                  similarity_boost: 0.75,
-                  style: emotion.style,
-                  use_speaker_boost: true,
+      const controller = new AbortController();
+      const disconnect = () => {
+        if (!reply.raw.writableEnded) controller.abort();
+      };
+      reply.raw.once('close', disconnect);
+      try {
+        const response = await providerFetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          signal: controller.signal,
+          headers: {
+            'x-api-key': env.MEMORIAL_LLM_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: env.MEMORIAL_LLM_MODEL,
+            max_tokens: 350,
+            system:
+              memorialPrompt({ ...body.profile, tone: emotion.tone }) +
+              '\n' +
+              emotionalGuidance(emotion) +
+              '\n' +
+              conversationPurpose(body.profile.purpose),
+            messages: [...body.history, { role: 'user', content: body.message }],
+          }),
+        });
+        const result = z
+          .object({ content: z.array(z.object({ type: z.string(), text: z.string().optional() })) })
+          .parse(await response.json());
+        const text = result.content
+          .filter((part) => part.type === 'text')
+          .map((part) => part.text ?? '')
+          .join('\n')
+          .trim()
+          .slice(0, 1400);
+        if (!text)
+          throw new ApiError('internal_error', 'The conversation provider returned no reply.');
+        let audio: string | null = null;
+        let voiceError: string | null = null;
+        if (voiceId && env.MEMORIAL_ELEVENLABS_API_KEY) {
+          try {
+            const speech = await providerFetch(
+              `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`,
+              {
+                method: 'POST',
+                signal: controller.signal,
+                headers: {
+                  'xi-api-key': env.MEMORIAL_ELEVENLABS_API_KEY,
+                  'content-type': 'application/json',
                 },
-              }),
-            },
-          );
-          audio = Buffer.from(await speech.arrayBuffer()).toString('base64');
-        } catch {
-          voiceError = 'Voice generation failed. Your text reply is still available.';
+                body: JSON.stringify({
+                  text,
+                  model_id: 'eleven_multilingual_v2',
+                  voice_settings: {
+                    stability: emotion.stability,
+                    similarity_boost: 0.75,
+                    style: emotion.style,
+                    use_speaker_boost: true,
+                  },
+                }),
+              },
+            );
+            audio = Buffer.from(await speech.arrayBuffer()).toString('base64');
+          } catch {
+            voiceError = 'Voice generation failed. Your text reply is still available.';
+          }
         }
+        return await finish({ text, mode: 'ai-simulation' as const, audio, voiceError, delivery });
+      } catch (error) {
+        await recordMemorialOutcome(ctx, user!.id, turnId, {
+          mode: 'ai-simulation',
+          tone: emotion.tone,
+          durationMs: Date.now() - started,
+          succeeded: false,
+        });
+        throw error;
+      } finally {
+        reply.raw.removeListener('close', disconnect);
       }
-      return { text, mode: 'ai-simulation' as const, audio, voiceError, delivery };
     },
   });
 }

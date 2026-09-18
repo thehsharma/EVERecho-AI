@@ -52,3 +52,18 @@ describe('adaptive emotional delivery', () => {
     expect(emotionalGuidance(d)).toContain('Warmth must not override factual grounding');
   });
 });
+
+it('uses the requested conversation purpose while respecting manual delivery and explicit distress', () => {
+  expect(emotionalDelivery({ ...profile, purpose: 'celebrate' }, 'Tell me a story').tone).toBe(
+    'cheerful',
+  );
+  expect(emotionalDelivery({ ...profile, purpose: 'celebrate' }, 'I feel sad today').tone).toBe(
+    'gentle',
+  );
+  expect(
+    emotionalDelivery(
+      { ...profile, purpose: 'celebrate', adaptiveDelivery: false },
+      'Tell me a story',
+    ).tone,
+  ).toBe('warm');
+});

@@ -9,6 +9,7 @@ export const memorialProfileSchema = z.object({
   phrases: z.string().trim().max(1000),
   tone: z.enum(['gentle', 'warm', 'reflective', 'cheerful']),
   adaptiveDelivery: z.boolean().optional(),
+  purpose: z.enum(['remember', 'celebrate', 'reflect', 'listen']).optional(),
 });
 export type MemorialProfile = z.infer<typeof memorialProfileSchema>;
 export const savedMemorialSchema = z.object({
@@ -30,6 +31,7 @@ export const memorialTurnSchema = z.object({
   voiceToken: z.string().max(2000).nullable().default(null),
 });
 export const memorialReplySchema = z.object({
+  turnId: z.uuid().optional(),
   text: z.string(),
   mode: z.enum(['local-preview', 'ai-simulation']),
   audio: z.string().nullable(),

@@ -14,7 +14,7 @@ import {
 import { findCurrentPolicy } from '@everecho/db';
 import { defineRoute } from '../http/route';
 import { withArchiveAccess } from '../lib/access';
-import { notFound } from '../errors';
+import { notFound, validationFailed } from '../errors';
 import type { AppContext } from '../context';
 
 const archiveParams = z.object({ archiveId: z.uuid() });
@@ -33,6 +33,44 @@ interface SessionRow {
 }
 
 export function registerInterviewRoutes(app: FastifyInstance, ctx: AppContext): void {
+  defineRoute(app, ctx, {
+    method: 'POST',
+    url: '/v1/archives/:archiveId/interviews/:sessionId/resume',
+    tag: 'interviews',
+    summary: 'Resume an interview',
+    auth: 'required',
+    params: sessionParams,
+    response: z.object({ session: interviewSessionSchema }),
+    handler: async ({ params, request }) =>
+      withArchiveAccess(
+        ctx,
+        request,
+        {
+          archiveId: params.archiveId,
+          action: 'interview.answer',
+          resource: { type: 'interview_session', id: params.sessionId },
+        },
+        async ({ tx }) => {
+          let session = await tx.maybeOne<SessionRow>(
+            'SELECT * FROM interview_session WHERE id=$1 AND archive_id=$2 FOR UPDATE',
+            [params.sessionId, params.archiveId],
+          );
+          if (!session) throw notFound();
+          if (session.safety_notice_shown_at || !['active', 'paused'].includes(session.status))
+            throw validationFailed('This interview cannot be resumed.');
+          session = await tx.one<SessionRow>(
+            "UPDATE interview_session SET status='active' WHERE id=$1 RETURNING *",
+            [session.id],
+          );
+          let prompt = await tx.maybeOne<PromptRow>(
+            'SELECT p.* FROM interview_prompt p LEFT JOIN interview_response r ON r.interview_prompt_id=p.id WHERE p.interview_session_id=$1 AND r.id IS NULL ORDER BY p.idx LIMIT 1',
+            [session.id],
+          );
+          if (!prompt) prompt = await nextPrompt(ctx, tx, params.archiveId, session.id, null);
+          return { session: await toSession(tx, session, prompt) };
+        },
+      ),
+  });
   defineRoute(app, ctx, {
     method: 'POST',
     url: '/v1/archives/:archiveId/interviews',
@@ -135,6 +173,42 @@ export function registerInterviewRoutes(app: FastifyInstance, ctx: AppContext): 
           );
           if (!session) throw notFound('That session was not found.');
 
+          if (session.status !== 'active')
+            throw validationFailed('Resume the interview before answering.');
+          const promptOwner = await tx.maybeOne(
+            'SELECT id FROM interview_prompt WHERE id=$1 AND interview_session_id=$2 AND archive_id=$3',
+            [body.promptId, session.id, params.archiveId],
+          );
+          if (!promptOwner) throw notFound('That question does not belong to this interview.');
+          if (body.action === 'pause') {
+            const paused = await tx.one<SessionRow>(
+              "UPDATE interview_session SET status='paused' WHERE id=$1 RETURNING *",
+              [session.id],
+            );
+            return { session: await toSession(tx, paused, null) };
+          }
+          if (
+            await tx.maybeOne('SELECT id FROM interview_response WHERE interview_prompt_id=$1', [
+              body.promptId,
+            ])
+          ) {
+            const current = await tx.maybeOne<PromptRow>(
+              'SELECT p.* FROM interview_prompt p LEFT JOIN interview_response r ON r.interview_prompt_id=p.id WHERE p.interview_session_id=$1 AND r.id IS NULL ORDER BY p.idx LIMIT 1',
+              [session.id],
+            );
+            return { session: await toSession(tx, session, current) };
+          }
+          if (body.action === 'answer' && !body.responseText?.trim() && !body.sourceAssetId)
+            throw validationFailed('Add words or a recording.');
+          if (
+            body.sourceAssetId &&
+            !(await tx.maybeOne(
+              "SELECT id FROM source_asset WHERE id=$1 AND archive_id=$2 AND deleted_at IS NULL AND status NOT IN ('uploading','rejected','deleted')",
+              [body.sourceAssetId, params.archiveId],
+            ))
+          )
+            throw notFound('That recording was not found.');
+
           await tx.query(
             `INSERT INTO interview_response (archive_id, interview_session_id, interview_prompt_id,
                                              response_text, source_asset_id, action)
@@ -179,14 +253,6 @@ export function registerInterviewRoutes(app: FastifyInstance, ctx: AppContext): 
             return { session: await toSession(tx, paused, null) };
           }
 
-          if (body.action === 'pause') {
-            const paused = await tx.one<SessionRow>(
-              `UPDATE interview_session SET status = 'paused' WHERE id = $1 RETURNING *`,
-              [session.id],
-            );
-            return { session: await toSession(tx, paused, null) };
-          }
-
           const prompt = await nextPrompt(
             ctx,
             tx,
@@ -220,6 +286,14 @@ export function registerInterviewRoutes(app: FastifyInstance, ctx: AppContext): 
           resource: { type: 'interview_session', id: params.sessionId },
         },
         async ({ tx, archive, user }) => {
+          const before = await tx.maybeOne<SessionRow>(
+            'SELECT * FROM interview_session WHERE id=$1 AND archive_id=$2 FOR UPDATE',
+            [params.sessionId, params.archiveId],
+          );
+          if (!before) throw notFound();
+          if (before.status === 'completed') return { session: await toSession(tx, before, null) };
+          if (before.status === 'abandoned' || before.safety_notice_shown_at)
+            throw validationFailed('This interview cannot be finished.');
           const responses = await tx.query<{ response_text: string | null }>(
             `SELECT response_text FROM interview_response
              WHERE interview_session_id = $1 AND action = 'answer' AND response_text IS NOT NULL
@@ -265,6 +339,15 @@ export function registerInterviewRoutes(app: FastifyInstance, ctx: AppContext): 
           auditOnAllow: true,
         },
         async ({ tx }) => {
+          const before = await tx.maybeOne<SessionRow>(
+            'SELECT * FROM interview_session WHERE id=$1 AND archive_id=$2 FOR UPDATE',
+            [params.sessionId, params.archiveId],
+          );
+          if (!before) throw notFound();
+          if (before.status !== 'completed')
+            throw validationFailed('Finish the interview before approving.');
+          if (before.summary_approved)
+            return { session: await toSession(tx, before, null), memoriesCreated: 0 };
           const session = await tx.one<SessionRow>(
             `UPDATE interview_session
              SET summary_approved = true, summary_text = coalesce($2, summary_text)

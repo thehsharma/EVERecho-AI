@@ -35,6 +35,8 @@ function groupsFor(): Group[] {
       heading: 'The archive',
       items: [
         { href: '', label: 'Overview' },
+        { href: '/guide', label: 'Family guide' },
+        { href: '/explore', label: 'Explore & keepsake', requires: 'memory.read' },
         { href: '/timeline', label: 'Timeline', requires: 'timeline.read' },
         { href: '/biography', label: 'Biography', requires: 'biography.read' },
         { href: '/people', label: 'People', requires: 'entity.read' },

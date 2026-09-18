@@ -1,4 +1,6 @@
 'use client';
+import Link from 'next/link';
+import { ReplyFeedback } from './reply-feedback';
 
 import { useEffect, useRef, useState } from 'react';
 import type { MemorialProfile, MemorialReply, MemorialStatus } from '@everecho/contracts';
@@ -25,6 +27,7 @@ type Message = {
   role: 'user' | 'assistant';
   content: string;
   mode?: MemorialReply['mode'];
+  turnId?: string;
   audio?: string | null;
 };
 const blankProfile: MemorialProfile = {
@@ -36,6 +39,7 @@ const blankProfile: MemorialProfile = {
   phrases: '',
   tone: 'warm',
   adaptiveDelivery: true,
+  purpose: 'remember',
 };
 
 async function encodeFile(file: File): Promise<string> {
@@ -213,6 +217,7 @@ export function MemorialStudio() {
       return;
     }
     const turn = ++sequence.current;
+    const sentAt = performance.now();
     if (restartTimer.current) clearTimeout(restartTimer.current);
     inFlight.current = true;
     setBusy(true);
@@ -250,7 +255,13 @@ export function MemorialStudio() {
       if (!alive.current || sequence.current !== turn) return;
       history.current = [
         ...history.current,
-        { role: 'assistant', content: body.text, mode: body.mode, audio: body.audio },
+        {
+          role: 'assistant',
+          content: body.text,
+          mode: body.mode,
+          audio: body.audio,
+          turnId: body.turnId,
+        },
       ];
       setMessages([...history.current]);
       inFlight.current = false;
@@ -263,6 +274,7 @@ export function MemorialStudio() {
               (body.delivery.adaptive ? ' · adapted to this message' : ' · your selected style')
           : '',
       );
+      setPhase('Reply ready in ' + ((performance.now() - sentAt) / 1000).toFixed(1) + ' seconds');
       speak(body, turn);
     } catch (caught) {
       if (!alive.current || sequence.current !== turn) return;
@@ -445,6 +457,21 @@ export function MemorialStudio() {
               Uses simple English/Hindi text cues to choose a gentler, warmer or more reflective
               delivery. It can get the tone wrong. Turn this off to always use your selected style.
             </p>
+            <label htmlFor="conversation-purpose">
+              What would you like from this conversation?
+            </label>
+            <select
+              id="conversation-purpose"
+              value={profile.purpose ?? 'remember'}
+              onChange={(e) =>
+                field('purpose', e.target.value as NonNullable<MemorialProfile['purpose']>)
+              }
+            >
+              <option value="remember">Help me remember</option>
+              <option value="celebrate">Celebrate with me</option>
+              <option value="reflect">Help me reflect</option>
+              <option value="listen">Just listen</option>
+            </select>
           </fieldset>
           <details className="memorial-voice-setup">
             <summary>02 / Recreate an authorized voice</summary>
@@ -591,6 +618,19 @@ export function MemorialStudio() {
               >
                 Start voice session
               </button>
+              {active && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    stop();
+                    listeningSession.current = true;
+                    setActive(true);
+                    resumeListening();
+                  }}
+                >
+                  Interrupt and speak
+                </button>
+              )}
               <button type="button" disabled={!active && !busy} onClick={stop}>
                 Stop session
               </button>
@@ -629,6 +669,7 @@ export function MemorialStudio() {
                         : 'AI · imagined dialogue'}
                   </span>
                   <p>{message.content}</p>
+                  {message.turnId && <ReplyFeedback turnId={message.turnId} />}
                   {message.audio && !active && (
                     <audio
                       controls
@@ -666,12 +707,14 @@ export function MemorialStudio() {
           </form>
           <div className="memorial-bottom">
             <span>Turn-based voice · you speak, then listen</span>
+            <Link href="/account/insights">Conversation measurements</Link>
             <button
               type="button"
               disabled={busy || active}
               onClick={() => {
                 history.current = [];
                 setMessages([]);
+                setDeliveryNote('');
               }}
             >
               Clear conversation

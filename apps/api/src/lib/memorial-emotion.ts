@@ -37,6 +37,15 @@ const settings = {
 export function emotionalDelivery(profile: MemorialProfile, message: string) {
   let tone = profile.tone;
   let adaptive = false;
+  if (profile.adaptiveDelivery !== false && profile.purpose && profile.purpose !== 'remember') {
+    tone =
+      profile.purpose === 'listen'
+        ? 'gentle'
+        : profile.purpose === 'reflect'
+          ? 'reflective'
+          : 'cheerful';
+    adaptive = true;
+  }
   if (profile.adaptiveDelivery !== false) {
     const text = message
       .normalize('NFKC')
@@ -84,4 +93,17 @@ export function emotionalGuidance(delivery: ReturnType<typeof emotionalDelivery>
     delivery.guidance +
     ' Treat text cues as uncertain; never announce a diagnosis or claim to read emotions. Respect explicit requests to stop, change subject, or just listen. Validate feelings the user actually expresses without agreeing with unsupported beliefs. Never guilt the user, encourage exclusivity, say the deceased is watching them, or promise that this simulation replaces human support. Do not insert crying, laughter, sighs, or other acted stage directions. Warmth must not override factual grounding.'
   );
+}
+
+export function conversationPurpose(purpose: MemorialProfile['purpose']) {
+  switch (purpose) {
+    case 'listen':
+      return 'The user wants to be heard. Acknowledge briefly, avoid unsolicited advice and repeated questions, and allow quiet pauses.';
+    case 'celebrate':
+      return 'The user wants to celebrate. Respond to their actual good news; be sensitive if the current message also expresses difficulty.';
+    case 'reflect':
+      return 'The user wants to reflect. Offer one optional question about the supplied material, without inventing shared history.';
+    default:
+      return 'The user wants to remember. Stay close to the supplied memories and ask which detail they would like to revisit.';
+  }
 }

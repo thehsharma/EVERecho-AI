@@ -1,69 +1,63 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/server';
 import { Card, PageHeader } from '@/components/ui';
-
 export const metadata = { title: 'Your family memory guide' };
-export default async function StartPage() {
+export default async function Page() {
   const me = await requireUser('/start');
   return (
     <div className="stack-lg">
       <PageHeader
-        title="Make room for the stories that matter"
-        lede="Start with one person and one memory. Build a private family archive at your own pace."
+        title="Keep a story worth passing on"
+        lede="Begin with one willing storyteller. Record, review, and make something your family can keep."
       />
+      <div className="grid">
+        <Card>
+          <h2>Start a family-history gift</h2>
+          <p>
+            Create a private archive for a parent or relative. They choose whether to participate
+            and what to share. You can make a personalized keepsake from approved stories.
+          </p>
+          <Link href="/archives/new">Set up an archive</Link>
+        </Card>
+        <Card>
+          <h2>Capture → review → explore</h2>
+          <p>
+            Record one answer, listen back, approve the summary, and review the resulting draft
+            stories. Then find connections and choose stories for a keepsake.
+          </p>
+          <Link href="/archives">Open your archives</Link>
+        </Card>
+      </div>
+      {me.archives.map((a) => (
+        <Card key={a.archiveId}>
+          <h2>{a.name}</h2>
+          <p>
+            Your role: {a.role.replaceAll('_', ' ')}. Available steps follow the storyteller’s
+            permissions.
+          </p>
+          <Link href={'/archives/' + a.archiveId + '/guide'}>Open this family’s guide</Link>
+        </Card>
+      ))}
       <Card>
-        <h2>1. Create your family archive</h2>
+        <h2>Optional memorial conversation</h2>
         <p>
-          Invite the person whose stories you want to preserve. They decide what can be recorded and
-          shared.
+          Choose whether to remember, reflect, celebrate, or simply be heard. The studio uses only
+          the notes you supply and labels its replies as AI simulation.
         </p>
-        <Link href="/archives/new">Create an archive</Link>
-      </Card>
-      <Card>
-        <h2>2. Record, review, and share</h2>
-        <p>
-          Use guided interviews, upload original recordings and photos, then review memories before
-          sharing them.
-        </p>
-        {me.archives.length ? (
-          <ul>
-            {me.archives.map((a) => (
-              <li key={a.archiveId}>
-                <Link href={`/archives/${a.archiveId}`}>{a.name}</Link> — open your archive to
-                record stories, manage invitations, and review permissions.
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Your archives will appear here once you create one or accept an invitation.</p>
-        )}
-      </Card>
-      <Card>
-        <h2>3. Explore memories with sources</h2>
-        <p>
-          Ask questions in your archive and follow the citations back to the original material.
-          Unknown answers stay unknown.
-        </p>
-        <Link href="/archives">Open your archives</Link>
-      </Card>
-      <Card>
-        <h2>4. Try an imagined conversation</h2>
-        <p>
-          The separate memorial studio uses the notes and personality you supply. Every AI reply is
-          labeled as a simulation. Save and export your profile there.
-        </p>
-        <Link href="/memorial">Open memorial studio</Link>
+        <div className="row">
+          <Link href="/memorial">Open memorial studio</Link>
+          <Link href="/account/insights">Your conversation measurements</Link>
+        </div>
       </Card>
       <Card>
         <h2>Your family stays in control</h2>
         <p>
-          Archive settings include member access, consent, exports, and deletion. Paying for an
-          archive does not give someone access to its memories.
+          Share an allowance without sharing private material. Export original files and review
+          continuity choices from each archive.
         </p>
-        <div className="memorial-actions">
-          <Link href="/trust">Understand consent</Link> ·{' '}
-          <Link href="/account/plan">Family subscription</Link> ·{' '}
-          <Link href="/account/billing">Reservations</Link> ·{' '}
+        <div className="row">
+          <Link href="/account/plan">Household & subscription</Link>
+          <Link href="/trust">Consent and privacy</Link>
           <Link href="/account/security">Account security</Link>
         </div>
       </Card>

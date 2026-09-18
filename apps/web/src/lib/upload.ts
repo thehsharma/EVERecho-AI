@@ -14,6 +14,7 @@ export async function uploadFile(
   archiveId: string,
   file: Blob,
   options: {
+    idempotencyKey?: string;
     filename: string;
     mimeType: string;
     kind: 'audio' | 'video' | 'photo' | 'document' | 'text';
@@ -34,7 +35,7 @@ export async function uploadFile(
     mimeType: options.mimeType,
     byteSize: file.size,
     kind: options.kind,
-    idempotencyKey: `${options.filename}-${file.size}-${Date.now()}`,
+    idempotencyKey: options.idempotencyKey ?? `${options.filename}-${file.size}-${Date.now()}`,
     caption: options.caption,
     privacy: {
       allowTranscription: true,
@@ -69,6 +70,7 @@ export async function uploadFile(
         : reject(new Error(`The upload was refused (${request.status}).`));
     request.onerror = () => reject(new Error('The connection dropped during the upload.'));
     request.ontimeout = () => reject(new Error('The upload timed out.'));
+    request.timeout = 120_000;
     request.send(file);
   });
 

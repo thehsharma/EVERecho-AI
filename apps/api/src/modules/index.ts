@@ -1,3 +1,6 @@
+import { registerMemorialHousehold } from './memorial-household';
+import { registerKeepsake } from './keepsake';
+import { registerMemorialQuality } from './memorial-quality';
 import { registerFamilySubscriptions } from './family-subscriptions';
 import type { FastifyInstance } from 'fastify';
 import type { AppContext } from '../context';
@@ -29,7 +32,10 @@ import { registerMemorialProfileRoutes } from './memorial-profiles';
 
 export async function registerRoutes(app: FastifyInstance, ctx: AppContext): Promise<void> {
   registerHealthRoutes(app, ctx);
+  registerKeepsake(app, ctx);
   registerMemorialRoutes(app, ctx);
+  registerMemorialQuality(app, ctx);
+  registerMemorialHousehold(app, ctx);
   registerFamilySubscriptions(app, ctx);
   registerMemorialProfileRoutes(app, ctx);
   registerAuthRoutes(app, ctx);

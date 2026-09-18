@@ -7,10 +7,13 @@ export const metadata = { title: 'Guided interview' };
 
 export default async function InterviewPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ archiveId: string }>;
+  searchParams: Promise<{ session?: string }>;
 }) {
   const { archiveId } = await params;
+  const { session } = await searchParams;
   const archive = await serverFetch<Archive>(`/v1/archives/${archiveId}`);
 
   return (
@@ -28,7 +31,11 @@ export default async function InterviewPage({
         </p>
       </Notice>
 
-      <InterviewPanel archiveId={archiveId} subjectName={archive.subjectDisplayName} />
+      <InterviewPanel
+        resumeSessionId={session}
+        archiveId={archiveId}
+        subjectName={archive.subjectDisplayName}
+      />
     </div>
   );
 }

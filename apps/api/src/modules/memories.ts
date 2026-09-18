@@ -69,6 +69,12 @@ interface ClaimRow {
   contradiction_ids: string[];
 }
 
+/** A card's body can contain any linked claim, so withhold the whole card when a source is restricted. */
+function readableMemory(topics: number, excluded: number, sensitivities: number) {
+  return `NOT EXISTS (SELECT 1 FROM unnest(m.topics) topic CROSS JOIN unnest($${topics}::text[]) restricted WHERE length(trim(restricted))>0 AND (strpos(lower(topic),lower(trim(restricted)))>0 OR strpos(lower(trim(restricted)),lower(topic))>0))
+ AND NOT EXISTS (SELECT 1 FROM claim linked JOIN claim_evidence evidence ON evidence.claim_id=linked.id LEFT JOIN source_asset source ON source.id=evidence.source_asset_id WHERE linked.memory_id=m.id AND (source.id IS NULL OR source.id=ANY($${excluded}::uuid[]) OR source.deleted_at IS NOT NULL OR source.status IN ('rejected','deleted','uploading','quarantined','scanning') OR NOT(source.sensitivity=ANY($${sensitivities}::text[])) OR source.embargo_until>now()))`;
+}
+
 const MEMORY_SELECT = `
   SELECT m.*, p.name AS place_name,
          coalesce(array_agg(DISTINCT me.entity_id) FILTER (WHERE me.entity_id IS NOT NULL), '{}') AS entity_ids
@@ -177,6 +183,7 @@ export function registerMemoryRoutes(app: FastifyInstance, ctx: AppContext): voi
              WHERE m.archive_id = $1 AND m.deleted_at IS NULL
                AND ($2 = 'all' OR m.status = $2)
                AND ($3 OR m.sensitivity = ANY($4::text[]))
+               AND ${readableMemory(6, 7, 4)}
              GROUP BY m.id, p.name
              ORDER BY m.occurred_on NULLS LAST, m.created_at DESC
              LIMIT $5`,
@@ -186,6 +193,8 @@ export function registerMemoryRoutes(app: FastifyInstance, ctx: AppContext): voi
               isStoryteller,
               allowedSensitivities(decision.obligations.maxSensitivity),
               query.limit,
+              decision.obligations.restrictedTopics,
+              decision.obligations.excludedSourceIds,
             ],
           );
 
@@ -193,8 +202,12 @@ export function registerMemoryRoutes(app: FastifyInstance, ctx: AppContext): voi
             rows.length === 0
               ? []
               : await tx.query<ClaimRow>(
-                  `${CLAIM_SELECT} WHERE c.memory_id = ANY($1::uuid[]) GROUP BY c.id`,
-                  [rows.map((r) => r.id)],
+                  `${CLAIM_SELECT} WHERE c.memory_id = ANY($1::uuid[]) AND ($2 OR (c.status='approved' AND c.sensitivity=ANY($3::text[]))) GROUP BY c.id`,
+                  [
+                    rows.map((r) => r.id),
+                    isStoryteller,
+                    allowedSensitivities(decision.obligations.maxSensitivity),
+                  ],
                 );
           const byMemory = new Map<string, ReturnType<typeof toClaim>[]>();
           for (const claim of claims) {
@@ -240,9 +253,15 @@ export function registerMemoryRoutes(app: FastifyInstance, ctx: AppContext): voi
         },
         async ({ tx, decision, user, archive }) => {
           const row = await tx.maybeOne<MemoryRow>(
-            `${MEMORY_SELECT} WHERE m.id = $1 AND m.archive_id = $2 AND m.deleted_at IS NULL
+            `${MEMORY_SELECT} WHERE m.id = $1 AND m.archive_id = $2 AND m.deleted_at IS NULL AND ${readableMemory(3, 4, 5)}
              GROUP BY m.id, p.name`,
-            [params.memoryId, params.archiveId],
+            [
+              params.memoryId,
+              params.archiveId,
+              decision.obligations.restrictedTopics,
+              decision.obligations.excludedSourceIds,
+              allowedSensitivities(decision.obligations.maxSensitivity),
+            ],
           );
           if (!row) throw notFound('That story was not found.');
 
@@ -257,8 +276,8 @@ export function registerMemoryRoutes(app: FastifyInstance, ctx: AppContext): voi
           }
 
           const claims = await tx.query<ClaimRow>(
-            `${CLAIM_SELECT} WHERE c.memory_id = $1 GROUP BY c.id`,
-            [row.id],
+            `${CLAIM_SELECT} WHERE c.memory_id = $1 AND ($2 OR (c.status='approved' AND c.sensitivity=ANY($3::text[]))) GROUP BY c.id`,
+            [row.id, isStoryteller, allowedSensitivities(decision.obligations.maxSensitivity)],
           );
           return {
             memory: toMemory(
